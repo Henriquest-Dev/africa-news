@@ -13,6 +13,16 @@ Este repositório é o estúdio de produção dos nossos vídeos curtos (Reels/T
   ambiente `POLLINATIONS_API_KEY`. Sem chave o servidor responde 401.
 - Ficheiros de trabalho (frames, renders intermédios) vão para o scratchpad, não para o repo.
 
+## Regras de produção (pedidas pelo dono do canal)
+
+- **Seguir sempre os três registos visuais das referências abaixo.** Não inventar estilos próprios (por exemplo,
+  ilustração cartoon flat) a menos que o pedido o diga.
+- **Gerar as imagens no servidor MCP da Pollinations** (`generateImage`), em 9:16, com os prompts-base de cada registo.
+- Narração: Piper `en_US-ryan-high`, verificada frase a frase com Whisper antes do render. Reescrever o que se ouvir mal.
+- Cada vídeo tem ganchos no início (frame 0 legível), no meio (open loop / re-gancho) e no fim (frase-espelho + CTA).
+- Temas: memecoins, Bitcoin, cripto e tecnologia, sempre em alta no momento (X, Google, imprensa), com factos verificados e fontes.
+- O perfil é **Damian Dupont (@DamianDupozjcr)**: "Memes. Culture. Community." O CTA fecha com o perfil dele.
+
 ## Guia de estilo (tirado da análise frame a frame de 3 vídeos de referência)
 
 ### Formato e ritmo

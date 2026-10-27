@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The House Always Eats</title>
+<link rel="stylesheet" href="fonts.css">
+<style>
+  html, body { margin: 0; background: #111; overflow: hidden; }
+  #stage { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; overflow: hidden; transform-origin: 0 0; background: #2D6FE0; }
+  .L { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+  .e { position: absolute; left: 0; top: 0; white-space: nowrap; will-change: transform, opacity; }
+  .slam { font-family: 'Rubik'; font-weight: 900; line-height: .92; letter-spacing: -.02em; color: #FFF4DE; }
+  .mono { font-family: 'JetBrains Mono'; font-weight: 700; letter-spacing: .04em; }
+  .ital { font-family: 'Instrument Serif'; font-style: italic; }
+  .outline { font-family: 'Rubik'; font-weight: 900; color: transparent; -webkit-text-stroke: 3px rgba(255,194,30,.28); }
+  .shadow { text-shadow: 0 10px 0 rgba(0,0,0,.18); }
+  svg.full { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; overflow: visible; }
+  canvas.full { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+  #ui { position: fixed; left: 0; right: 0; bottom: 0; padding: 10px; background: #000c; color: #ddd; font: 13px system-ui; display: flex; gap: 10px; align-items: center; }
+  #ui input { flex: 1; }
+  .render #ui { display: none; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="flood" class="e" style="border-radius:50%"></div>
+  <div id="cam" class="L"></div>
+  <canvas id="fx" class="full" width="1080" height="1920"></canvas>
+  <div id="hud" class="L"></div>
+</div>
+<div id="ui"><button id="pp">▶</button><input id="scrub" type="range" min="0" max="1000" value="0"><span id="tc">0.00</span></div>
+<script src="sfx.js"></script>
+<script src="vo.js"></script>
+<script src="timing.js"></script>
+<script>
+/* BEAT SHEET — narração manda no tempo (LINES = [início, duração] de cada frase); música trap a 140 BPM por baixo
+   0.00 S1 HOOK      "81%" já visível no frame 0, pilha de moedas mortas; 1.76 "ARE DEAD." treme      | hit + impact, impact
+   2.15  moeda salta da pilha, cresce e inunda de ouro                                                 | whoosh → boom
+   2.31 S2 CASINO    slot machine com coroa; "THE CASINO MADE" + contagem $18,000,000; "IN ONE WEEK."   | ticks, moedas
+   5.40  moeda da slot inunda de azul-noite                                                            | swoosh
+   5.60 S3 DATA      gráfico sobe ao topo e cai 90%; "EVEN THE ONES THAT MADE IT" / "81%" / "CRASHED 90%+" | glitch + boom
+   8.45  ponto do gráfico inunda de laranja                                                            | swoosh
+   8.59 S4 PUMP.FUN  cartão: receita do protocolo $18.6M em 7 dias, barras; mão com rake varre moedas    | ticks, swoosh
+  12.30  moeda inunda de preto
+  12.48 S5 TRIPLET   COINS DIE. / THE HOUSE STILL EATS. / EVERY BUY. / EVERY SELL. / PAYS A FEE.     | impacts, pops, ding
+  16.60  moeda do "FEE" inunda de azul
+  16.73 S6 WOLF      lobo vestido de ovelha; "COMMUNITY." riscado → carimbo "EXIT LIQUIDITY"            | impact
+  19.80  inunda de creme
+  20.01 S7 SEARCH    barra de pesquisa escreve "bitcoin", interesse cai até 20/100; carimbos "CRYPTO IS DEAD" | typing, impacts; música pára 22.9
+  24.30  inunda de azul
+  24.49 S8 TOURISTS  turistas vão-se embora; multidão com coroas sobe: "WHO'S REALLY HERE."            | riser → boom, pop
+  28.20  coroa inunda de azul-banner
+  28.45 S9 END       avatar do Damian, MEMES. CULTURE. COMMUNITY., @handle escrito, botão FOLLOW clicado | hit, pops, ticks, click, ding
+*/
+const W = 1080, H = 1920, DUR = 33.2;
+window.VIDEO = { w: W, h: H, duration: DUR };
+if (location.search.includes('render')) document.documentElement.classList.add('render');
+const C = { blue: '#2D6FE0', sky: '#4A95F2', gold: '#FFC21E', goldD: '#E89A06', orange: '#F2661F', navy: '#13204A', cream: '#FFF4DE', ink: '#0E0E14', green: '#1F8A5B' };
+
+// ---- helpers da skill ----
+function spring(t, w = 14, z = 0.82) { if (t <= 0) return 0; if (z >= 1) return 1 - Math.exp(-w * t) * (1 + w * t); const wd = w * Math.sqrt(1 - z * z); return 1 - Math.exp(-z * w * t) * (Math.cos(wd * t) + (z * w / wd) * Math.sin(wd * t)); }
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const ease = x => (x = clamp(x), x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const easeOut = x => 1 - Math.pow(1 - clamp(x), 3);
+const easeIn = x => Math.pow(clamp(x), 3);
+const lerp = (a, b, k) => a + (b - a) * k;
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const rng = s => () => (s = (s + 0x6D2B79F5) | 0, s = Math.imul(s ^ (s >>> 15), 1 | s), s ^= s + Math.imul(s ^ (s >>> 7), 61 | s), ((s ^ (s >>> 14)) >>> 0) / 4294967296);
+
+// ---- DOM ----
+const cam = document.getElementById('cam'), stage = document.getElementById('stage'), flood = document.getElementById('flood');
+const NS = 'http://www.w3.org/2000/svg';
+function layer(p = cam) { const d = document.createElement('div'); d.className = 'L'; p.appendChild(d); return d; }
+function img(p, src, w) { const i = document.createElement('img'); i.src = 'assets/' + src; i.className = 'e'; i.style.width = w + 'px'; p.appendChild(i); return i; }
+function txt(p, s, cls, size, css = '') { const d = document.createElement('div'); d.className = 'e ' + cls; d.style.fontSize = size + 'px'; d.style.cssText += css; d.textContent = s; p.appendChild(d); return d; }
+function box(p, css) { const d = document.createElement('div'); d.className = 'e'; d.style.cssText = css; p.appendChild(d); return d; }
+function put(el, x, y, s = 1, r = 0, o = 1) { el.style.transform = `translate(${x}px,${y}px) translate(-50%,-50%) scale(${s}) rotate(${r}deg)`; el.style.opacity = o; el.style.visibility = o <= .002 ? 'hidden' : 'visible'; }
+function show(el, on) { el.style.display = on ? 'block' : 'none'; }
+function word(el, t, t0, t1, x, y, o = {}) {
+  const k = spring(t - t0, o.w || 18, o.z || .58);
+  let op = t < t0 ? 0 : clamp((t - t0) / .08) * (1 - seg(t, t1, t1 + .12));
+  put(el, x + (1 - k) * (o.dx || 0), y + (1 - k) * (o.dy ?? 70), lerp(o.s0 ?? .6, 1, k) * (o.s || 1), o.r || 0, op);
+  const bl = (1 - clamp((t - t0) / .15)) * 12; el.style.filter = t >= t0 && bl > .4 ? `blur(${bl.toFixed(1)}px)` : 'none';
+}
+function svgEl(p, w = W, h = H) { const s = document.createElementNS(NS, 'svg'); s.setAttribute('class', 'full'); s.setAttribute('viewBox', `0 0 ${w} ${h}`); s.style.width = w + 'px'; s.style.height = h + 'px'; p.appendChild(s); return s; }
+function path(s, d, stroke, width, fill = 'none') { const p = document.createElementNS(NS, 'path'); p.setAttribute('d', d); p.setAttribute('fill', fill); p.setAttribute('stroke', stroke); p.setAttribute('stroke-width', width); p.setAttribute('stroke-linecap', 'round'); p.setAttribute('stroke-linejoin', 'round'); s.appendChild(p); return p; }
+function draw(p, k) { const L = p.__L ??= p.getTotalLength(); p.setAttribute('stroke-dasharray', `${L} ${L}`); p.setAttribute('stroke-dashoffset', L * (1 - clamp(k))); p.style.opacity = k > 0 ? 1 : 0; }
+// moeda da marca (ouro com coroa, como as do avatar)
+const COIN_SVG = `<svg viewBox="0 0 200 200" width="100%" height="100%"><circle cx="100" cy="106" r="92" fill="${C.goldD}"/><circle cx="100" cy="96" r="92" fill="${C.gold}"/><circle cx="100" cy="96" r="70" fill="#FFB000"/><circle cx="100" cy="96" r="70" fill="none" stroke="#FFE27A" stroke-width="6"/><path d="M58 122 L52 70 L78 92 L100 60 L122 92 L148 70 L142 122 Z" fill="${C.orange}"/><rect x="58" y="126" width="84" height="12" rx="4" fill="${C.orange}"/></svg>`;
+function coin(p, size) { const d = document.createElement('div'); d.className = 'e'; d.style.width = d.style.height = size + 'px'; d.innerHTML = COIN_SVG; p.appendChild(d); return d; }
+function fmt(n) { return '$' + Math.round(n).toLocaleString('en-US'); }
+
+// ---- fundo: cor por cena + "flood" a partir da moeda ----
+// [início, fim, x, y, cor nova]
+const FLOODS = [[2.15, 2.5, 540, 760, C.gold], [5.4, 5.72, 540, 900, C.navy], [8.42, 8.72, 880, 1180, C.orange], [12.28, 12.55, 540, 1500, C.ink], [16.58, 16.86, 540, 1120, C.blue], [19.78, 20.08, 540, 960, C.cream], [24.28, 24.58, 540, 1300, C.blue], [28.18, 28.48, 540, 1460, C.navy]];
+function baseColor(t) { let c = C.blue; for (const f of FLOODS) if (t >= f[1]) c = f[4]; return c; }
+
+// ---- HUD (moldura de câmara, da skill) ----
+const hud = document.getElementById('hud');
+const hudCss = `color:rgba(255,255,255,.55);font-size:24px;`;
+const brk = svgEl(hud); [['M40 110 V40 H110'], ['M970 40 H1040 V110'], ['M40 1810 V1880 H110'], ['M970 1880 H1040 V1810']].forEach(([d]) => path(brk, d, 'rgba(255,255,255,.55)', 4));
+const hScene = txt(hud, '', 'mono', 24, hudCss), hLabel = txt(hud, '', 'mono', 24, hudCss), hTc = txt(hud, '', 'mono', 24, hudCss), hHandle = txt(hud, '@DAMIANDUPOZJCR', 'mono', 24, hudCss);
+const hDot = box(hud, 'width:14px;height:14px;border-radius:50%;background:#FF3B30');
+const SCENES = [[0, 'HOOK'], [2.31, 'THE CASINO'], [5.6, 'DATA'], [8.59, 'REVENUE'], [12.48, 'THE HOUSE'], [16.73, 'COMMUNITY?'], [20.01, 'SENTIMENT'], [24.49, 'WHO STAYS'], [28.45, 'FOLLOW']];
+
+// ================= CENAS =================
+// S1 hook
+const s1 = layer();
+const s1coins = Array.from({ length: 10 }, (_, i) => { const r = rng(10 + i); return { e: coin(s1, 90 + r() * 80), x: r() * W, y: r() * H, v: 40 + r() * 80, rot: (r() - .5) * 200, o: .25 + r() * .25 }; });
+const dead = img(s1, 'dead_coins.png', 900);
+const t1a = txt(s1, '81%', 'slam shadow', 400, `color:${C.gold}`), t1b = txt(s1, 'OF MEME COINS', 'slam', 104), t1c = txt(s1, 'ARE DEAD.', 'slam shadow', 170);
+const carrier = coin(cam, 220);   // a moeda que atravessa as transições
+// S2 casino
+const s2 = layer();
+const slot = img(s2, 'slot.png', 560);
+const pour = Array.from({ length: 22 }, (_, i) => { const r = rng(40 + i); return { e: coin(s2, 70 + r() * 50), x: 540 + (r() - .5) * 360, d: r() * 1.2, vx: (r() - .5) * 500, rot: (r() - .5) * 720 }; });
+const t2a = txt(s2, 'THE CASINO MADE', 'slam', 96, `color:${C.navy}`), t2n = txt(s2, '$0', 'slam', 136, `color:${C.navy}`), t2b = txt(s2, 'IN ONE WEEK.', 'slam', 120, `color:${C.cream};background:${C.navy};padding:10px 26px 18px;border-radius:18px`);
+// S3 chart
+const s3 = layer();
+const ch = svgEl(s3);
+const grid3 = Array.from({ length: 5 }, (_, i) => path(ch, `M120 ${760 + i * 120} H960`, 'rgba(255,255,255,.12)', 2));
+const up = path(ch, 'M120 1240 C 220 1220, 260 1160, 330 1120 S 430 1000, 480 980 S 580 840, 640 790', C.gold, 12);
+const crash = path(ch, 'M640 790 L 680 900 L 700 870 L 760 1100 L 790 1080 L 850 1250 L 960 1270', C.orange, 12);
+const ath = txt(s3, 'ATH', 'mono', 34, `color:${C.gold}`), athDot = box(s3, `width:34px;height:34px;border-radius:50%;background:${C.gold};box-shadow:0 0 0 10px rgba(255,194,30,.25)`);
+const endDot = box(s3, `width:34px;height:34px;border-radius:50%;background:${C.orange};box-shadow:0 0 0 10px rgba(242,102,31,.3)`);
+const t3a = txt(s3, 'EVEN THE ONES', 'slam', 100), t3b = txt(s3, 'THAT MADE IT:', 'slam', 100);
+const t3c = txt(s3, '81%', 'slam shadow', 330, `color:${C.orange}`), t3d = txt(s3, 'CRASHED −90%+', 'slam', 92, `color:${C.cream}`);
+const src3 = txt(s3, 'DATA: TALOS VIA CRYPTOSLATE · OCT 2026', 'mono', 26, 'color:rgba(255,255,255,.6)');
+// S4 revenue card
+const s4 = layer();
+const ghost1 = box(s4, `width:840px;height:640px;border-radius:44px;background:rgba(255,244,222,.35)`), ghost2 = box(s4, `width:840px;height:640px;border-radius:44px;background:rgba(255,244,222,.55)`);
+const card = box(s4, `width:860px;height:700px;border-radius:44px;background:${C.cream};box-shadow:0 30px 0 rgba(0,0,0,.15)`);
+const cTitle = txt(card, 'PUMP.FUN', 'slam', 74, `color:${C.navy};left:60px;top:56px`);
+const cSub = txt(card, 'PROTOCOL REVENUE · 7 DAYS', 'mono', 30, `color:rgba(19,32,74,.6);left:62px;top:146px`);
+const cNum = txt(card, '$0.0M', 'slam', 190, `color:${C.orange};left:54px;top:196px;transform-origin:0 50%`);
+const bars = Array.from({ length: 7 }, (_, i) => box(card, `left:${66 + i * 108}px;top:420px;width:76px;height:170px;border-radius:14px 14px 4px 4px;background:${i == 6 ? C.orange : C.navy};transform-origin:50% 100%`));
+const cSrc = txt(card, 'DEFILLAMA · WEEK TO OCT 7, 2026', 'mono', 24, `color:rgba(19,32,74,.55);left:62px;top:630px`);
+const rake = img(s4, 'rake.png', 640);
+const rcoins = Array.from({ length: 9 }, (_, i) => { const r = rng(80 + i); return { e: coin(s4, 90 + r() * 40), x: 180 + i * 90 + r() * 30, y: 1660 + r() * 90 }; });
+const t4a = txt(s4, 'MEANWHILE…', 'slam', 96, `color:${C.cream}`);
+// S5 kinetic triplet
+const s5 = layer();
+const p5 = box(s5, 'width:2400px;height:2600px'); const rows5 = Array.from({ length: 12 }, (_, i) => { const d = txt(p5, Array(8).fill('HOUSE').join(' '), 'outline', 220); d.style.left = '0'; d.style.top = i * 220 + 'px'; return d; });
+const k5 = [
+  [12.48, 13.32, C.cream, [['COINS', C.navy, 250], ['DIE.', C.orange, 330]]],
+  [13.32, 14.3, C.ink, [['THE HOUSE', C.gold, 150], ['STILL EATS.', C.cream, 150]]],
+  [14.3, 14.95, C.blue, [['EVERY', C.cream, 160], ['BUY.', C.gold, 300]]],
+  [14.95, 15.72, C.orange, [['EVERY', C.cream, 160], ['SELL.', C.navy, 300]]],
+  [15.72, 16.75, C.gold, [['PAYS A', C.navy, 160], ['FEE.', C.ink, 360]]],
+].map(([a, b, bg, ws]) => ({ a, b, bg, el: ws.map(([s, c, z]) => txt(s5, s, 'slam shadow', z, `color:${c}`)) }));
+const deadSmall = img(s5, 'dead_coins.png', 560);
+const feeCoin = coin(s5, 260);
+// S6 wolf
+const s6 = layer();
+const wolfBg = box(s6, `width:900px;height:900px;border-radius:50%;background:${C.gold}`);
+const wolf = img(s6, 'wolf.png', 820);
+const t6a = txt(s6, "THAT'S NOT A", 'slam', 96), t6b = txt(s6, 'COMMUNITY.', 'slam shadow', 140);
+const s6svg = svgEl(s6), strike = path(s6svg, 'M70 400 C 300 380, 700 430, 1010 370', C.orange, 26);
+const stamp = txt(s6, 'EXIT LIQUIDITY', 'slam', 132, `color:${C.ink};background:${C.gold};padding:14px 34px 22px;border-radius:20px;border:8px solid ${C.ink}`);
+const t6c = txt(s6, 'pretending to be one.', 'ital', 110, `color:${C.cream}`);
+// S7 search
+const s7 = layer();
+const sbar = box(s7, `width:900px;height:150px;border-radius:75px;background:#fff;box-shadow:0 14px 0 rgba(19,32,74,.12), 0 0 0 4px rgba(19,32,74,.1)`);
+const sTxt = txt(sbar, '', 'mono', 60, `color:${C.navy};left:120px;top:40px`);
+const sIcon = svgEl(sbar, 900, 150); path(sIcon, 'M58 62 m-22 0 a22 22 0 1 0 44 0 a22 22 0 1 0 -44 0 M74 78 L92 96', C.navy, 8);
+const tr = svgEl(s7);
+const trLine = path(tr, 'M110 980 C 180 960, 220 760, 300 720 S 380 900, 440 880 S 520 640, 580 600 S 700 960, 780 1050 S 900 1200, 970 1230', C.blue, 12);
+const trBase = path(tr, 'M110 1300 H970', 'rgba(19,32,74,.25)', 4);
+const trLab100 = txt(s7, '100', 'mono', 30, `color:rgba(19,32,74,.5)`), trLab = txt(s7, 'PEAK', 'mono', 30, `color:${C.blue}`);
+const big20 = txt(s7, '20', 'slam shadow', 300, `color:${C.orange}`), of100 = txt(s7, '/100', 'slam', 120, `color:${C.navy}`);
+const src7 = txt(s7, 'GOOGLE TRENDS · "BITCOIN" · OCT 18–24, 2026', 'mono', 26, 'color:rgba(19,32,74,.55)');
+const t7a = txt(s7, 'EVERYONE SAYS', 'slam', 100, `color:${C.navy}`);
+const stamps = [-7, 5, -3].map((r, i) => ({ r, e: txt(s7, 'CRYPTO IS DEAD', 'slam', 118, `color:${C.cream};background:${C.ink};padding:16px 34px 24px;border-radius:16px`) }));
+// S8 tourists / crowd
+const s8 = layer();
+const tour = img(s8, 'tourists.png', 760), crowd = img(s8, 'crowd.png', 1060);
+const t8a = txt(s8, "THAT'S GOOD NEWS.", 'slam', 94), t8b = txt(s8, 'THE TOURISTS', 'slam', 120), t8c = txt(s8, 'LEFT.', 'slam shadow', 220, `color:${C.gold}`);
+const t8d = txt(s8, 'NOW WE FIND OUT', 'slam', 104), t8e = txt(s8, "WHO'S REALLY", 'slam', 120, `color:${C.gold}`), t8f = txt(s8, 'HERE.', 'slam shadow', 240, `color:${C.gold}`);
+// S9 end
+const s9 = layer();
+const rays = document.createElement('canvas'); rays.width = rays.height = 1400; rays.className = 'e';
+{ const g = rays.getContext('2d'); g.translate(700, 700); for (let i = 0; i < 24; i++) { g.rotate(Math.PI / 12); g.fillStyle = i % 2 ? 'rgba(74,149,242,.35)' : 'rgba(255,194,30,.10)'; g.beginPath(); g.moveTo(0, 0); g.lineTo(700, -90); g.lineTo(700, 90); g.fill(); } }
+s9.appendChild(rays);
+const rain = Array.from({ length: 16 }, (_, i) => { const r = rng(900 + i); return { e: coin(s9, 70 + r() * 70), x: r() * W, d: r() * 4, v: 380 + r() * 300, rot: (r() - .5) * 400 }; });
+const ring = box(s9, `width:660px;height:660px;border-radius:50%;background:${C.gold};box-shadow:0 20px 0 ${C.goldD}`);
+const avatar = img(s9, 'avatar.png', 600);
+const crownS = svgEl(s9, 200, 140); crownS.style.width = '200px'; crownS.style.height = '140px'; crownS.setAttribute('class', 'e'); path(crownS, 'M20 120 L10 30 L60 70 L100 10 L140 70 L190 30 L180 120 Z', C.ink, 10, C.gold);
+const e1 = txt(s9, 'MEMES.', 'slam', 84), e2 = txt(s9, 'CULTURE.', 'slam', 84, `color:${C.gold}`), e3 = txt(s9, 'COMMUNITY.', 'slam', 84);
+const name9 = txt(s9, 'DAMIAN DUPONT', 'slam shadow', 104), handle = txt(s9, '', 'mono', 52, `color:rgba(255,244,222,.85)`);
+const follow = box(s9, `width:520px;height:140px;border-radius:70px;background:${C.cream};display:flex;align-items:center;justify-content:center;font-family:Rubik;font-weight:900;font-size:66px;color:${C.ink};letter-spacing:.02em`); follow.textContent = 'FOLLOW';
+const cursor = svgEl(s9, 80, 100); cursor.style.width = '80px'; cursor.style.height = '100px'; cursor.setAttribute('class', 'e'); path(cursor, 'M8 6 L8 80 L28 62 L42 94 L56 88 L42 56 L70 56 Z', C.ink, 6, '#fff');
+const HANDLE = '@DamianDupozjcr';
+
+const scenes = [s1, s2, s3, s4, s5, s6, s7, s8, s9];
+
+// ---- grão + vinheta ----
+const fx = document.getElementById('fx').getContext('2d');
+const grain = [], R0 = rng(5); for (let i = 0; i < 6; i++) { const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d'), d = g.createImageData(256, 256); for (let j = 0; j < d.data.length; j += 4) { const v = R0() * 255; d.data[j] = d.data[j + 1] = d.data[j + 2] = v; d.data[j + 3] = 255; } g.putImageData(d, 0, 0); grain.push(c); }
+const vig = document.createElement('canvas'); vig.width = W; vig.height = H; { const g = vig.getContext('2d'), gr = g.createRadialGradient(540, 900, 500, 540, 960, 1250); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,.42)'); g.fillStyle = gr; g.fillRect(0, 0, W, H); }
+const shakeAt = [0.05, 1.76, 2.45, 7.4, 12.62, 13.38, 16.28, 17.9, 21.66, 23.3, 23.5, 23.7, 24.58, 26.7, 28.48];
+function shake(t) { let x = 0, y = 0; for (const s of shakeAt) { const d = t - s; if (d >= 0 && d < .3) { const a = Math.exp(-d * 14) * 16; x += Math.sin(d * 95) * a; y += Math.cos(d * 81) * a; } } return [x, y]; }
+
+// ================= SEEK =================
+window.seek = function (t) {
+  t = clamp(t, 0, DUR - 1e-4);
+  scenes.forEach(s => show(s, false));
+  stage.style.background = baseColor(t);
+  // flood ativo
+  const f = FLOODS.find(f => t >= f[0] && t < f[1]);
+  if (f) { const r = lerp(0, 2300, easeIn(seg(t, f[0], f[1]) * .6 + .4 * ease(seg(t, f[0], f[1])))); flood.style.width = flood.style.height = 2 * r + 'px'; flood.style.background = f[4]; put(flood, f[2], f[3], 1, 0, 1); } else flood.style.visibility = 'hidden';
+  carrier.style.visibility = 'hidden';
+  let camS = 1;
+
+  // ---------- S1 hook (0 – 2.5) ----------
+  if (t < 2.45) {
+    show(s1, true);
+    s1coins.forEach(c => put(c.e, c.x, (c.y - t * c.v + H) % H, 1, c.rot * t, c.o));
+    const dk = spring(t + .6, 10, .6);
+    put(dead, 540, lerp(1900, 1520, dk), 1 + t * .02, 0, 1);
+    word(t1a, t, -0.4, 99, 540, 560, { z: .5, w: 22, s0: 1.5, dy: 0 }); t1a.style.filter = 'none';
+    word(t1b, t, 0.72, 99, 540, 860, { dy: 50 });
+    word(t1c, t, 1.72, 99, 540, 1040, { z: .45, w: 24, s0: 1.7, dy: 0, r: -3 });
+    // a moeda salta da pilha e torna-se o flood dourado
+    if (t > 1.98) { const k = seg(t, 1.98, 2.3); carrier.style.visibility = 'visible'; put(carrier, lerp(560, 540, k), lerp(1440, 760, easeOut(k)) - Math.sin(k * Math.PI) * 120, lerp(.5, 1.6, easeIn(k)), k * 540, 1); }
+    camS = 1 + t * .03;
+  }
+  // ---------- S2 casino (2.3 – 5.75) ----------
+  if (t >= 2.45 && t < 5.75) {
+    show(s2, true);
+    const d = t - 2.3, sk = spring(t - 2.4, 11, .6);
+    put(slot, 540, lerp(1700, 1240, sk), 1 + d * .02, lerp(6, 0, sk), 1);
+    pour.forEach((p, i) => { const tt = t - 3.6 - p.d * .8; const on = tt > 0 && tt < 2.2; put(p.e, p.x + p.vx * tt * .3, 1420 + tt * 260 + 900 * tt * tt * .5 - 520 * tt, .8, p.rot * tt, on ? 1 : 0); });
+    word(t2a, t, 2.62, 99, 540, 300, { dy: -50 });
+    const v = lerp(0, 18000000, easeOut(seg(t, 3.45, 4.5)));
+    t2n.textContent = fmt(v); word(t2n, t, 3.45, 99, 540, 470, { z: .6, dy: 0, s0: 1.3 });
+    word(t2b, t, 4.75, 99, 540, 660, { z: .5, w: 20, s0: 1.4, dy: 0, r: -2 });
+    if (t > 5.2) { const k = seg(t, 5.2, 5.48); carrier.style.visibility = 'visible'; put(carrier, 540, lerp(1180, 900, easeOut(k)), lerp(.4, 1.4, easeIn(k)), k * 400, 1); }
+    camS = 1 + d * .025;
+  }
+  // ---------- S3 chart (5.6 – 8.8) ----------
+  if (t >= 5.66 && t < 8.75) {
+    show(s3, true);
+    grid3.forEach((g, i) => g.style.opacity = clamp((t - 5.65) / .2 - i * .2) * .9);
+    draw(up, ease(seg(t, 5.75, 6.5)));
+    const ck = seg(t, 7.3, 7.75); draw(crash, ck);
+    put(athDot, 640, 790, spring(t - 6.45, 18, .5), 0, t > 6.45 ? 1 : 0); word(ath, t, 6.5, 99, 640, 730, { dy: 20 });
+    const ep = crash.getPointAtLength((crash.__L ??= crash.getTotalLength()) * ck);
+    put(endDot, ep.x, ep.y, 1, 0, t > 7.3 ? 1 : 0);
+    word(t3a, t, 5.85, 99, 540, 270, { dy: -40 }); word(t3b, t, 6.25, 99, 540, 380, { dy: -40 });
+    word(t3c, t, 6.85, 99, 540, 1500, { z: .5, w: 22, s0: 1.5, dy: 0 });
+    word(t3d, t, 7.65, 99, 540, 1700, { dy: 40 });
+    word(src3, t, 6.0, 99, 540, 1840, { dy: 0, s0: 1 });
+    if (t > 8.2) { const k = seg(t, 8.2, 8.45); carrier.style.visibility = 'visible'; put(carrier, lerp(ep.x, 880, k), lerp(ep.y, 1180, k), lerp(.3, 1.2, easeIn(k)), k * 500, 1); }
+    camS = 1 + (t - 5.6) * .02;
+  }
+  // ---------- S4 revenue (8.6 – 12.6) ----------
+  if (t >= 8.68 && t < 12.55) {
+    show(s4, true);
+    const d = t - 8.6, ck = spring(t - 8.9, 10, .7);
+    const cy = lerp(1900, 860, ck);
+    put(ghost1, 540 + 40, cy - 70, .92, 4, 1); put(ghost2, 540 + 20, cy - 35, .96, 2, 1); put(card, 540, cy, 1, lerp(8, -2, ck), 1);
+    word(t4a, t, 8.65, 99, 540, 300, { dy: -40 });
+    const n = lerp(0, 18.6, easeOut(seg(t, 10.0, 11.0))); cNum.textContent = '$' + n.toFixed(1) + 'M';
+    cNum.style.transform = `scale(${1 + .06 * Math.exp(-Math.max(0, t - 11.0) * 8) * (t > 11.0)})`;
+    bars.forEach((b, i) => { const hgt = [.35, .5, .42, .62, .55, .78, 1][i]; b.style.transform = `scaleY(${hgt * spring(t - 11.05 - i * .05, 16, .6)})`; });
+    const rk = ease(seg(t, 11.3, 12.2));
+    put(rake, lerp(1300, 520, rk), 1560, 1, lerp(-8, 6, rk), t > 11.3 ? 1 : 0);
+    rcoins.forEach((c, i) => { const pushX = Math.max(0, (c.x) - lerp(1300, 300, rk) + 260); put(c.e, c.x - pushX * .9, c.y, .9, -pushX * .4, t > 9.2 ? clamp((t - 9.2) / .2 - i * .1) : 0); });
+    if (t > 12.05) { const k = seg(t, 12.05, 12.3); carrier.style.visibility = 'visible'; put(carrier, 540, lerp(1700, 1500, k), lerp(.4, 1.3, easeIn(k)), k * 400, 1); }
+    camS = 1 + d * .02;
+  }
+  // ---------- S5 kinetic triplet (12.45 – 16.9) ----------
+  if (t >= 12.5 && t < 16.84) {
+    show(s5, true);
+    const cur = k5.find(k => t >= k.a && t < k.b) || k5[k5.length - 1];
+    if (t >= 12.55) stage.style.background = cur.bg;
+    show(p5, cur === k5[1]); if (cur === k5[1]) { put(p5, 540, 960, 1, -12, 1); rows5.forEach((r, i) => r.style.transform = `translateX(${(i % 2 ? -1 : 1) * (t - 13.32) * 220 - 500}px)`); }
+    k5.forEach(k => k.el.forEach((e, j) => { if (k !== cur) { e.style.visibility = 'hidden'; return; } const y = [820, 1060][j] + (k === k5[0] ? 0 : 0); word(e, t, k.a + j * .14, 99, 540, j ? y + 40 : y - 20, { z: .5, w: 24, s0: 1.5, dy: 0, r: j ? -2 : 0 }); }));
+    put(deadSmall, 540, 1480 + (1 - spring(t - 12.5, 12, .6)) * 400, 1, 0, cur === k5[0] ? 1 : 0);
+    if (cur === k5[4]) { const k = spring(t - 15.95, 14, .55); put(feeCoin, lerp(1300, 540, k), 1500, 1, lerp(360, 0, k), 1); } else feeCoin.style.visibility = 'hidden';
+    if (t > 16.45) { feeCoin.style.visibility = 'hidden'; const k = seg(t, 16.45, 16.62); carrier.style.visibility = 'visible'; put(carrier, 540, lerp(1500, 1120, k), lerp(1.2, 1.6, k), k * 300, 1); }
+    camS = 1 + (t - 12.45) * .01;
+  }
+  // ---------- S6 wolf (16.7 – 20.1) ----------
+  if (t >= 16.82 && t < 20.06) {
+    show(s6, true);
+    const d = t - 16.7, wk = spring(t - 16.8, 11, .55);
+    put(wolfBg, 540, 1270, lerp(.2, 1, wk), 0, 1); put(wolf, 540, lerp(1700, 1300, wk), 1 + d * .02, Math.sin(d * 3) * 2, 1);
+    word(t6a, t, 16.75, 99, 540, 250, { dy: -40 }); word(t6b, t, 17.05, 99, 540, 400, { z: .5, w: 22, s0: 1.5, dy: 0 });
+    draw(strike, ease(seg(t, 17.75, 17.95)));
+    word(stamp, t, 17.9, 99, 540, 620, { z: .45, w: 26, s0: 2.2, dy: 0, r: -6 });
+    word(t6c, t, 18.5, 99, 540, 800, { dy: 30 });
+    camS = 1 + d * .025;
+  }
+  // ---------- S7 search (20.0 – 24.6) ----------
+  if (t >= 20.04 && t < 24.55) {
+    show(s7, true);
+    const d = t - 20.0, bk = spring(t - 20.05, 12, .7);
+    const q = 'bitcoin'; sTxt.textContent = q.slice(0, Math.floor(lerp(0, q.length + .99, seg(t, 20.2, 20.75)))) + ((Math.floor(t * 3) % 2 || t < 20.75) ? '|' : '');
+    put(sbar, 540, lerp(-200, 330, bk), 1, 0, 1);
+    draw(trLine, ease(seg(t, 20.8, 21.8))); trBase.style.opacity = clamp((t - 20.75) / .2);
+    word(trLab, t, 21.1, 99, 580, 550, { dy: 20 }); word(trLab100, t, 21.1, 99, 96, 600, { dy: 0, s0: 1 });
+    word(big20, t, 21.62, 99, 470, 1520, { z: .5, w: 22, s0: 1.6, dy: 0 }); word(of100, t, 21.82, 99, 760, 1570, { dy: 30 });
+    word(src7, t, 21.0, 99, 540, 1840, { dy: 0, s0: 1 });
+    word(t7a, t, 22.9, 99, 540, 560, { dy: -30 });
+    stamps.forEach((s, i) => word(s.e, t, 23.3 + i * .2, 99, 540 + (i - 1) * 30, 860 + i * 190, { z: .45, w: 28, s0: 2.4, dy: 0, r: s.r }));
+    camS = 1 + d * .015;
+  }
+  // ---------- S8 tourists / crowd (24.5 – 28.5) ----------
+  if (t >= 24.54 && t < 28.45) {
+    show(s8, true);
+    const d = t - 24.5, walk = seg(t, 25.2, 26.9);
+    put(tour, lerp(540, 600, walk), lerp(1420, 1080, walk) + Math.abs(Math.sin(t * 9)) * -12 * (walk < 1), lerp(1, .35, walk), 0, 1 - seg(t, 26.6, 26.9));
+    word(t8a, t, 24.75, 26.55, 540, 300, { dy: -40 }); word(t8b, t, 25.35, 26.55, 540, 440, { dy: -30 }); word(t8c, t, 25.75, 26.55, 540, 620, { z: .5, w: 22, s0: 1.5, dy: 0 });
+    const ck = spring(t - 26.65, 10, .55); put(crowd, 540, lerp(2300, 1500, ck), 1, 0, t > 26.6 ? 1 : 0);
+    word(t8d, t, 26.7, 99, 540, 300, { dy: -40 }); word(t8e, t, 27.3, 99, 540, 470, { dy: -30 }); word(t8f, t, 27.7, 99, 540, 670, { z: .5, w: 22, s0: 1.5, dy: 0 });
+    if (t > 28.0) { const k = seg(t, 28.0, 28.18); carrier.style.visibility = 'visible'; put(carrier, 540, lerp(1300, 1460, k), lerp(.5, 1.4, easeIn(k)), k * 300, 1); }
+    camS = 1 + d * .02;
+  }
+  // ---------- S9 end (28.4 – 33.2) ----------
+  if (t >= 28.44) {
+    show(s9, true);
+    const d = t - 28.4;
+    put(rays, 540, 840, 1.3, d * 8, clamp(d / .3));
+    rain.forEach(c => { const y = ((d - c.d) * c.v) % 2300 - 200; put(c.e, c.x, y, .8, c.rot * d, d > c.d ? .5 : 0); });
+    const ak = spring(t - 28.5, 12, .55);
+    put(ring, 540, 840, ak, 0, 1); put(avatar, 540, 840, ak, 0, 1);
+    put(crownS, 540, lerp(320, 470, spring(t - 28.9, 14, .5)), 1, -8, t > 28.9 ? 1 : 0);
+    word(e1, t, 28.5, 99, 540, 1230, { dy: 40 }); word(e2, t, 28.95, 99, 540, 1318, { dy: 40 }); word(e3, t, 29.85, 99, 540, 1406, { dy: 40, z: .5, s0: 1.4 });
+    word(name9, t, 30.3, 99, 540, 1540, { dy: 40 });
+    handle.textContent = HANDLE.slice(0, Math.floor(lerp(0, HANDLE.length + .99, seg(t, 30.55, 31.4)))) + ((Math.floor(t * 3) % 2 || t < 31.4) ? '|' : '');
+    put(handle, 540, 1628, 1, 0, t > 30.5 ? 1 : 0);
+    const press = t > 31.75 ? 1 - .08 * Math.exp(-(t - 31.75) * 10) * Math.sin(Math.min(Math.PI, (t - 31.75) * 20)) : 1;
+    const fk = spring(t - 30.9, 14, .55);
+    put(follow, 540, 1770, lerp(.3, 1, fk) * press, 0, t > 30.9 ? 1 : 0);
+    follow.style.background = t > 31.78 ? C.gold : C.cream;
+    follow.textContent = t > 31.78 ? 'FOLLOWING ✓' : 'FOLLOW';
+    const ck = ease(seg(t, 31.1, 31.7)); put(cursor, lerp(980, 620, ck) + 40, lerp(1960, 1790, ck) + 50, t > 31.75 && t < 31.85 ? .9 : 1, 0, t > 31.1 ? 1 : 0);
+    camS = 1 + d * .015;
+  }
+  const [sx, sy] = shake(t);
+  cam.style.transform = `translate(${540 + sx}px,${960 + sy}px) scale(${camS}) translate(-540px,-960px)`;
+
+  // HUD
+  const si = SCENES.filter(s => t >= s[0]).length;
+  hScene.textContent = `SCENE ${String(si).padStart(2, '0')} / 09`; put(hScene, 880, 70, 1, 0, 1);
+  hLabel.textContent = SCENES[si - 1][1]; put(hLabel, 70 + hLabel.offsetWidth / 2, 1850, 1, 0, 1);
+  const tc = `00:${String(Math.floor(t)).padStart(2, '0')}:${String(Math.floor((t % 1) * 30)).padStart(2, '0')}`;
+  hTc.textContent = tc; put(hTc, 900, 1850, 1, 0, 1); put(hDot, 770, 1850, 1, 0, Math.floor(t * 2) % 2 ? 1 : .35);
+  put(hHandle, 70 + hHandle.offsetWidth / 2, 70, 1, 0, 1);
+  const dark = [C.cream, C.gold].includes(stage.style.background) || ['rgb(255, 244, 222)', 'rgb(255, 194, 30)'].includes(stage.style.background);
+  hud.style.filter = dark ? 'invert(1)' : 'none';
+
+  // textura
+  fx.clearRect(0, 0, W, H); fx.drawImage(vig, 0, 0);
+  fx.globalAlpha = .09; fx.globalCompositeOperation = 'overlay';
+  const gt = grain[Math.floor(t * 24) % 6]; for (let y = 0; y < H; y += 256) for (let x = 0; x < W; x += 256) fx.drawImage(gt, x, y);
+  fx.globalCompositeOperation = 'source-over'; fx.globalAlpha = 1;
+};
+
+// ================= ÁUDIO =================
+function b64buf(s) { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u.buffer; }
+window.buildAudio = async function (ctx) {
+  const sfx = {}; for (const k in SFX) sfx[k] = await ctx.decodeAudioData(b64buf(SFX[k]));
+  const vo = await ctx.decodeAudioData(b64buf(VO));
+  const master = ctx.createGain(); master.gain.value = .9; master.connect(ctx.destination);
+  const music = ctx.createGain(); music.connect(master);
+  const fxBus = ctx.createGain(); fxBus.gain.value = .55; fxBus.connect(master);
+  const voBus = ctx.createGain(); voBus.gain.value = 1.35; voBus.connect(master);
+  { const s = ctx.createBufferSource(); s.buffer = vo; s.connect(voBus); s.start(0); }
+  // ducking: música baixa por baixo de cada frase; pausa dramática em "Everyone says crypto is dead"
+  const mg = music.gain; mg.setValueAtTime(.42, 0);
+  for (const [a, d] of LINES) { mg.setTargetAtTime(.2, a - .05, .04); mg.setTargetAtTime(.36, a + d, .15); }
+  mg.setTargetAtTime(0, 22.8, .03); mg.setTargetAtTime(.3, 24.45, .02); mg.setTargetAtTime(0, 32.4, .3);
+  const R = rng(42), noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate); { const d = noise.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = R() * 2 - 1; }
+  const play = (n, at, g = 1, dur, rate = 1) => { const s = ctx.createBufferSource(); s.buffer = sfx[n]; s.playbackRate.value = rate; const gg = ctx.createGain(); gg.gain.value = g; s.connect(gg); gg.connect(fxBus); s.start(at, 0, dur); if (dur) { gg.gain.setValueAtTime(g, at + dur - .08); gg.gain.linearRampToValueAtTime(0, at + dur); } };
+  const kick = (at, v = .9) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.setValueAtTime(150, at); o.frequency.exponentialRampToValueAtTime(42, at + .12); g.gain.setValueAtTime(v, at); g.gain.exponentialRampToValueAtTime(.001, at + .35); o.connect(g); g.connect(music); o.start(at); o.stop(at + .4); };
+  const clap = (at, v = .5) => { const s = ctx.createBufferSource(); s.buffer = noise; const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1800; f.Q.value = .8; const g = ctx.createGain(); g.gain.setValueAtTime(v, at); g.gain.exponentialRampToValueAtTime(.001, at + .18); s.connect(f); f.connect(g); g.connect(music); s.start(at, R() * .5, .2); };
+  const hat = (at, v = .12) => { const s = ctx.createBufferSource(); s.buffer = noise; const f = ctx.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 8000; const g = ctx.createGain(); g.gain.setValueAtTime(v, at); g.gain.exponentialRampToValueAtTime(.001, at + .04); s.connect(f); f.connect(g); g.connect(music); s.start(at, R() * .5, .05); };
+  const bass = (at, f, len, v = .45) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(f * 1.5, at); o.frequency.exponentialRampToValueAtTime(f, at + .06); g.gain.setValueAtTime(v, at); g.gain.setTargetAtTime(0, at + len - .1, .08); const ws = ctx.createWaveShaper(); const cu = new Float32Array(256); for (let i = 0; i < 256; i++) { const x = i / 128 - 1; cu[i] = Math.tanh(x * 2.2); } ws.curve = cu; o.connect(ws); ws.connect(g); g.connect(music); o.start(at); o.stop(at + len + .3); };
+  const pluck = (at, f, v = .07) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'triangle'; o.frequency.value = f; g.gain.setValueAtTime(v, at); g.gain.exponentialRampToValueAtTime(.001, at + .35); o.connect(g); g.connect(music); o.start(at); o.stop(at + .4); };
+  // trap a 140 BPM: Lá menor (Lá–Fá–Dó–Sol, 1 compasso cada)
+  const B = 60 / 140, BAR = B * 4, roots = [55, 43.65, 65.41, 49.0], mel = [[440, 523.25, 659.25], [349.23, 440, 523.25], [392, 523.25, 659.25], [392, 493.88, 587.33]];
+  for (let bar = 0; bar * BAR < 32.4; bar++) {
+    const t0 = bar * BAR, ch = bar % 4;
+    if (t0 >= 22.8 && t0 < 24.4) continue;
+    bass(t0, roots[ch], B * 2.5); bass(t0 + B * 2.75, roots[ch], B * 1.2, .35);
+    kick(t0); kick(t0 + B * 2.5, .7); clap(t0 + B * 2);
+    for (let i = 0; i < 8; i++) { const at = t0 + i * B / 2; if (at >= 22.8 && at < 24.45) continue; hat(at, i % 2 ? .07 : .11); if (bar % 2 && i == 7) for (let r = 1; r < 4; r++) hat(at + r * B / 8, .06); }
+    mel[ch].forEach((f, i) => pluck(t0 + i * B * 1.5 + B * .5, f));
+  }
+  // efeitos (biblioteca CC0 da skill sound-effects)
+  play('hit', 0, .7, 1.2); play('impact', .05, .9); play('impact', 1.76, .9);
+  play('whoosh', 2.0, .8); play('boom', 2.4, .55, 1.2);
+  for (let k = 0; k < 8; k++) play('tick', 2.6 + k * .08, .45);
+  for (let k = 0; k < 10; k++) play('coin', 3.5 + k * .1, .35, undefined, 1 + k * .03);
+  play('pop', 4.75, .7);
+  play('swoosh', 5.25, .7); play('glitch', 7.35, .35, .3); play('boom', 7.45, .5, 1.2);
+  play('swoosh', 8.25, .7);
+  for (let k = 0; k < 10; k++) play('tick', 10.0 + k * .1, .45);
+  play('whoosh', 11.35, .7); for (let k = 0; k < 5; k++) play('coin', 11.6 + k * .1, .3, undefined, .9 + k * .05);
+  play('swoosh', 12.15, .6); play('impact', 12.62, .9); play('hit', 13.38, .7, 1); play('pop', 14.3, .7); play('pop', 14.66, .6); play('pop', 14.95, .7); play('pop', 15.4, .6);
+  play('coin', 16.1, .6); play('coin', 16.28, .6, undefined, 1.2);
+  play('whoosh', 16.5, .6); play('impact', 17.9, 1); play('swoosh', 19.65, .6);
+  for (let k = 0; k < 7; k++) play('click', 20.2 + k * .08, .5);
+  play('impact', 21.66, .8); play('impact', 23.3, .9); play('impact', 23.5, .9); play('impact', 23.7, .9);
+  play('riser', 22.95, .5, 1.5); play('boom', 24.5, .6, 1.4);
+  play('whoosh', 25.2, .5); play('pop', 26.65, .7); play('impact', 26.7, .6);
+  play('swoosh', 28.05, .6); play('hit', 28.48, .7, 1.4); play('pop', 28.5, .6); play('pop', 28.95, .6); play('pop', 29.85, .6);
+  for (let k = 0; k < 15; k++) play('tick', 30.55 + k * .056, .45);
+  play('click', 31.75, .9); play('coin', 31.8, .6, undefined, .9);
+};
+
+// ================= PREVIEW =================
+let buf, ac, src, startAt = 0, offset = 0, playing = false;
+async function play() { ac ??= new AudioContext(); if (!buf) { const off = new OfflineAudioContext(2, Math.ceil(48000 * DUR), 48000); await buildAudio(off); buf = await off.startRendering(); } src = ac.createBufferSource(); src.buffer = buf; src.connect(ac.destination); src.start(0, offset % DUR); startAt = ac.currentTime; playing = true; }
+function pause() { if (!playing) return; offset += ac.currentTime - startAt; src.stop(); playing = false; }
+function now() { return playing ? (offset + ac.currentTime - startAt) % DUR : offset; }
+if (!location.search.includes('render')) {
+  const fit = () => { const k = Math.min(innerWidth / W, (innerHeight - 50) / H); stage.style.transform = `scale(${k})`; }; fit(); addEventListener('resize', fit);
+  const pp = document.getElementById('pp'), sc = document.getElementById('scrub'), tcEl = document.getElementById('tc');
+  pp.onclick = () => { playing ? pause() : play(); pp.textContent = playing ? '❚❚' : '▶'; };
+  sc.oninput = () => { const p = playing; pause(); offset = sc.value / 1000 * DUR; if (p) play(); };
+  (function loop() { const t = now(); seek(t); sc.value = t / DUR * 1000; tcEl.textContent = t.toFixed(2); requestAnimationFrame(loop); })();
+} else seek(0);
+</script>
+</body>
+</html>

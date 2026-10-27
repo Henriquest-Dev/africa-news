@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>One Company?</title>
+<link rel="stylesheet" href="fonts.css">
+<style>
+  html, body { margin: 0; background: #111; overflow: hidden; }
+  #stage { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; overflow: hidden; background: #0a1a45; transform-origin: 0 0; }
+  canvas.full { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+  .L { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+  .e { position: absolute; left: 0; top: 0; white-space: nowrap; will-change: transform, opacity; }
+  .big { font-family: 'Caslon'; font-weight: 700; color: #FFF4DE; line-height: .9; text-shadow: 0 8px 36px rgba(0,0,0,.5); }
+  .gold { color: #FFC21E; } .orange { color: #F2661F; }
+  .ital { font-family: 'Instr'; font-style: italic; color: #FFF4DE; text-shadow: 0 4px 24px rgba(0,0,0,.55); }
+  .mono { font-family: 'JetBrains Mono'; font-weight: 700; letter-spacing: .06em; }
+  .cut { filter: drop-shadow(10px 14px 0 rgba(3,10,35,.42)); }
+  .paper { background: #FFF4DE; color: #13204A; border-radius: 6px; }
+  .stamp { font-family: 'Caslon'; font-weight: 700; color: #FFF4DE; background: #F2661F; padding: 6px 26px 12px; border: 7px solid #FFF4DE; }
+  .pz { position: absolute; left: 0; top: 0; }
+  .pin { position: absolute; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #FFE9A0, #FFC21E 45%, #B8780A 90%); box-shadow: 0 2px 0 rgba(0,0,0,.45); }
+  svg.full { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; overflow: visible; }
+  #ui { position: fixed; left: 0; right: 0; bottom: 0; padding: 10px; background: #000c; color: #ddd; font: 13px system-ui; display: flex; gap: 10px; align-items: center; }
+  #ui input { flex: 1; } .render #ui { display: none; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="bg" class="full" width="1080" height="1920"></canvas>
+  <div id="cam" class="L"></div>
+  <canvas id="fx" class="full" width="1080" height="1920"></canvas>
+</div>
+<div id="ui"><button id="pp">▶</button><input id="scrub" type="range" min="0" max="1000" value="0"><span id="tc">0.00</span></div>
+<script src="sfx.js"></script>
+<script src="vo.js"></script>
+<script src="timing.js"></script>
+<script>
+/* BEAT SHEET — fantoches de papel articulados (ombro + cotovelo + pescoço com pinos dourados) controlados por fios de marionete.
+   0.00 S1 HOOK   dois fantoches: um segura o foguetão, outro o carro; aproximam-se; "SPACEX + TESLA" / "ONE COMPANY?"   | flip, slide
+   2.83 S2 PILE   pilha de bitcoins cai entre eles; ambos levantam os braços; "30,000+ BTC"                                | stamp, coins
+   5.71 S3 SPLIT  duas colunas de moedas sobem: SPACEX 18,712 (foguetão em cima) / TESLA 11,509 (carro em cima)            | ticks
+  11.02 S4 VALUE  lupa passa sobre a moeda; "≈ $2.4B"                                                                    | whoosh, coin
+  14.38 S5 CALL   telefone a tocar; calendário "OCT 20"; balão "a good idea"                                             | ring
+  18.44 S6 CATCH  o fantoche-CEO; a tesoura corta-lhe os fios (20.0) e ele cai; "HE DOESN'T GET TO DECIDE"             | snip, crumple
+  21.09 S7 ROOM   sala do comité; dois fantoches leem documentos; a porta fecha-se (24.4) com o CEO de fora              | door
+  25.48 S8 TERMS  contrato com carimbos NO PRICE / NO TERMS / NOT GUARANTEED                                              | stamps
+  29.04 S9 BTC    linha de papel sobe; moeda ₿ sobe; "1-WEEK HIGH"; fantoches celebram                                    | riser, hit
+  32.95 S10       colagem foguetão + carro + pilha; "ONE COMPANY?" gigante                                                 | boom
+  36.70 S11 CTA   avatar, fantoche acena com o braço articulado; handle escrito                                            | pins, ticks
+*/
+const W = 1080, H = 1920, DUR = 40.6;
+window.VIDEO = { w: W, h: H, duration: DUR };
+if (location.search.includes('render')) document.documentElement.classList.add('render');
+const C = { gold: '#FFC21E', goldD: '#E89A06', orange: '#F2661F', navy: '#13204A', cream: '#FFF4DE' };
+
+function spring(t, w = 14, z = 0.82) { if (t <= 0) return 0; if (z >= 1) return 1 - Math.exp(-w * t) * (1 + w * t); const wd = w * Math.sqrt(1 - z * z); return 1 - Math.exp(-z * w * t) * (Math.cos(wd * t) + (z * w / wd) * Math.sin(wd * t)); }
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const ease = x => (x = clamp(x), x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const expo = x => (x = clamp(x), x === 1 ? 1 : 1 - Math.pow(2, -10 * x));
+const lerp = (a, b, k) => a + (b - a) * k;
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const rng = s => () => (s = (s + 0x6D2B79F5) | 0, s = Math.imul(s ^ (s >>> 15), 1 | s), s ^= s + Math.imul(s ^ (s >>> 7), 61 | s), ((s ^ (s >>> 14)) >>> 0) / 4294967296);
+// chaves de pose suaves: kp([[t, v], ...]) com easeInOut; v pode ser número
+const kp = keys => t => { if (t <= keys[0][0]) return keys[0][1]; for (let i = 1; i < keys.length; i++) { const [a, va] = keys[i - 1], [b, vb] = keys[i]; if (t <= b) return lerp(va, vb, ease((t - a) / (b - a))); } return keys[keys.length - 1][1]; };
+
+const cam = document.getElementById('cam'), NS = 'http://www.w3.org/2000/svg';
+function layer() { const d = document.createElement('div'); d.className = 'L'; cam.appendChild(d); return d; }
+function el(p, tag, cls = '', css = '') { const d = document.createElement(tag); d.className = cls; d.style.cssText = css; p.appendChild(d); return d; }
+function img(p, src, w, cls = 'e cut') { const i = el(p, 'img', cls, `width:${w}px`); i.src = 'assets/' + src; return i; }
+function txt(p, s, cls, size, css = '') { const d = el(p, 'div', 'e ' + cls, `font-size:${size}px;` + css); d.textContent = s; return d; }
+function put(e, x, y, s = 1, r = 0, o = 1) { e.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px) translate(-50%,-50%) scale(${s.toFixed(4)}) rotate(${r.toFixed(2)}deg)`; e.style.opacity = o; e.style.visibility = o <= .002 ? 'hidden' : 'visible'; }
+function hide(...es) { es.forEach(e => e.style.visibility = 'hidden'); }
+function show(e, on) { e.style.display = on ? 'block' : 'none'; }
+function svgEl(p) { const s = document.createElementNS(NS, 'svg'); s.setAttribute('class', 'full'); s.setAttribute('viewBox', `0 0 ${W} ${H}`); p.appendChild(s); return s; }
+function path(s, d, stroke, w, dash) { const p = document.createElementNS(NS, 'path'); p.setAttribute('d', d); p.setAttribute('fill', 'none'); p.setAttribute('stroke', stroke); p.setAttribute('stroke-width', w); p.setAttribute('stroke-linecap', 'round'); p.setAttribute('stroke-linejoin', 'round'); if (dash) p.setAttribute('stroke-dasharray', dash); s.appendChild(p); return p; }
+function draw(p, k) { const L = p.__L ??= p.getTotalLength(); if (!p.getAttribute('stroke-dasharray') || p.__solid) { p.__solid = true; p.setAttribute('stroke-dasharray', `${L} ${L}`); p.setAttribute('stroke-dashoffset', L * (1 - clamp(k))); } else p.style.clipPath = `inset(0 ${(1 - clamp(k)) * 100}% 0 0)`; p.style.opacity = k > 0 ? 1 : 0; }
+function drop(e, t, t0, t1, x, y, o = {}) {
+  if (t < t0 || t > t1 + .25) { e.style.visibility = 'hidden'; return; }
+  const k = spring(t - t0, o.w || 12, o.z || .62), out = ease(seg(t, t1, t1 + .25));
+  put(e, x + (1 - k) * (o.dx || 0) + out * (o.ox || 0), y + (1 - k) * (o.dy ?? -140) + out * (o.oy ?? 0), lerp(o.s0 ?? 1.2, 1, k) * (o.s || 1), lerp(o.r0 ?? -12, o.r || 0, k) + Math.sin(t * 1.7 + (o.ph || 0)) * (o.wob ?? 1.2), clamp((t - t0) / .08) * (1 - out));
+}
+function word(e, t, t0, t1, x, y, o = {}) {
+  if (t < t0 || t > t1 + .2) { e.style.visibility = 'hidden'; return; }
+  const k = spring(t - t0, o.w || 15, o.z || .66), out = ease(seg(t, t1, t1 + .18));
+  put(e, x + (1 - k) * (o.dx || 0), y + (1 - k) * (o.dy ?? 50) - out * 30, lerp(o.s0 ?? .75, 1, k) * (o.s || 1), o.r || 0, clamp((t - t0) / .1) * (1 - out));
+  const bl = (1 - clamp((t - t0) / .18)) * 9; e.style.filter = bl > .4 ? `blur(${bl.toFixed(1)}px)` : 'none';
+}
+{ const g = document.getElementById('bg').getContext('2d'), gr = g.createRadialGradient(540, 860, 60, 540, 900, 1300); gr.addColorStop(0, '#3D82F0'); gr.addColorStop(.5, '#1A49B5'); gr.addColorStop(1, '#06133A'); g.fillStyle = gr; g.fillRect(0, 0, W, H); }
+
+// ================= FANTOCHE ARTICULADO =================
+// hierarquia: corpo ⟶ (braço ⟶ antebraço ⟶ adereço), cabeça; pinos dourados nas articulações; fios até às mãos e à cabeça
+function puppet(parent, name) {
+  const M = RIGS[name], [RW, RH] = M.size;
+  const root = el(parent, 'div', 'e cut', `width:${RW}px;height:${RH}px`);
+  const full = (p, src) => { const i = el(p, 'img', 'pz', `width:${RW}px;height:${RH}px`); i.src = `assets/${name}_${src}.png`; return i; };
+  const wrap = (p, o) => el(p, 'div', 'pz', `width:${RW}px;height:${RH}px;transform-origin:${o[0]}px ${o[1]}px`);
+  const pin = (p, o) => el(p, 'div', 'pin', `left:${o[0]}px;top:${o[1]}px`);
+  full(root, 'torso');
+  const head = wrap(root, M.neck); full(head, 'head');
+  const arm = side => { const J = M[side], up = wrap(root, J.S); full(up, 'up' + side); const fo = wrap(up, J.E); full(fo, 'fo' + side); const prop = el(fo, 'div', 'pz', `left:${J.T[0]}px;top:${J.T[1]}px`); pin(fo, J.E); pin(up, J.S); return { up, fo, prop, J }; };
+  const L = arm('L'), R = arm('R');
+  return { root, head, L, R, M, st: {} };
+}
+const rot2 = (v, a) => { const r = a * Math.PI / 180, c = Math.cos(r), s = Math.sin(r); return [v[0] * c - v[1] * s, v[0] * s + v[1] * c]; };
+const add = (a, b) => [a[0] + b[0], a[1] + b[1]], sub = (a, b) => [a[0] - b[0], a[1] - b[1]];
+// p = {x,y,s,r,hd,aL,eL,aR,eR,o}; ângulos em graus a partir da pose desenhada
+function pose(P, t, p) {
+  const ph = P.ph ??= Math.random() * 0;   // determinístico
+  const sway = Math.sin(t * 1.9 + P.seed) * 1.6, bob = Math.sin(t * 3.8 + P.seed) * 5;
+  const s = p.s ?? 1, r = (p.r || 0) + sway, o = p.o ?? 1;
+  put(P.root, p.x, p.y + bob, s, r, o);
+  // follow-through: o antebraço atrasa-se ligeiramente em relação ao braço
+  const lagL = Math.sin(t * 3.8 + P.seed - .7) * 4, lagR = Math.sin(t * 3.8 + P.seed + 1.3) * 4;
+  const aL = (p.aL || 0) + Math.sin(t * 2.3 + P.seed) * 3, eL = (p.eL || 0) + lagL, aR = (p.aR || 0) - Math.sin(t * 2.1 + P.seed) * 3, eR = (p.eR || 0) - lagR;
+  P.L.up.style.transform = `rotate(${aL.toFixed(2)}deg)`; P.L.fo.style.transform = `rotate(${eL.toFixed(2)}deg)`;
+  P.R.up.style.transform = `rotate(${aR.toFixed(2)}deg)`; P.R.fo.style.transform = `rotate(${eR.toFixed(2)}deg)`;
+  P.L.prop.style.transform = `rotate(${(-(aL + eL + r) + Math.sin(t * 3 + P.seed) * 3).toFixed(2)}deg)`; P.R.prop.style.transform = `rotate(${(-(aR + eR + r) - Math.sin(t * 3 + P.seed) * 3).toFixed(2)}deg)`;
+  const hd = (p.hd || 0) + Math.sin(t * 2.6 + P.seed) * 2.5; P.head.style.transform = `rotate(${hd.toFixed(2)}deg)`;
+  // posições no mundo (para os fios de marionete)
+  const M = P.M, c = [M.size[0] / 2, M.size[1] / 2], ctr = [p.x, p.y + bob];
+  const world = q => add(ctr, rot2([(q[0] - c[0]) * s, (q[1] - c[1]) * s], r));
+  const hand = (J, a, e) => add(J.S, rot2(add(sub(J.E, J.S), rot2(sub(J.T, J.E), e)), a));
+  const top = add(M.neck, rot2([0, -M.neck[1] + 10], hd));
+  P.st = { o, hL: world(hand(M.L, aL, eL)), hR: world(hand(M.R, aR, eR)), head: world(top) };
+}
+// fios: três linhas finas de cada fantoche até uma cruzeta de madeira acima do ecrã
+function strings(svg, P, cut = 0) {
+  if (!P.lines) { P.lines = [0, 1, 2].map(() => path(svg, 'M0 0', 'rgba(255,244,222,.75)', 2.4)); P.bar = path(svg, 'M0 0', '#C98A3A', 16); }
+  const st = P.st, bx = st.head[0], by = -40;
+  const pts = [st.hL, st.head, st.hR], anchors = [[bx - 170, by + 30], [bx, by + 10], [bx + 170, by + 30]];
+  P.lines.forEach((l, i) => { const a = anchors[i], b = pts[i]; const m = cut > 0 ? lerp(1, .35, cut) : 1; const e = [lerp(a[0], b[0], m), lerp(a[1], b[1], m)]; l.setAttribute('d', `M${a[0]} ${a[1]} L${e[0]} ${e[1]}`); l.style.opacity = st.o * (cut > 0 ? 1 - cut * .6 : 1); });
+  P.bar.setAttribute('d', `M${bx - 200} ${by + 30} L${bx + 200} ${by + 30}`); P.bar.style.opacity = st.o;
+}
+function hideStrings(P) { if (P.lines) { P.lines.forEach(l => l.style.opacity = 0); P.bar.style.opacity = 0; } }
+
+// ================= CENAS =================
+const world = layer();                                     // fantoches partilhados entre cenas
+const svgS = svgEl(world);                                 // fios
+const PA = puppet(world, 'exec_a'); PA.seed = 1;           // "SpaceX"
+const PC = puppet(world, 'exec_c'); PC.seed = 2.3;         // "Tesla"
+const PB = puppet(world, 'exec_b'); PB.seed = 3.7;         // diretora
+// adereços ficam de pé na palma (contra-rodam para se manterem direitos)
+const onPalm = (slot, src, w, dx = -50, dy = -96) => { const i = img(slot, src, w, 'pz'); i.style.transform = `translate(${dx}%,${dy}%)`; return i; };
+const rocketP = onPalm(PA.L.prop, 'rocket.png', 230, -55), carP = onPalm(PC.R.prop, 'car.png', 300, -50, -92);
+const docB = onPalm(PB.R.prop, 'contract.png', 230, -40, -92), docC = onPalm(PC.L.prop, 'contract.png', 230, -60, -92);
+
+const ov = layer(); ov.style.zIndex = 5;
+const t1a = txt(ov, 'SPACEX + TESLA', 'big', 130), t1b = txt(ov, 'ONE COMPANY?', 'big gold', 150);
+const pile = img(ov, 'btc_pile.png', 620), t2a = txt(ov, '30,000+', 'big gold', 230), t2b = txt(ov, 'BITCOIN', 'big', 120);
+const s2stamp = txt(ov, 'TOGETHER', 'stamp', 90);
+// colunas de moedas
+const colA = Array.from({ length: 9 }, () => img(ov, 'btc_coin.png', 170)), colB = Array.from({ length: 6 }, () => img(ov, 'btc_coin.png', 170));
+const rocketTop = img(ov, 'rocket.png', 170), carTop = img(ov, 'car.png', 300);
+const lA = txt(ov, 'SPACEX', 'mono', 44, `color:${C.cream}`), nA = txt(ov, '18,712', 'big gold', 120), lB = txt(ov, 'TESLA', 'mono', 44, `color:${C.cream}`), nB = txt(ov, '11,509', 'big gold', 120);
+const src3 = txt(ov, 'BTC HOLDINGS · VIA COINDESK', 'mono', 26, 'color:rgba(255,244,222,.6)');
+// valor
+const coin4 = img(ov, 'btc_coin.png', 520), mag = img(ov, 'magnifier.png', 470);
+const t4a = txt(ov, "AT TODAY'S PRICE", 'mono', 44, `color:${C.cream}`), t4b = txt(ov, '≈ $2.4B', 'big gold', 260), t4c = txt(ov, '30,221 BTC × ~$80K', 'mono', 34, 'color:rgba(255,244,222,.7)');
+// chamada
+const phone = img(ov, 'phone.png', 560);
+const cal5 = el(ov, 'div', 'e cut paper', 'width:280px;height:300px;text-align:center');
+cal5.innerHTML = `<div style="height:56px;background:${C.orange};border-radius:6px 6px 0 0"></div><div class="mono" style="font-size:40px;margin-top:12px">OCT</div><div style="font-family:Caslon;font-weight:700;font-size:140px;line-height:1">20</div>`;
+const bub5 = el(ov, 'div', 'e cut paper', 'padding:20px 38px;font-family:Instr;font-style:italic;font-size:64px;border-radius:44px'); bub5.textContent = '"a good idea"';
+const t5a = txt(ov, 'EARNINGS CALL', 'big', 120), t5b = txt(ov, 'Q3 · SPACEX', 'mono', 40, `color:${C.cream}`);
+const ringSvg = svgEl(ov), rings = [0, 1, 2].map(i => path(ringSvg, `M${300 - i * 34} ${1040 - i * 30} q -40 60 0 120`, C.gold, 10));
+// o problema
+const t6a = txt(ov, "HERE'S THE CATCH.", 'big', 110), t6b = txt(ov, "HE DOESN'T", 'big', 140), t6c = txt(ov, 'GET TO DECIDE.', 'big gold', 140);
+const sciss = el(ov, 'div', 'e', 'font-size:170px;line-height:1'); sciss.textContent = '✂'; sciss.style.color = C.cream; sciss.style.filter = 'drop-shadow(6px 8px 0 rgba(3,10,35,.4))';
+// sala
+const room = img(ov, 'table.png', 1000), door = img(ov, 'door.png', 330); door.style.transformOrigin = '0% 50%';
+const t7a = txt(ov, 'INDEPENDENT', 'big', 120), t7b = txt(ov, 'DIRECTORS', 'big gold', 140), t7c = txt(ov, 'Musk is out of the room.', 'ital', 80);
+// termos
+const contract = img(ov, 'contract.png', 620), pen = img(ov, 'pen.png', 380);
+const st8 = ['NO PRICE', 'NO TERMS', 'NOT GUARANTEED'].map(s => txt(ov, s, 'stamp', 84));
+// btc
+const s9svg = svgEl(ov), chart = path(s9svg, 'M110 1450 L 260 1390 L 380 1420 L 520 1300 L 640 1330 L 780 1180 L 960 1060', C.gold, 14);
+const coin9 = img(ov, 'btc_coin.png', 260), t9a = txt(ov, '1-WEEK HIGH', 'stamp', 100), t9b = txt(ov, 'THE NEXT DAY', 'big', 120), t9c = txt(ov, '~$83,500 · OCT 21', 'mono', 36, `color:${C.cream}`);
+// colagem
+const rocket10 = img(ov, 'rocket.png', 330), car10 = img(ov, 'car.png', 620), pile10 = img(ov, 'btc_pile.png', 560);
+const t10a = txt(ov, 'ROCKETS. CARS.', 'big', 110), t10b = txt(ov, '30,000 BITCOIN.', 'big gold', 110), giant = txt(ov, 'ONE?', 'big gold', 420);
+// final
+const avRing = el(ov, 'div', 'e cut', `width:640px;height:640px;border-radius:50%;background:${C.cream}`), av = img(ov, 'avatar.png', 600, 'e');
+const e1 = txt(ov, 'WHAT HAPPENS NEXT?', 'big', 92), nm = txt(ov, 'FOLLOW DAMIAN DUPONT', 'big gold', 72), hdl = txt(ov, '', 'mono', 50, `color:${C.cream}`);
+const credit = txt(ov, 'MUSIC: "TRAPPIST" BY AXTONCROLLEY (CC-BY 3.0)', 'mono', 20, 'color:rgba(255,244,222,.45)');
+const HANDLE = '@DamianDupozjcr';
+const band = layer(); band.style.zIndex = 8; const bandSvg = svgEl(band), bandPoly = document.createElementNS(NS, 'polygon'); bandPoly.setAttribute('fill', C.gold); bandSvg.appendChild(bandPoly);
+function bandPts(x0, x1, yc, hh, ph) { const top = [], bot = []; for (let i = 0; i <= 40; i++) { const x = lerp(x0, x1, i / 40), w = Math.sin(x * .006 + ph) * 70 + Math.sin(x * .013 + ph * 1.7) * 24; top.push([x, yc - hh + w]); bot.push([x, yc + hh + w * .7]); } return top.concat(bot.reverse()); }
+const WIPES = [[5.45, 5.95], [18.2, 18.7], [32.7, 33.2]];
+
+// textura
+const fx = document.getElementById('fx').getContext('2d');
+const dots = document.createElement('canvas'); dots.width = dots.height = 12; { const g = dots.getContext('2d'); g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.arc(6, 6, 1.6, 0, 7); g.fill(); }
+const dotPat = fx.createPattern(dots, 'repeat');
+const grain = [], R0 = rng(7); for (let i = 0; i < 6; i++) { const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d'), d = g.createImageData(256, 256); for (let j = 0; j < d.data.length; j += 4) { const v = R0() * 255; d.data[j] = d.data[j + 1] = d.data[j + 2] = v; d.data[j + 3] = 255; } g.putImageData(d, 0, 0); grain.push(c); }
+const vig = document.createElement('canvas'); vig.width = W; vig.height = H; { const g = vig.getContext('2d'), gr = g.createRadialGradient(540, 900, 380, 540, 960, 1300); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,10,.7)'); g.fillStyle = gr; g.fillRect(0, 0, W, H); }
+const dust = Array.from({ length: 40 }, (_, i) => { const r = rng(100 + i); return { x: r() * W, y: r() * H, v: 10 + r() * 30, a: r() * 6.28, l: 6 + r() * 20, o: .15 + r() * .3 }; });
+const bumps = [2.85, 4.28, 12.34, 20.05, 24.45, 25.52, 26.22, 27.14, 31.3, 35.6];
+function bump(t) { let s = 0; for (const b of bumps) { const d = t - b; if (d >= 0 && d < .6) s += Math.exp(-d * 7) * Math.sin(d * 18) * .014; } return s; }
+
+// ================= SEEK =================
+window.seek = function (t) {
+  t = clamp(t, 0, DUR - 1e-4);
+  [...ov.children].forEach(c => { if (c.tagName !== 'svg') c.style.visibility = 'hidden'; });
+  [chart, ...rings].forEach(p => p.style.opacity = 0);
+  let showA = false, showB = false, showC = false;
+  carP.style.visibility = 'inherit'; docC.style.visibility = 'hidden'; rocketP.style.visibility = 'inherit'; docB.style.visibility = 'inherit';
+  // ---------- S1 + S2: dois fantoches aproximam-se (0 – 5.7) ----------
+  if (t < 5.7) {
+    showA = showC = true;
+    const ax = kp([[0, 310], [1.8, 340], [2.8, 290]])(t), cx = kp([[0, 750], [1.8, 720], [2.8, 770]])(t);
+    const up = ease(seg(t, 2.8, 3.3)) - ease(seg(t, 5.0, 5.5));
+    pose(PA, t, { x: ax, y: 1360, s: .62, hd: -4, aL: lerp(-8, 35, up), eL: lerp(5, 25, up), aR: lerp(10, -60, up), eR: lerp(0, -40, up) });
+    pose(PC, t, { x: cx, y: 1360, s: .62, hd: 4, aL: lerp(-10, 60, up), eL: lerp(0, 40, up), aR: lerp(8, -35, up), eR: lerp(-5, -25, up) });
+    word(t1a, t, -0.4, 2.7, 540, 300, { dy: 0 }); t1a.style.filter = 'none';
+    word(t1b, t, 1.85, 2.7, 540, 450, { s0: 1.3, dy: 0, z: .55 });
+    drop(pile, t, 2.85, 99, 540, 1600, { dy: -900, r0: 0, s0: 1 });
+    word(t2a, t, 4.28, 99, 540, 380, { s0: 1.4, dy: 0, z: .55 }); word(t2b, t, 4.9, 99, 540, 540, { dy: 40 });
+    drop(s2stamp, t, 3.4, 99, 540, 1200, { s0: 2.2, r0: -18, r: -8, dy: 0, w: 20 });
+  }
+  // ---------- S3 (5.71 – 11.0) ----------
+  if (t >= 5.71 && t < 11.0) {
+    colA.forEach((c, i) => drop(c, t, 5.8 + i * .09, 99, 330, 1640 - i * 62, { dy: -500, r0: 30, s0: 1, wob: .5, ph: i }));
+    colB.forEach((c, i) => drop(c, t, 7.95 + i * .1, 99, 750, 1640 - i * 62, { dy: -500, r0: -30, s0: 1, wob: .5, ph: i }));
+    drop(rocketTop, t, 6.5, 99, 330, 1640 - 9 * 62 - 220, { r: -4 }); drop(carTop, t, 8.6, 99, 750, 1640 - 6 * 62 - 90, { r: 3 });
+    word(lA, t, 5.76, 99, 330, 1790, { dy: 20 }); word(nA, t, 6.76, 99, 330, 320, { s0: 1.4, dy: 0 });
+    word(lB, t, 7.98, 99, 750, 1790, { dy: 20 }); word(nB, t, 9.2, 99, 750, 500, { s0: 1.4, dy: 0 });
+    word(src3, t, 6.2, 99, 540, 1870, { dy: 0, s0: 1 });
+  }
+  // ---------- S4 (11.0 – 14.35) ----------
+  if (t >= 11.0 && t < 14.35) {
+    drop(coin4, t, 11.05, 99, 540, 1180, { r0: 120, s0: .6 });
+    const mk = ease(seg(t, 11.3, 12.4)); put(mag, lerp(1200, 620, mk) + Math.sin(t * 2) * 20, lerp(1500, 1250, mk), 1, lerp(30, -10, mk), t > 11.3 ? 1 : 0);
+    word(t4a, t, 11.08, 99, 540, 330, { dy: 20 }); word(t4b, t, 12.34, 99, 540, 520, { s0: 1.4, dy: 0, z: .55 }); word(t4c, t, 12.8, 99, 540, 680, { dy: 20 });
+  }
+  // ---------- S5 (14.35 – 18.4) ----------
+  if (t >= 14.35 && t < 18.45) {
+    const ringing = t > 14.4 && t < 16.2; drop(phone, t, 14.4, 99, 600, 1300, { dy: 400, wob: ringing ? 0 : 1 });
+    if (ringing) phone.style.transform += ` rotate(${Math.sin(t * 60) * 3}deg)`;
+    rings.forEach((r, i) => { r.style.opacity = ringing ? (Math.sin(t * 12 - i) > 0 ? 1 : .2) : 0; });
+    word(t5a, t, 15.5, 99, 540, 330, { dy: -30 }); word(t5b, t, 16.22, 99, 540, 450, { dy: 20 });
+    drop(cal5, t, 17.1, 99, 250, 800, { r: -8 }); drop(bub5, t, 16.4, 99, 700, 820, { s0: .3, r0: 10, r: -4, dy: 40 });
+  }
+  // ---------- S6 (18.4 – 21.1): os fios são cortados ----------
+  if (t >= 18.45 && t < 21.1) {
+    showA = true;
+    const cut = ease(seg(t, 20.0, 20.35)), fall = ease(seg(t, 20.05, 20.6));
+    pose(PA, t, { x: 540, y: lerp(1300, 1520, fall), s: .7, hd: lerp(-6, 25, fall), aL: lerp(40, -10, fall), eL: lerp(20, 50, fall), aR: lerp(-40, 10, fall), eR: lerp(-20, -50, fall), r: lerp(0, 9, fall) });
+    PA.cut = cut;
+    const sk = ease(seg(t, 19.4, 20.0)); put(sciss, lerp(1250, 560, sk), 160, 1, -90 + Math.sin(t * 40) * (t > 19.8 && t < 20.2 ? 14 : 0), t > 19.4 && t < 20.7 ? 1 - seg(t, 20.4, 20.7) : 0);
+    word(t6a, t, 18.48, 99, 540, 330, { dy: -30 }); word(t6b, t, 19.6, 99, 540, 470, { dy: 30 }); word(t6c, t, 20.0, 99, 540, 600, { dy: 30 });
+  }
+  // ---------- S7 (21.1 – 25.45): sala do comité ----------
+  if (t >= 21.1 && t < 25.45) {
+    showB = showC = true; carP.style.visibility = 'hidden'; docC.style.visibility = 'inherit';
+    drop(room, t, 21.12, 99, 540, 900, { dy: 300, r0: 2, wob: .3, s: .9 });
+    const read = Math.sin(t * 2.2);
+    pose(PB, t, { x: 290, y: 1530, s: .5, hd: 8 + read * 3, aL: 0, eL: 0, aR: -8 + read * 6, eR: 10 });
+    pose(PC, t, { x: 770, y: 1540, s: .52, hd: -6 - read * 3, aL: 30 + read * 5, eL: 15, aR: 5, eR: 0 });
+    // porta fecha-se a partir da direita
+    const dk = ease(seg(t, 24.05, 24.45)); put(door, 975, 1380, .9, 0, t > 23.6 ? 1 : 0); door.style.transform += ` perspective(900px) rotateY(${lerp(-75, 0, dk)}deg)`;
+    word(t7a, t, 22.04, 99, 540, 300, { dy: -30 }); word(t7b, t, 22.64, 99, 540, 430, { s0: 1.3, dy: 0 }); word(t7c, t, 24.04, 99, 540, 570, { dy: 30 });
+  }
+  // ---------- S8 (25.45 – 29.0) ----------
+  if (t >= 25.45 && t < 29.0) {
+    drop(contract, t, 25.5, 99, 540, 1080, { dy: 600, r0: -6, r: 2 });
+    drop(pen, t, 25.7, 99, 880, 1500, { r0: 40, r: 20 });
+    st8.forEach((s, i) => drop(s, t, [25.52, 26.22, 27.14][i], 99, 540 + [-90, 80, 0][i], [760, 1030, 1330][i], { s0: 2.4, r0: -25, r: [-8, 6, -4][i], dy: 0, w: 20 }));
+  }
+  // ---------- S9 (29.0 – 32.9) ----------
+  if (t >= 29.0 && t < 32.95) {
+    showA = showC = true;
+    const yay = ease(seg(t, 31.2, 31.6));
+    pose(PA, t, { x: 200, y: 1560, s: .5, aL: lerp(0, 90, yay), eL: lerp(0, 40, yay), aR: lerp(0, -90, yay), eR: lerp(0, -40, yay) });
+    pose(PC, t, { x: 880, y: 1560, s: .5, aL: lerp(0, 90, yay), eL: lerp(0, 40, yay), aR: lerp(0, -90, yay), eR: lerp(0, -40, yay) });
+    draw(chart, ease(seg(t, 30.4, 31.4)));
+    const L = chart.__L ??= chart.getTotalLength(), pt = chart.getPointAtLength(L * ease(seg(t, 30.4, 31.4)));
+    put(coin9, pt.x, pt.y - 90, .9, t * 40, t > 30.4 ? 1 : 0);
+    word(t9b, t, 29.62, 99, 540, 330, { dy: -30 }); drop(t9a, t, 31.3, 99, 540, 500, { s0: 2.2, r0: -15, r: -5, dy: 0, w: 20 }); word(t9c, t, 31.6, 99, 540, 640, { dy: 20 });
+  }
+  // ---------- S10 (32.95 – 36.7) ----------
+  if (t >= 32.95 && t < 36.7) {
+    drop(rocket10, t, 32.95, 99, 260, 1250, { dy: 700, r: -8 }); drop(car10, t, 33.58, 99, 650, 1530, { dx: 800, dy: 0, r: 2 });
+    drop(pile10, t, 34.28, 99, 690, 1110, { dy: -700, r0: 0 });
+    word(t10a, t, 32.94, 99, 540, 300, { dy: -30 }); word(t10b, t, 34.28, 99, 540, 420, { dy: -30 });
+    if (t >= 35.55) { const z = seg(t, 35.55, 36.6); put(giant, 540, 900, lerp(.6, 3.2, ease(z)), 0, z < .6 ? 1 : 1 - seg(z, .6, 1)); }
+  }
+  // ---------- S11 CTA (36.6 – fim) ----------
+  if (t >= 36.6) {
+    showA = true;
+    const ak = spring(t - 36.65, 10, .65); put(avRing, 540, 700, ak, 0, 1); put(av, 540, 700, ak, 0, 1);
+    const wave = Math.sin((t - 37.4) * 7);
+    pose(PA, t, { x: 900, y: 1690, s: .4, hd: -6, aL: 0, eL: 0, aR: t > 37.4 ? -120 + wave * 8 : lerp(0, -120, ease(seg(t, 37.0, 37.4))), eR: t > 37.4 ? -40 + wave * 30 : -20 });
+    word(e1, t, 36.68, 99, 540, 1150, { dy: 40 }); word(nm, t, 37.9, 99, 540, 1290, { dy: 40, s0: 1.2 });
+    hdl.textContent = HANDLE.slice(0, Math.floor(lerp(0, HANDLE.length + .99, seg(t, 38.2, 39.0)))) + (Math.floor(t * 3) % 2 || t < 39 ? '|' : '');
+    put(hdl, 540, 1400, 1, 0, t > 38.1 ? 1 : 0); word(credit, t, 38.2, 99, 540, 1870, { dy: 0, s0: 1 });
+  }
+  [[PA, showA], [PB, showB], [PC, showC]].forEach(([P, on]) => { if (!on) { P.root.style.visibility = 'hidden'; hideStrings(P); } else strings(svgS, P, P === PA && t >= 18.45 && t < 21.1 ? PA.cut : 0); });
+  // faixas de transição
+  const wp = WIPES.find(w => t >= w[0] - .05 && t < w[1]);
+  if (wp) { show(band, true); const k = seg(t, wp[0], wp[1]); const x1 = lerp(-300, 1500, ease(clamp(k * 2))), x0 = lerp(-400, 1500, ease(clamp(k * 2 - 1))); bandPoly.setAttribute('points', bandPts(x0, x1, 960, 1150, t * 2.4).map(p => p.join(',')).join(' ')); } else show(band, false);
+  const z = 1 + (t % 5) * .006 + bump(t);
+  cam.style.transform = `translate(540px,960px) scale(${z.toFixed(4)}) translate(-540px,-960px) translate(${(Math.sin(t * .4) * 6).toFixed(1)}px,0)`;
+  fx.clearRect(0, 0, W, H); fx.globalAlpha = .5; fx.fillStyle = dotPat; fx.fillRect(0, 0, W, H);
+  fx.globalAlpha = 1; fx.strokeStyle = 'rgba(255,244,222,.6)'; fx.lineCap = 'round';
+  dust.forEach(p => { const y = ((p.y - t * p.v) % H + H) % H, x = p.x + Math.sin(t * .5 + p.a) * 30; fx.globalAlpha = p.o; fx.lineWidth = 2.5; fx.beginPath(); fx.moveTo(x, y); fx.lineTo(x + Math.cos(p.a) * p.l * .3, y + Math.sin(p.a) * p.l); fx.stroke(); });
+  fx.globalAlpha = 1; fx.drawImage(vig, 0, 0);
+  fx.globalAlpha = .08; fx.globalCompositeOperation = 'overlay'; const gt = grain[Math.floor(t * 24) % 6]; for (let y = 0; y < H; y += 256) for (let x = 0; x < W; x += 256) fx.drawImage(gt, x, y);
+  fx.globalCompositeOperation = 'source-over'; fx.globalAlpha = 1;
+};
+
+// ================= ÁUDIO =================
+function b64buf(s) { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u.buffer; }
+window.buildAudio = async function (ctx) {
+  const sfx = {}; for (const k in SFX) sfx[k] = await ctx.decodeAudioData(b64buf(SFX[k]));
+  const vo = await ctx.decodeAudioData(b64buf(VO));
+  const master = ctx.createGain(); master.gain.value = .9; master.connect(ctx.destination);
+  const music = ctx.createGain(); music.connect(master);
+  const fxBus = ctx.createGain(); fxBus.gain.value = .5; fxBus.connect(master);
+  const voBus = ctx.createGain(); voBus.gain.value = 1.45; voBus.connect(master);
+  { const s = ctx.createBufferSource(); s.buffer = vo; s.connect(voBus); s.start(0); }
+  { const s = ctx.createBufferSource(); s.buffer = sfx.music; s.connect(music); s.start(0); }
+  const mg = music.gain; mg.setValueAtTime(.55, 0);
+  for (const [a, d] of LINES) { mg.setTargetAtTime(.26, a - .05, .06); mg.setTargetAtTime(.42, a + d, .25); }
+  mg.setTargetAtTime(0, 19.95, .03); mg.setTargetAtTime(.42, 21.05, .1); mg.setTargetAtTime(0, 39.6, .4);
+  const play = (n, at, g = 1, dur, rate = 1) => { const s = ctx.createBufferSource(); s.buffer = sfx[n]; s.playbackRate.value = rate; const gg = ctx.createGain(); gg.gain.value = g; s.connect(gg); gg.connect(fxBus); s.start(at, 0, dur); if (dur) { gg.gain.setValueAtTime(g, at + dur - .08); gg.gain.linearRampToValueAtTime(0, at + dur); } };
+  play('paper_flip', 0.02, .7); play('paper_slide', 0.1, .5); play('paper_flip', 1.85, .5);
+  play('whoosh', 2.6, .5); play('boom', 2.95, .5, 1.2); for (let k = 0; k < 6; k++) play('coin', 3.0 + k * .08, .4, undefined, 1 + k * .05); play('stamp_thud', 3.45, .9); play('impact', 4.28, .6);
+  play('paper_slide', 5.45, .7);
+  for (let k = 0; k < 9; k++) play('coin', 5.85 + k * .09, .35, undefined, 1 + k * .04); play('pin_tack', 6.5, .6);
+  for (let k = 0; k < 6; k++) play('coin', 8.0 + k * .1, .35, undefined, 1.1 + k * .04); play('pin_tack', 8.6, .6);
+  play('paper_flip', 11.05, .6); play('whoosh', 11.3, .4); play('impact', 12.34, .7); play('tick', 12.8, .4);
+  play('paper_flip', 14.4, .6); for (let k = 0; k < 3; k++) play('ring', 14.5 + k * .55, .45); play('pin_tack', 16.4, .5); play('paper_flip', 17.1, .5);
+  play('paper_slide', 18.2, .6); play('scissors_snip', 19.85, .9); play('scissors_snip', 20.05, .8); play('paper_crumple', 20.3, .7); play('hit', 20.3, .6, 1.2);
+  play('paper_slide', 21.1, .6); play('paper_flip', 22.6, .4); play('door', 24.42, 1); play('impact', 24.45, .5);
+  play('paper_slide', 25.5, .6); [25.52, 26.22, 27.14].forEach(a => play('stamp_thud', a, .95));
+  play('paper_flip', 29.05, .5); play('riser', 30.2, .4, 1.1); play('hit', 31.3, .7, 1.2); play('stamp_thud', 31.3, .6);
+  play('paper_slide', 32.7, .7); play('paper_flip', 32.95, .5); play('whoosh', 33.58, .5); play('coin', 34.3, .5); play('boom', 35.6, .5, 1.2);
+  play('paper_flip', 36.65, .6); play('pin_tack', 37.9, .5); for (let k = 0; k < 15; k++) play('tick', 38.2 + k * .053, .4); play('coin', 39.1, .5);
+};
+
+// ================= PREVIEW =================
+let buf, ac, src, startAt = 0, offset = 0, playing = false;
+async function play() { ac ??= new AudioContext(); if (!buf) { const off = new OfflineAudioContext(2, Math.ceil(48000 * DUR), 48000); await buildAudio(off); buf = await off.startRendering(); } src = ac.createBufferSource(); src.buffer = buf; src.connect(ac.destination); src.start(0, offset % DUR); startAt = ac.currentTime; playing = true; }
+function pause() { if (!playing) return; offset += ac.currentTime - startAt; src.stop(); playing = false; }
+function now() { return playing ? (offset + ac.currentTime - startAt) % DUR : offset; }
+if (!location.search.includes('render')) {
+  const st = document.getElementById('stage'), fit = () => { const k = Math.min(innerWidth / W, (innerHeight - 50) / H); st.style.transform = `scale(${k})`; }; fit(); addEventListener('resize', fit);
+  const pp = document.getElementById('pp'), sc = document.getElementById('scrub'), tcEl = document.getElementById('tc');
+  pp.onclick = () => { playing ? pause() : play(); pp.textContent = playing ? '❚❚' : '▶'; };
+  sc.oninput = () => { const p = playing; pause(); offset = sc.value / 1000 * DUR; if (p) play(); };
+  (function loop() { const t = now(); seek(t); sc.value = t / DUR * 1000; tcEl.textContent = t.toFixed(2); requestAnimationFrame(loop); })();
+} else seek(0);
+</script>
+</body>
+</html>

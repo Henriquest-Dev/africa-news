@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "pollinations": {
+      "type": "http",
+      "url": "https://gen.pollinations.ai/mcp/pollinations",
+      "headers": {
+        "Authorization": "Bearer ${POLLINATIONS_API_KEY}"
+      }
+    }
+  }
+}

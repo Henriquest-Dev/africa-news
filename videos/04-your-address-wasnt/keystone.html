@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Your Address Wasn't</title>
+<link rel="stylesheet" href="fonts.css">
+<style>
+  html, body { margin: 0; background: #000; overflow: hidden; }
+  #stage { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; overflow: hidden; background: #000; transform-origin: 0 0; }
+  .L { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+  .e { position: absolute; left: 0; top: 0; white-space: nowrap; will-change: transform, opacity; }
+  .plate { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; object-fit: cover; will-change: transform, filter, opacity; }
+  .cap { font-family: 'Instrument Serif'; font-style: italic; color: #fff; text-shadow: 0 4px 30px rgba(0,0,0,.65), 0 1px 3px rgba(0,0,0,.5); letter-spacing: -.01em; }
+  .hl { color: #FFD43B; }
+  .bub { font-family: 'Inter'; font-weight: 800; font-size: 34px; color: #111; background: #fff; padding: 12px 22px; border-radius: 22px; box-shadow: 0 8px 24px rgba(0,0,0,.35); }
+  .tag { font-family: 'Inter'; font-weight: 700; font-size: 46px; color: #fff; background: #2F6BFF; padding: 14px 30px; border: 3px solid #fff; box-shadow: 6px 6px 0 rgba(0,0,0,.35); }
+  .giant { font-family: 'Instrument Serif'; font-style: italic; color: #fff; text-shadow: 0 10px 60px rgba(0,0,0,.6); }
+  svg.full { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; overflow: visible; }
+  canvas.full { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+  #ui { position: fixed; left: 0; right: 0; bottom: 0; padding: 10px; background: #000c; color: #ddd; font: 13px system-ui; display: flex; gap: 10px; align-items: center; }
+  #ui input { flex: 1; }
+  .render #ui { display: none; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="cam" class="L"></div>
+  <canvas id="fx" class="full" width="1080" height="1920"></canvas>
+</div>
+<div id="ui"><button id="pp">▶</button><input id="scrub" type="range" min="0" max="1000" value="0"><span id="tc">0.00</span></div>
+<script src="sfx.js"></script>
+<script src="vo.js"></script>
+<script src="timing.js"></script>
+<script>
+/* BEAT SHEET — estilo "diorama cinematográfico" (referência: vídeo do Nolan). A narração manda no tempo; CAPS = legenda palavra a palavra.
+   0.00 S1 porch     pacote à porta, figura desfocada; "Did you buy / a hardware wallet / online?" … "where you live." (amarelo + risco)
+   3.30              "live." gigante atravessa o ecrã → blur + passa de quente a frio                     | whoosh, impact
+   3.75 S2 hacker    ecrãs com dados; "Keystone just / confirmed hackers / broke into / its online store." | glitch
+   6.95 S3 labels    etiquetas azuis empilham-se: NAME / CONTACT DETAILS / HOME ADDRESS / ORDER HISTORY  | pops
+  11.20 S4 wallet    luz quente, carteira; anel amarelo desenhado em "safe."; brilhos ✦                    | ding
+  14.65 S5 crowd     balões de reação sobre as pessoas: "wait…" "my address??" "not again" (re-hook a meio) | pops
+  16.75 S6 archive   caixas de arquivo; "after 180 days." → "180" gigante                                  | impact
+  20.75 S3b labels   zoom nas etiquetas, carimbo "DELETED?"; "leaked anyway."                              | impact
+  23.55 S7 phone     cartão de email falso desliza; carimbo FAKE                                           | ding, impact
+  27.90 S8 pen       a caneta pára; X amarelo desenhado; "anyone." gigante
+  31.95 S9 door      porta com corrente, frio; "Your keys were safe." / "Your address wasn't." (flash, música pára) | hit
+  34.40 S10 desk     vista de cima, tablet com o perfil do Damian desliza; pesquisa "@DamianDupozjcr" escrita | whoosh, ticks, ding
+*/
+const W = 1080, H = 1920, DUR = 38.6;
+CAPS[0][0] = -0.4;   // a 1.ª legenda já está nítida no frame 0 (miniatura)
+window.VIDEO = { w: W, h: H, duration: DUR };
+if (location.search.includes('render')) document.documentElement.classList.add('render');
+const Y = '#FFD43B';
+
+// ---- helpers da skill ----
+function spring(t, w = 14, z = 0.82) { if (t <= 0) return 0; if (z >= 1) return 1 - Math.exp(-w * t) * (1 + w * t); const wd = w * Math.sqrt(1 - z * z); return 1 - Math.exp(-z * w * t) * (Math.cos(wd * t) + (z * w / wd) * Math.sin(wd * t)); }
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const ease = x => (x = clamp(x), x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const expo = x => (x = clamp(x), x === 1 ? 1 : 1 - Math.pow(2, -10 * x));
+const expoIO = x => (x = clamp(x), x === 0 ? 0 : x === 1 ? 1 : x < .5 ? Math.pow(2, 20 * x - 10) / 2 : (2 - Math.pow(2, -20 * x + 10)) / 2);
+const lerp = (a, b, k) => a + (b - a) * k;
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const rng = s => () => (s = (s + 0x6D2B79F5) | 0, s = Math.imul(s ^ (s >>> 15), 1 | s), s ^= s + Math.imul(s ^ (s >>> 7), 61 | s), ((s ^ (s >>> 14)) >>> 0) / 4294967296);
+
+const cam = document.getElementById('cam'), NS = 'http://www.w3.org/2000/svg';
+function el(p, tag, cls, css = '') { const d = document.createElement(tag); if (cls) d.className = cls; d.style.cssText += css; p.appendChild(d); return d; }
+function txt(p, s, cls, size, css = '') { const d = el(p, 'div', 'e ' + cls, `font-size:${size}px;` + css); d.textContent = s; return d; }
+function put(e, x, y, s = 1, r = 0, o = 1) { e.style.transform = `translate(${x.toFixed(2)}px,${y.toFixed(2)}px) translate(-50%,-50%) scale(${s.toFixed(4)}) rotate(${r.toFixed(2)}deg)`; e.style.opacity = o; e.style.visibility = o <= .002 ? 'hidden' : 'visible'; }
+function svgEl(p) { const s = document.createElementNS(NS, 'svg'); s.setAttribute('class', 'full'); s.setAttribute('viewBox', `0 0 ${W} ${H}`); p.appendChild(s); return s; }
+function path(s, d, stroke, width) { const p = document.createElementNS(NS, 'path'); p.setAttribute('d', d); p.setAttribute('fill', 'none'); p.setAttribute('stroke', stroke); p.setAttribute('stroke-width', width); p.setAttribute('stroke-linecap', 'round'); p.setAttribute('stroke-linejoin', 'round'); s.appendChild(p); return p; }
+function draw(p, k) { const L = p.__L ??= p.getTotalLength(); p.setAttribute('stroke-dasharray', `${L} ${L}`); p.setAttribute('stroke-dashoffset', L * (1 - clamp(k))); p.style.opacity = k > 0 ? 1 : 0; }
+
+// ---- cenas: [imagem, início, fim, grading, deriva x, posição da legenda y] ----
+const GR = { warm: 'sepia(.18) saturate(1.12) contrast(1.04)', cold: 'saturate(.78) hue-rotate(-8deg) brightness(.92) contrast(1.06)', neutral: 'contrast(1.04)' };
+const SC = [
+  ['s01_porch.jpg', 0, 3.75, 'warm', 30, 820], ['s02_hacker.jpg', 3.75, 6.95, 'cold', -30, 1240], ['s03_labels.jpg', 6.95, 11.2, 'neutral', 20, 1500],
+  ['s04_wallet.jpg', 11.2, 14.65, 'warm', -25, 560], ['s05_crowd.jpg', 14.65, 16.75, 'neutral', 30, 1420], ['s06_boxes.jpg', 16.75, 20.75, 'cold', -20, 1000],
+  ['s03_labels.jpg', 20.75, 23.55, 'cold', 25, 1500], ['s07_phone.jpg', 23.55, 27.9, 'cold', -20, 420], ['s08_paper.jpg', 27.9, 31.95, 'neutral', 20, 420],
+  ['s09_door.jpg', 31.95, 34.4, 'cold', 0, 1500], ['s10_desk.jpg', 34.4, DUR, 'warm', 0, 1480]];
+const plates = SC.map(s => { const i = el(cam, 'img', 'plate'); i.src = 'assets/' + s[0]; return i; });
+const TR = .38;   // duração da transição blur
+
+// ---- overlays por cena ----
+const ov = el(cam, 'div', 'L', 'z-index:50');
+const osvg = svgEl(ov);
+// S1: risco amarelo por baixo de "live."
+const swoosh1 = path(osvg, 'M290 890 C 450 935, 660 925, 800 880 C 840 866, 850 846, 820 840', Y, 9);
+// S3: etiquetas azuis (como as Wi-Fi/Bluetooth/GPS da referência)
+const tags = ['NAME', 'CONTACT DETAILS', 'HOME ADDRESS', 'ORDER HISTORY'].map(s => txt(ov, s, 'tag', 46));
+const TAGT = [7.0, 7.6, 9.06, 10.06];
+const stampDel = txt(ov, 'DELETED?', 'tag', 70, 'background:#E5333B;border-color:#fff');
+// S4: anel amarelo desenhado à volta da carteira + brilhos
+const ring4 = path(osvg, 'M560 690 C 1010 670, 1100 1090, 920 1320 C 720 1500, 190 1470, 100 1190 C 40 950, 250 700, 610 690', Y, 8);
+const sparks = Array.from({ length: 10 }, (_, i) => { const r = rng(70 + i); return { e: txt(ov, '✦', '', 30 + r() * 50, 'color:#fff;text-shadow:0 0 18px rgba(255,255,255,.9)'), x: 120 + r() * 840, y: 300 + r() * 1300, ph: r() * 6 }; });
+// S5: balões de reação
+const bubs = [['wait…', 300, 520, 14.9], ['my address??', 560, 430, 15.25], ['not again', 860, 560, 15.6], ['180 days??', 700, 330, 21.2]].map(([s, x, y, t0]) => ({ e: txt(ov, s, 'bub', 34), x, y, t0 }));
+const bubs2 = [['deleted??', 260, 760, 21.3], ['seriously', 820, 700, 22.2]].map(([s, x, y, t0]) => ({ e: txt(ov, s, 'bub', 34), x, y, t0 }));
+// S7: email falso
+const mail = el(ov, 'div', 'e', 'width:640px;padding:30px 34px;border-radius:30px;background:rgba(255,255,255,.96);box-shadow:0 20px 60px rgba(0,0,0,.5);font-family:Inter;white-space:normal');
+mail.innerHTML = `<div style="font-weight:800;font-size:30px;color:#111">📦 Refund available</div><div style="font-weight:700;font-size:26px;color:#555;margin-top:10px;line-height:1.3">Confirm your recovery phrase to receive your refund.</div><div style="margin-top:20px;display:inline-block;background:#2F6BFF;color:#fff;font-weight:800;font-size:26px;padding:12px 22px;border-radius:14px">Verify wallet</div>`;
+const stampFake = txt(ov, 'FAKE', 'tag', 110, 'background:#E5333B;border-color:#fff');
+// S8: X amarelo desenhado
+const xa = path(osvg, 'M360 1120 L 760 1460', Y, 16), xb = path(osvg, 'M760 1120 L 360 1460', Y, 16);
+// S10: tablet com o perfil + pesquisa
+const tab = el(ov, 'div', 'e', 'width:700px;height:930px;border-radius:46px;background:#0b0b0b;padding:22px;box-sizing:border-box;box-shadow:0 40px 80px rgba(0,0,0,.55), inset 0 0 0 3px #333');
+const tabImg = el(tab, 'img', '', 'width:100%;height:100%;object-fit:cover;object-position:top;border-radius:28px;display:block'); tabImg.src = 'assets/profile.jpg';
+const search = el(ov, 'div', 'e', 'width:640px;height:110px;border-radius:55px;background:rgba(20,20,20,.88);border:3px solid rgba(255,255,255,.85);box-shadow:0 14px 40px rgba(0,0,0,.4)');
+const sTxt = txt(search, '', '', 44, 'font-family:Inter;font-weight:700;color:#fff;left:40px;top:28px');
+const HANDLE = '@DamianDupozjcr';
+// legenda e palavras gigantes
+const capEl = txt(cam, '', 'cap', 96, 'z-index:60');
+const GIANTS = [['live.', 3.3, 3.85], ['180', 19.0, 19.95], ['anyone.', 31.2, 32.05]].map(([s, a, b]) => ({ e: txt(cam, s, 'giant', 420, 'z-index:61'), a, b }));
+const flash = el(cam, 'div', 'L', 'background:#fff;z-index:70');
+
+// ---- grão, vinheta, scanlines leves ----
+const fx = document.getElementById('fx').getContext('2d');
+const grain = [], R0 = rng(5); for (let i = 0; i < 6; i++) { const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d'), d = g.createImageData(256, 256); for (let j = 0; j < d.data.length; j += 4) { const v = R0() * 255; d.data[j] = d.data[j + 1] = d.data[j + 2] = v; d.data[j + 3] = 255; } g.putImageData(d, 0, 0); grain.push(c); }
+const vig = document.createElement('canvas'); vig.width = W; vig.height = H; { const g = vig.getContext('2d'), gr = g.createRadialGradient(540, 960, 450, 540, 960, 1250); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,.55)'); g.fillStyle = gr; g.fillRect(0, 0, W, H); }
+const dust = Array.from({ length: 40 }, (_, i) => { const r = rng(300 + i); return { x: r() * W, y: r() * H, v: 8 + r() * 25, s: 1 + r() * 2.5, o: .15 + r() * .35 }; });
+
+// ================= SEEK =================
+window.seek = function (t) {
+  t = clamp(t, 0, DUR - 1e-4);
+  // placas: push-in contínuo + transição blur/grade entre cenas
+  SC.forEach((s, i) => {
+    const [, a, b, gr, dx] = s, p = plates[i];
+    const on = t >= a - TR && t < b + TR; if (!on) { p.style.visibility = 'hidden'; return; }
+    const life = (t - a) / (b - a);
+    const inK = i === 0 ? 1 : expo(seg(t, a - TR * .2, a + TR)), outK = i === SC.length - 1 ? 0 : ease(seg(t, b - TR * .6, b + TR * .4));
+    const sc = 1.0 + .05 * (t - a + 1) / 1 * .5 + (1 - inK) * .08 + outK * .06;
+    p.style.transform = `translate(${(dx * life).toFixed(1)}px,0) scale(${sc.toFixed(4)})`;
+    const bl = (1 - inK) * 26 + outK * 26;
+    p.style.filter = `${GR[gr]} blur(${bl.toFixed(1)}px) brightness(${(1 + (1 - inK) * .25 + outK * .25).toFixed(3)})`;
+    p.style.opacity = (i === 0 ? 1 : clamp(inK * 1.4)) * (1 - (i === SC.length - 1 ? 0 : seg(t, b, b + TR * .4)));
+    p.style.visibility = 'visible'; p.style.zIndex = i;
+  });
+  // legenda palavra a palavra (1–3 palavras), centrada; posição segue a cena
+  const ci = CAPS.findIndex(c => t >= c[0] && t < c[1]);
+  const scene = SC.findLast(s => t >= s[1]) || SC[0];
+  if (ci >= 0 && !GIANTS.some(g => t >= g.a && t < g.b)) {
+    const [a, b, s, h] = CAPS[ci], k = expo(seg(t, a, a + .28));
+    capEl.textContent = s; capEl.classList.toggle('hl', !!h);
+    capEl.style.fontSize = (h ? 128 : 106) + 'px';
+    put(capEl, 540, scene[5] + (1 - k) * 26, lerp(.94, 1, k), 0, clamp(k * 1.5) * (1 - seg(t, b - .06, b)));
+    capEl.style.filter = k < .9 ? `blur(${((1 - k) * 8).toFixed(1)}px)` : 'none';
+  } else capEl.style.visibility = 'hidden';
+  // palavras gigantes de transição
+  GIANTS.forEach(g => { if (t < g.a || t >= g.b) { g.e.style.visibility = 'hidden'; return; } const k = seg(t, g.a, g.b); put(g.e, 540, 960, lerp(.85, 1.25, ease(k)), 0, Math.sin(k * Math.PI) * 1.2 > 1 ? 1 : Math.sin(k * Math.PI) * 1.2); g.e.style.color = Y; });
+  // S1 risco
+  draw(swoosh1, t > 2.9 && t < 3.75 ? expo(seg(t, 2.95, 3.3)) : 0);
+  // S3 etiquetas + S3b carimbo
+  tags.forEach((g, i) => { const on3 = t >= 6.95 && t < 11.25, on3b = t >= 20.75 && t < 23.6; const t0 = on3 ? TAGT[i] : 20.8 + i * .06; const k = spring(t - t0, 16, .7); const x = 360 + i * 70, y = 420 + i * 120; put(g, x + (on3b ? 30 : 0), y, lerp(.6, 1, k) * (on3b ? 1.06 : 1), 0, (on3 || on3b) && t >= t0 ? clamp((t - t0) / .1) * (on3 ? 1 - seg(t, 11.05, 11.25) : 1 - seg(t, 23.4, 23.6)) : 0); });
+  { const k = spring(t - 22.5, 20, .55); put(stampDel, 600, 980, lerp(2.2, 1, k), -8, t >= 22.5 && t < 23.6 ? 1 - seg(t, 23.4, 23.6) : 0); }
+  // S4 anel + brilhos
+  draw(ring4, t >= 12.1 && t < 14.7 ? ease(seg(t, 12.15, 12.65)) : 0); ring4.style.opacity = t >= 12.1 && t < 14.7 ? 1 - seg(t, 14.5, 14.7) : 0;
+  sparks.forEach(s => { const on = (t >= 11.2 && t < 14.7) || t >= 35.5; const tw = (Math.sin(t * 3 + s.ph) + 1) / 2; put(s.e, s.x, s.y - (t % 10) * 8, .5 + tw * .7, t * 30 + s.ph * 50, on ? tw * .9 : 0); });
+  // S5 / S3b balões
+  [...bubs, ...bubs2].forEach(b => { const end = b.t0 < 17 ? 16.7 : 23.5; const k = spring(t - b.t0, 18, .55); put(b.e, b.x, b.y - (t - b.t0) * 10, lerp(.3, 1, k), 0, t >= b.t0 && t < end ? 1 - seg(t, end - .15, end) : 0); });
+  // S7 email falso + carimbo
+  { const k = expo(seg(t, 24.4, 25.0)); put(mail, 540, lerp(1400, 1180, k), 1, 0, t >= 24.4 && t < 27.9 ? clamp(k * 2) * (1 - seg(t, 27.7, 27.9)) : 0); const s = spring(t - 26.7, 20, .55); put(stampFake, 700, 1120, lerp(2.4, 1, s), -10, t >= 26.7 && t < 27.9 ? 1 - seg(t, 27.7, 27.9) : 0); }
+  // S8 X
+  draw(xa, t >= 29.9 && t < 31.95 ? expo(seg(t, 29.9, 30.2)) : 0); draw(xb, t >= 30.9 && t < 31.95 ? expo(seg(t, 30.9, 31.2)) : 0);
+  // S9 flash em "wasn't."
+  flash.style.opacity = t >= 33.2 && t < 33.5 ? (1 - seg(t, 33.2, 33.5)) * .55 : 0; flash.style.visibility = flash.style.opacity > 0 ? 'visible' : 'hidden';
+  // S10 tablet + pesquisa
+  { const k = spring(t - 34.6, 8, .8); put(tab, lerp(1300, 560, k), lerp(1500, 860, k), .96, lerp(18, -3, k), t >= 34.5 ? 1 : 0);
+    const sk = expo(seg(t, 36.0, 36.4)); put(search, 540, lerp(1900, 1700, sk), 1, 0, t >= 36.0 ? clamp(sk * 2) : 0);
+    sTxt.textContent = HANDLE.slice(0, Math.floor(lerp(0, HANDLE.length + .99, seg(t, 36.3, 37.3)))) + (Math.floor(t * 3) % 2 || t < 37.3 ? '|' : ''); }
+
+  // câmara: deriva lenta global
+  cam.style.transform = `translate(${(Math.sin(t * .35) * 6).toFixed(2)}px,${(Math.cos(t * .3) * 5).toFixed(2)}px)`;
+  // textura
+  fx.clearRect(0, 0, W, H);
+  fx.fillStyle = 'rgba(255,255,255,.5)'; dust.forEach(d => { const y = ((d.y - t * d.v) % H + H) % H; fx.globalAlpha = d.o; fx.beginPath(); fx.arc((d.x + Math.sin(t * .4 + d.y) * 20) % W, y, d.s, 0, 7); fx.fill(); });
+  fx.globalAlpha = 1; fx.drawImage(vig, 0, 0);
+  fx.globalAlpha = .1; fx.globalCompositeOperation = 'overlay'; const gt = grain[Math.floor(t * 24) % 6]; for (let y = 0; y < H; y += 256) for (let x = 0; x < W; x += 256) fx.drawImage(gt, x, y);
+  fx.globalCompositeOperation = 'source-over'; fx.globalAlpha = 1;
+};
+
+// ================= ÁUDIO =================
+function b64buf(s) { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u.buffer; }
+window.buildAudio = async function (ctx) {
+  const sfx = {}; for (const k in SFX) sfx[k] = await ctx.decodeAudioData(b64buf(SFX[k]));
+  const vo = await ctx.decodeAudioData(b64buf(VO));
+  const master = ctx.createGain(); master.gain.value = .9; master.connect(ctx.destination);
+  const music = ctx.createGain(); music.connect(master);
+  const fxBus = ctx.createGain(); fxBus.gain.value = .45; fxBus.connect(master);
+  const voBus = ctx.createGain(); voBus.gain.value = 1.4; voBus.connect(master);
+  { const s = ctx.createBufferSource(); s.buffer = vo; s.connect(voBus); s.start(0); }
+  const mg = music.gain; mg.setValueAtTime(.5, 0);
+  for (const [a, d] of LINES) { mg.setTargetAtTime(.3, a - .05, .06); mg.setTargetAtTime(.45, a + d, .25); }
+  mg.setTargetAtTime(0, 33.15, .02); mg.setTargetAtTime(.42, 34.4, .1); mg.setTargetAtTime(0, 37.9, .3);
+  const R = rng(42), noise = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate); { const d = noise.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = R() * 2 - 1; }
+  const play = (n, at, g = 1, dur, rate = 1) => { const s = ctx.createBufferSource(); s.buffer = sfx[n]; s.playbackRate.value = rate; const gg = ctx.createGain(); gg.gain.value = g; s.connect(gg); gg.connect(fxBus); s.start(at, 0, dur); if (dur) { gg.gain.setValueAtTime(g, at + dur - .08); gg.gain.linearRampToValueAtTime(0, at + dur); } };
+  // cama de suspense: drone grave + pulso tipo batimento a 92 BPM + piano em notas soltas
+  const B = 60 / 92;
+  const drone = (f, a, b, v) => [1, 1.003, 1.5].forEach((m, i) => { const o = ctx.createOscillator(), lp = ctx.createBiquadFilter(), g = ctx.createGain(); o.type = i < 2 ? 'sawtooth' : 'sine'; o.frequency.value = f * m; lp.type = 'lowpass'; lp.frequency.value = 380; g.gain.setValueAtTime(0, a); g.gain.linearRampToValueAtTime(v * (i < 2 ? 1 : .6), a + .8); g.gain.setValueAtTime(v, b - .5); g.gain.linearRampToValueAtTime(0, b); o.connect(lp); lp.connect(g); g.connect(music); o.start(a); o.stop(b + .1); });
+  drone(55, 0, 16.8, .1); drone(46.25, 16.8, 33.15, .11); drone(55, 34.4, 38.4, .09);
+  const thump = (at, v) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.setValueAtTime(90, at); o.frequency.exponentialRampToValueAtTime(40, at + .15); g.gain.setValueAtTime(v, at); g.gain.exponentialRampToValueAtTime(.001, at + .4); o.connect(g); g.connect(music); o.start(at); o.stop(at + .45); };
+  const tick = (at, v) => { const s = ctx.createBufferSource(); s.buffer = noise; const f = ctx.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 6000; const g = ctx.createGain(); g.gain.setValueAtTime(v, at); g.gain.exponentialRampToValueAtTime(.001, at + .03); s.connect(f); f.connect(g); g.connect(music); s.start(at, R(), .04); };
+  const piano = (at, f, v = .07) => [1, 2, 3].forEach((h, i) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sine'; o.frequency.value = f * h; g.gain.setValueAtTime(v / (h * h), at); g.gain.exponentialRampToValueAtTime(.0005, at + 2.2 / h); o.connect(g); g.connect(music); o.start(at); o.stop(at + 2.3); });
+  const notes = [220, 261.63, 329.63, 246.94, 220, 196, 261.63, 220];
+  for (let i = 0; i * B < 38; i++) {
+    const at = i * B; if (at >= 33.15 && at < 34.4) continue;
+    if (i % 2 === 0) { thump(at, at > 14.6 ? .55 : .4); thump(at + .22, at > 14.6 ? .3 : .2); }
+    if (at > 7) { tick(at + B / 2, .05); }
+    if (i % 4 === 0) piano(at + .02, notes[(i / 4) % notes.length]);
+  }
+  // efeitos
+  play('swoosh', 3.25, .6); play('impact', 3.75, .7); play('glitch', 3.8, .25, .3);
+  [7.0, 7.6, 9.06, 10.06].forEach(a => play('pop', a, .6)); play('whoosh', 6.85, .4);
+  play('whoosh', 11.1, .4); play('ding', 12.2, .5); play('ding', 13.74, .45, undefined, 1.1);
+  play('whoosh', 14.55, .4); [14.9, 15.25, 15.6].forEach(a => play('pop', a, .55));
+  play('whoosh', 16.65, .4); play('swoosh', 18.9, .5); play('impact', 19.4, .7);
+  play('whoosh', 20.65, .4); [21.2, 21.3, 22.2].forEach(a => play('pop', a, .5)); play('impact', 22.5, .6);
+  play('whoosh', 23.45, .4); play('ding', 24.4, .6); play('impact', 26.7, .7);
+  play('whoosh', 27.8, .4); play('swoosh', 29.9, .5); play('swoosh', 30.9, .5); play('impact', 31.6, .6);
+  play('whoosh', 31.85, .4); play('hit', 33.2, .7, 1.4);
+  play('swoosh', 34.5, .5); for (let k = 0; k < 15; k++) play('tick', 36.3 + k * .066, .4); play('ding', 37.5, .5);
+};
+
+// ================= PREVIEW =================
+let buf, ac, src, startAt = 0, offset = 0, playing = false;
+async function play() { ac ??= new AudioContext(); if (!buf) { const off = new OfflineAudioContext(2, Math.ceil(48000 * DUR), 48000); await buildAudio(off); buf = await off.startRendering(); } src = ac.createBufferSource(); src.buffer = buf; src.connect(ac.destination); src.start(0, offset % DUR); startAt = ac.currentTime; playing = true; }
+function pause() { if (!playing) return; offset += ac.currentTime - startAt; src.stop(); playing = false; }
+function now() { return playing ? (offset + ac.currentTime - startAt) % DUR : offset; }
+if (!location.search.includes('render')) {
+  const st = document.getElementById('stage'), fit = () => { const k = Math.min(innerWidth / W, (innerHeight - 50) / H); st.style.transform = `scale(${k})`; }; fit(); addEventListener('resize', fit);
+  const pp = document.getElementById('pp'), sc = document.getElementById('scrub'), tcEl = document.getElementById('tc');
+  pp.onclick = () => { playing ? pause() : play(); pp.textContent = playing ? '❚❚' : '▶'; };
+  sc.oninput = () => { const p = playing; pause(); offset = sc.value / 1000 * DUR; if (p) play(); };
+  (function loop() { const t = now(); seek(t); sc.value = t / DUR * 1000; tcEl.textContent = t.toFixed(2); requestAnimationFrame(loop); })();
+} else seek(0);
+</script>
+</body>
+</html>

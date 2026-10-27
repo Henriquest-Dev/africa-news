@@ -1,0 +1,10 @@
+Did you buy a hardware wallet online? Someone might now know where you live.
+Keystone just confirmed hackers broke into its online store.
+Your name. Your contact details. Your home address. Your order history.
+Your seed phrase is safe. Your private keys are safe too.
+But here's the part people are angry about.
+Keystone says it deletes customer records after one hundred and eighty days. Some customers say their older orders leaked anyway.
+And now, Keystone is warning about scam emails offering fake refunds.
+So never type your seed phrase. Not for a refund. Not for anyone.
+Your keys were safe. Your address wasn't.
+Follow Damian Dupont, before the next leak.

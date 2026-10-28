@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<title>Inteligência a Dobrar</title>
+<link rel="stylesheet" href="fonts.css">
+<style>
+  html, body { margin: 0; background: #222; overflow: hidden; }
+  #stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; background: #f7f3e8; }
+  svg { position: absolute; left: 0; top: 0; }
+  #ui { position: fixed; left: 0; right: 0; bottom: 0; padding: 8px; background: #000c; color: #ddd; font: 13px system-ui; display: flex; gap: 10px; align-items: center; }
+  #ui input { flex: 1; } .render #ui { display: none; }
+</style>
+</head>
+<body>
+<div id="stage"><svg id="sv" width="1920" height="1080" viewBox="0 0 1920 1080"></svg></div>
+<div id="ui"><button id="pp">▶</button><input id="scrub" type="range" min="0" max="1000" value="0"><span id="tc">0.00</span></div>
+<script src="stick.js"></script>
+<script src="timing.js"></script>
+<script src="sfx.js"></script>
+<script src="vo.js"></script>
+<script>
+/* "E se a tua inteligência dobrasse todos os dias?" — 16:9, 8:00.
+   Fundos: 9 cenários a traço gerados na Pollinations (flux.1-schnell). Personagens: stickman desenhado em código no estilo
+   das folhas de referência (poses + 35 expressões), com traço "a ferver" (boil) a 8 imagens/s como animação desenhada à mão.
+   Cada frase da narração (87) tem uma cena própria: BEATS[i]. */
+const W = 1920, H = 1080, DUR = TL.dur, FLOOR = 930;
+window.VIDEO = { w: W, h: H, duration: DUR };
+if (location.search.includes('render')) document.documentElement.classList.add('render');
+const sv = document.getElementById('sv');
+const kp = keys => t => { if (t <= keys[0][0]) return keys[0][1]; for (let i = 1; i < keys.length; i++) { const [a, va] = keys[i - 1], [b, vb] = keys[i]; if (t <= b) return lerp(va, vb, ease((t - a) / (b - a))); } return keys[keys.length - 1][1]; };
+const fmt = n => Math.round(n).toLocaleString('pt-PT').replace(/\./g, ' ').replace(/ /g, ' ');
+const IQ = d => 100 * Math.pow(2, d);
+
+// ---------- defs: traço a ferver ----------
+const defs = S('defs', {}, sv);
+for (let i = 0; i < 3; i++) { const f = S('filter', { id: 'boil' + i, x: '-10%', y: '-10%', width: '120%', height: '120%' }, defs); S('feTurbulence', { type: 'fractalNoise', baseFrequency: '0.022', numOctaves: 2, seed: 3 + i * 7, result: 'n' }, f); S('feDisplacementMap', { in: 'SourceGraphic', in2: 'n', scale: 4.5 }, f); }
+// ---------- camadas ----------
+const cam = S('g', {}, sv);
+const bgImg = S('image', { x: 0, y: 0, width: W, height: H, preserveAspectRatio: 'xMidYMid slice', opacity: .62 }, cam);
+const bgPaper = S('g', {}, cam);
+const world = S('g', {}, cam);
+const hud = S('g', {}, sv), card = S('g', {}, sv);
+// fundos procedimentais (papel, espaço, cosmos)
+const PAPER = {
+  paper: g => { for (let i = 0; i < 26; i++) { const x = 60 + (i * 397) % 1800, y = 60 + (i * 251) % 960; S('path', { ...INK, 'stroke-width': 3, opacity: .18, d: i % 3 ? `M${x} ${y} q20 -20 40 0 t40 0` : `M${x - 14} ${y} L${x + 14} ${y} M${x} ${y - 14} L${x} ${y + 14}` }, g); } },
+  space: g => { for (let i = 0; i < 70; i++) { const x = (i * 271) % 1920, y = (i * 173) % 820, r = 2 + (i % 4); S('path', { ...INK, 'stroke-width': 3, d: i % 5 ? `M${x - r} ${y} L${x + r} ${y} M${x} ${y - r} L${x} ${y + r}` : `M${x} ${y - 9} L${x + 3} ${y - 3} L${x + 9} ${y} L${x + 3} ${y + 3} L${x} ${y + 9} L${x - 3} ${y + 3} L${x - 9} ${y} L${x - 3} ${y - 3} Z` }, g); }
+    S('circle', { ...INK, cx: 1600, cy: 260, r: 120, fill: '#dff1ff' }, g); S('path', { ...INK, 'stroke-width': 4, d: 'M1500 220 q40 -30 70 0 t60 20 M1530 320 q30 20 60 0 t40 -30' }, g); S('path', { ...INK, 'stroke-width': 4, d: 'M0 ' + (FLOOR + 10) + ' Q960 ' + (FLOOR - 40) + ' 1920 ' + (FLOOR + 10) }, g); },
+  cosmos: g => { for (let a = 0; a < 3; a++) S('path', { ...INK, 'stroke-width': 4, opacity: .5, d: Array.from({ length: 90 }, (_, i) => { const th = i * .18 + a * 2.1, r = 8 + i * 6; return (i ? 'L' : 'M') + (960 + Math.cos(th) * r).toFixed(1) + ' ' + (420 + Math.sin(th) * r * .55).toFixed(1); }).join(' ') }, g); PAPER.space(g); },
+};
+const paperGroups = {}; for (const k in PAPER) { paperGroups[k] = S('g', { visibility: 'hidden' }, bgPaper); PAPER[k](paperGroups[k]); }
+
+// ---------- helpers de cena ----------
+function T(g, str, x, y, size = 64, o = {}) { const t = S('text', { x, y, 'text-anchor': o.anchor || 'middle', 'font-family': o.font || 'Patrick Hand', 'font-size': size, fill: o.fill || '#111' }, g); t.textContent = str; if (o.stroke) { t.setAttribute('stroke', '#fffdf7'); t.setAttribute('stroke-width', 10); t.setAttribute('paint-order', 'stroke'); } return t; }
+function typeOn(el, full, lt, t0, cps = 22) { const n = Math.floor(clamp((lt - t0) * cps, 0, full.length)); el.textContent = full.slice(0, n); el.setAttribute('visibility', lt >= t0 ? 'visible' : 'hidden'); }
+function pop(el, lt, t0, x, y, s = 1, r = 0) { const k = lt < t0 ? 0 : spring(lt - t0, 16, .55); el.setAttribute('transform', `translate(${x} ${y}) rotate(${r}) scale(${(k * s).toFixed(3)})`); el.setAttribute('visibility', k > .01 ? 'visible' : 'hidden'); }
+function place(el, x, y, s = 1, r = 0, vis = true) { el.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${r.toFixed(1)}) scale(${s})`); el.setAttribute('visibility', vis ? 'visible' : 'hidden'); }
+function drawOn(p, lt, t0, t1) { const L = p.__L ??= p.getTotalLength(); const k = seg(lt, t0, t1); p.setAttribute('stroke-dasharray', `${L} ${L}`); p.setAttribute('stroke-dashoffset', L * (1 - k)); p.setAttribute('visibility', k > 0 ? 'visible' : 'hidden'); }
+function line(g, d, w = 6, o = {}) { return S('path', { ...INK, 'stroke-width': w, d, ...o }, g); }
+function hl(g, str, x, y, size = 70, o = {}) {   // palavra com marcador amarelo por trás
+  const gg = S('g', {}, g), r = S('rect', { x: 0, y: -size * .72, height: size * .9, width: 0, fill: o.color || '#ffe066', transform: 'skewX(-8)' }, gg), t = T(gg, str, 0, 0, size, { font: o.font || 'Permanent Marker', anchor: 'start' });
+  return lt => { const w = t.getComputedTextLength(); gg.setAttribute('transform', `translate(${x - w / 2} ${y})`); const k = seg(lt, o.t0 || 0, (o.t0 || 0) + .35); r.setAttribute('width', (w + 24) * k); r.setAttribute('x', -12); gg.setAttribute('visibility', lt >= (o.t0 || 0) ? 'visible' : 'hidden'); t.setAttribute('opacity', clamp((lt - (o.t0 || 0)) / .15)); };
+}
+// pose com transições suaves: keys [[t, 'pose' | objeto], ...]
+function P(lt, keys, blend = .32) { let cur = keys[0][1]; let pose = typeof cur === 'string' ? POSES[cur] : cur;
+  for (let i = 1; i < keys.length; i++) { const [tk, pk] = keys[i]; if (lt < tk) break; const nxt = typeof pk === 'string' ? POSES[pk] : pk; pose = mixPose(pose, nxt, ease(seg(lt, tk, tk + blend))); }
+  return pose; }
+const Ex = (lt, keys) => { let e = keys[0][1]; for (const [tk, k] of keys) if (lt >= tk) e = k; return e; };
+const wobble = (pose, lt, a = 6) => ({ ...pose, aR: [pose.aR[0] + Math.sin(lt * 9) * a, pose.aR[1] + Math.sin(lt * 9 + 1) * a] });   // gesto ao falar
+
+// ---------- PROTAGONISTA ----------
+const heroLayer = S('g', {}, world);
+const HERO = makeStick(heroLayer, { seed: 1 });
+const aura = S('g', {}, heroLayer); for (let i = 0; i < 8; i++) { const a = i / 8 * 6.283; S('path', { ...INK, 'stroke-width': 5, d: `M${Math.cos(a) * 80} ${Math.sin(a) * 80} L${Math.cos(a) * 104} ${Math.sin(a) * 104}` }, aura); }
+let curDay = 0;
+function hero(x, pose, expr, lt, o = {}) {
+  const hs = 1 + Math.min(.42, Math.log2(curDay + 1) * .085) * (o.noGrow ? 0 : 1);
+  drawStick(HERO, x, o.y ?? FLOOR, pose, expr, { s: o.s || 1.15, t: lt + 7, headScale: hs * (o.hs || 1), rot: o.rot || 0, flip: o.flip, headTilt: o.tilt || 0 });
+  const hp = HERO.handPos.head, s = o.s || 1.15;
+  const on = curDay >= 10 && !o.noGrow; aura.setAttribute('visibility', on ? 'visible' : 'hidden');
+  if (on) aura.setAttribute('transform', `translate(${x + hp[0] * s} ${(o.y ?? FLOOR) + hp[1] * s}) rotate(${lt * 20}) scale(${hs * s * (1 + Math.sin(lt * 4) * .05)})`);
+}
+// atores secundários reutilizáveis por cena
+function actor(g, acc, seed) { return makeStick(g, { acc, seed }); }
+
+// ---------- BEATS (uma cena por frase) ----------
+// cada beat: (g) => (lt, d) => {...}   g = grupo próprio; lt = tempo local; d = duração até à frase seguinte
+const BEATS = [];
+const B = fn => BEATS.push(fn);
+
+// ===== INTRO (papel) =====
+B(g => { const h = hl(g, 'INTELIGÊNCIA × 2', 960, 200, 90), d1 = T(g, 'TODOS OS DIAS', 960, 290, 60); const br = S('g', {}, g); S('path', { ...INK, fill: '#ffd1dc', d: 'M-60 0 C-90 -60 -30 -100 0 -70 C30 -100 90 -60 60 0 C80 40 30 70 0 50 C-30 70 -80 40 -60 0 Z' }, br); line(br, 'M0 -70 L0 50 M-40 -30 q20 10 0 30 M40 -30 q-20 10 0 30', 4);
+  return lt => { h(lt); typeOn(d1, 'TODOS OS DIAS', lt, 1.0); hero(760, P(lt, [[0, 'stand'], [0.4, 'think']]), Ex(lt, [[0, 'calm'], [1.1, 'curious']]), lt); pop(br, lt, .6, 1250, 640, 1 + seg(lt, 1.5, 4) * .8); }; });
+B(g => { const e = actor(g, ['wild'], 3), t = hl(g, 'DIA 1  >  EINSTEIN', 960, 180, 80, { t0: 1.4 });
+  return lt => { hero(700, P(lt, [[0, 'stand'], [1.2, 'hips']]), Ex(lt, [[0, 'calm'], [1.2, 'confident']]), lt); drawStick(e, 1250, FLOOR, P(lt, [[0, 'stand'], [1.6, 'shrug']]), Ex(lt, [[0, 'calm'], [1.6, 'shocked']]), { s: 1.1, t: lt }); t(lt); }; });
+B(g => { const t = hl(g, 'DIA 30 = ???', 960, 170, 96, { t0: .3 });
+  return lt => { t(lt); const hs = 1 + seg(lt, .5, 3) * .9; hero(960, P(lt, [[0, 'stand'], [1, 'scared']]), Ex(lt, [[0, 'calm'], [1.2, 'shocked']]), lt, { hs, noGrow: true }); }; });
+B(g => { const crowd = [[260, ['hair']], [470, ['glasses', 'tie']], [1450, ['bun']], [1660, ['tie']]].map(([x, a], i) => ({ x, c: actor(g, a, 10 + i) }));
+  return lt => { hero(960, P(lt, [[0, 'stand'], [2.5, 'scared']]), Ex(lt, [[0, 'confident'], [2.6, 'nervous']]), lt);
+    crowd.forEach((p, i) => drawStick(p.c, p.x + (p.x < 960 ? 1 : -1) * seg(lt, 2.4, 4) * 120, FLOOR, P(lt, [[0, 'stand'], [2.5 + i * .1, p.x < 960 ? 'point' : 'pointL']]), Ex(lt, [[0, 'calm'], [2.5, 'scared']]), { s: .95, t: lt + i })); }; });
+B(g => { const btn = prop(g, 'button');
+  return lt => { pop(btn, lt, .2, 1180, FLOOR - 230, 1.6); hero(820, P(lt, [[0, 'stand'], [1.2, 'point']]), Ex(lt, [[0, 'curious'], [1.2, 'pensive']]), lt); }; });
+B(g => { const b = prop(g, 'bulbOff'), q = T(g, '?', 1230, 400, 160, { font: 'Permanent Marker' });
+  return lt => { hero(900, P(lt, [[0, 'think']]), Ex(lt, [[0, 'pensive'], [2, 'confused']]), lt); pop(b, lt, .5, 1110, 420, 1.2); place(q, 0, Math.sin(lt * 3) * 10, 1, 0, lt > 1); }; });
+B(g => { const pages = [0, 1, 2].map(i => { const gg = S('g', {}, g); S('rect', { ...INK, fill: '#fffdf7', x: -90, y: -110, width: 180, height: 220 }, gg); T(gg, 'DIA ' + [0, 1, 2][i], 0, 20, 64, { font: 'Permanent Marker' }); return gg; });
+  return lt => { hero(lerp(300, 1500, seg(lt, 0, 2.2)), walkPose(lt), 'happy', lt); pages.forEach((p, i) => { const k = seg(lt, .3 + i * .5, .7 + i * .5); place(p, 1500, 330 - k * 60, 1, -k * 25 * (2 - i), lt > .2); p.setAttribute('opacity', 1 - (i < 2 ? k : 0)); }); }; });
+
+// ===== DIA 0 (quarto) =====
+B(g => { const m = T(g, 'QI: 100', 1320, 380, 80, { font: 'Permanent Marker' }), avg = T(g, '(a média)', 1320, 450, 52);
+  return lt => { hero(800, P(lt, [[0, 'stand'], [.4, 'wave'], [2.2, 'hips']]), Ex(lt, [[0, 'happy'], [3, 'calm']]), lt); m.setAttribute('visibility', lt > 1.6 ? 'visible' : 'hidden'); typeOn(avg, '(a média)', lt, 3.4); }; });
+B(g => { const k = prop(g, 'key'), ph = prop(HERO.hand.R, 'phone'), qs = [0, 1, 2].map(i => T(g, '?', 0, 0, 90, { font: 'Permanent Marker' }));
+  return lt => { hero(900, P(lt, [[0, 'confused'], [2.2, 'phone']]), Ex(lt, [[0, 'confused'], [2.4, 'incredulous']]), lt); place(k, 1200, FLOOR - 10, 1.2, 20, lt < 2.4); ph.setAttribute('visibility', lt > 2.2 ? 'visible' : 'hidden'); qs.forEach((q, i) => place(q, 760 + i * 120, 330 - Math.sin(lt * 3 + i) * 15, 1, (i - 1) * 12, lt > .5 + i * .3)); }; });
+B(g => { const bed = S('g', {}, g), sp = [0, 1, 2, 3].map(i => T(g, '✦', 0, 0, 50, { fill: '#e8a800' }));
+  return lt => { const lie = seg(lt, .5, 1.6); hero(lerp(900, 1050, lie), P(lt, [[0, 'stand'], [.5, 'sad']]), Ex(lt, [[0, 'tired'], [1.6, 'sleep']]), lt, { rot: -90 * ease(lie), y: lerp(FLOOR, 800, ease(lie)) });
+    sp.forEach((s, i) => place(s, 790 + Math.cos(lt * 2 + i * 1.6) * 90, 690 + Math.sin(lt * 2 + i * 1.6) * 50, 1, 0, lt > 2.5)); HERO.handPos && 0; }; });
+
+// ===== DIA 1 (quarto) =====
+B(g => { return lt => { const up = seg(lt, 1.6, 2.1); hero(960, P(lt, [[0, 'stand'], [1.6, 'celebrate']]), Ex(lt, [[0, 'shocked'], [1.8, 'excited']]), lt, { y: FLOOR - Math.sin(up * Math.PI) * 120 }); }; });
+B(g => { const bars = [['TU ONTEM', 100], ['EINSTEIN*', 160], ['TU HOJE', 200]].map(([n, v], i) => { const gg = S('g', {}, g); const r = S('rect', { ...INK, fill: i === 2 ? '#ffe066' : '#fffdf7', x: -60, y: 0, width: 120, height: 0 }, gg); const l = T(gg, n, 0, 50, 40); const vt = T(gg, String(v), 0, 0, 52, { font: 'Permanent Marker' }); return { gg, r, vt, v }; }); const note = T(g, '*estimativa, nunca foi medido', 1350, 1010, 32);
+  return lt => { bars.forEach((b, i) => { const k = ease(seg(lt, .4 + i * .5, 1.2 + i * .5)), hgt = b.v * 2.4 * k; b.r.setAttribute('y', -hgt); b.r.setAttribute('height', hgt); b.vt.setAttribute('y', -hgt - 18); place(b.gg, 1100 + i * 220, FLOOR - 40, 1, 0, lt > .3 + i * .5); }); hero(560, P(lt, [[0, 'stand'], [.6, 'presentL'], [1.4, 'present']]), Ex(lt, [[0, 'confident']]), lt); note.setAttribute('visibility', lt > 1.6 ? 'visible' : 'hidden'); }; });
+B(g => { const cube = prop(HERO.hand.R, 'cube'), t = hl(g, '3 SEGUNDOS', 1350, 300, 80, { t0: 3.4 });
+  return lt => { hero(860, P(lt, [[0, 'stand'], [.8, 'phone']]), Ex(lt, [[0, 'curious'], [2.5, 'confident']]), lt); cube.setAttribute('visibility', lt > .8 ? 'visible' : 'hidden'); cube.setAttribute('transform', `rotate(${lt > 2 && lt < 3.4 ? lt * 900 : 0}) scale(1.1)`); t(lt); }; });
+B(g => { const bk = prop(HERO.hand.R, 'book'), pages = T(g, 'pág. 1', 1300, 420, 60, { font: 'Permanent Marker' });
+  return lt => { hero(900, P(lt, [[0, 'read']]), Ex(lt, [[0, 'pensive'], [2.2, 'happy']]), lt); bk.setAttribute('transform', 'translate(-30 -30) scale(1.3)'); pages.textContent = 'pág. ' + Math.min(342, Math.floor(lt * 140)); }; });
+B(g => { const cl = [0, 1, 2].map(i => line(g, `M${-90} 0 q20 -40 50 -20 q20 -40 60 -10 q40 -10 40 30 Z`, 5)); const tl = S('g', {}, g); S('rect', { ...INK, fill: '#fffdf7', x: -30, y: -90, width: 60, height: 170, rx: 14 }, tl); const lamps = [0, 1, 2].map(i => S('circle', { cx: 0, cy: -55 + i * 52, r: 20, stroke: '#111', 'stroke-width': 5, fill: '#fffdf7' }, tl)); line(tl, 'M0 80 L0 260');
+  return lt => { hero(lerp(400, 1000, seg(lt, 0, 3)), lt < 3 ? walkPose(lt, .8) : POSES.stand, Ex(lt, [[0, 'curious'], [3, 'excited']]), lt, { tilt: -10 }); cl.forEach((c, i) => place(c, 300 + i * 500 + lt * 30, 220 + i * 40, 1.4, 0, true)); place(tl, 1550, 600, 1, 0, true); lamps.forEach((l, i) => l.setAttribute('fill', Math.floor(lt * 1.5) % 3 === i ? ['#ff5a4f', '#ffd23f', '#7ddc7a'][i] : '#fffdf7')); }; });
+B(g => { const b = prop(g, 'bulb');
+  return lt => { hero(960, P(lt, [[0, 'stand'], [.3, 'celebrate']]), Ex(lt, [[0, 'excited']]), lt, { y: FLOOR - Math.abs(Math.sin(lt * 5)) * 40 * (lt < 1.6) }); pop(b, lt, .2, 960, 260, 1.5); }; });
+
+// ===== DIA 2 (sala de aula) =====
+B(g => { return lt => { hero(960, P(lt, [[0, 'stand'], [.6, 'hips']]), Ex(lt, [[0, 'confident']]), lt); }; });
+B(g => { const tch = actor(g, ['glasses', 'tie'], 20), eq = T(g, '2 + 2 = 5', 880, 300, 70, { font: 'Patrick Hand', fill: '#fff' }), x = line(g, 'M800 250 L980 320 M980 250 L800 320', 9, { stroke: '#ff5a4f' });
+  return lt => { drawStick(tch, 560, FLOOR, P(lt, [[0, 'write']]), 'serious', { s: 1.05, t: lt }); typeOn(eq, '2 + 2 = 5', lt, .2, 8); hero(1350, P(lt, [[0, 'stand'], [.7, 'raise']]), Ex(lt, [[0, 'confident']]), lt); drawOn(x, lt, 1.0, 1.4); }; });
+B(g => { const tch = actor(g, ['glasses', 'tie'], 21), clock = T(g, '0:00', 1380, 280, 90, { font: 'Permanent Marker' }), paper = prop(HERO.hand.R, 'notebook');
+  return lt => { hero(1000, P(lt, [[0, 'sitWrite']]), Ex(lt, [[0, 'confident']]), lt); clock.textContent = '0:0' + Math.min(5, Math.floor(lt * 2.2)); drawStick(tch, 520, FLOOR, P(lt, [[0, 'cross'], [2.3, 'pointL']]), Ex(lt, [[0, 'serious'], [2.3, 'angry']]), { s: 1.05, t: lt }); paper.setAttribute('transform', 'scale(.8)'); }; });
+B(g => { const tch = actor(g, ['glasses', 'tie'], 22), ws = ['1)  a² + b²', '2)  ∫ f(x) dx', '3)  √49 = 7'].map((s, i) => T(g, s, 760, 230 + i * 70, 54, { fill: '#fff', anchor: 'start' }));
+  return lt => { hero(600, P(lt, [[0, 'write'], [2.5, 'presentL']]), Ex(lt, [[0, 'confident'], [3, 'smug']]), lt); ws.forEach((w, i) => typeOn(w, ['1)  a² + b²', '2)  ∫ f(x) dx', '3)  √49 = 7'][i], lt, .3 + i * .8, 18)); drawStick(tch, 1450, FLOOR, P(lt, [[0, 'stand'], [2.5, 'scared']]), Ex(lt, [[0, 'incredulous'], [2.6, 'shocked']]), { s: 1.05, t: lt }); }; });
+B(g => { const words = ['Hello!', 'Hola!', 'Bonjour!', 'Ciao!', 'Hallo!', 'Salut!'].map((w, i) => { const gg = S('g', {}, g); S('path', { ...INK, 'stroke-width': 5, fill: '#fffdf7', d: 'M-110 -50 Q-110 -90 0 -90 Q110 -90 110 -50 Q110 -10 20 -10 L0 20 L-10 -10 Q-110 -10 -110 -50 Z' }, gg); T(gg, w, 0, -38, 46); return gg; });
+  return lt => { hero(960, wobble(POSES.talk, lt), Ex(lt, [[0, 'happy'], [3.5, 'bored']]), lt); words.forEach((w, i) => pop(w, lt, .4 + i * .65, [520, 1400, 400, 1520, 600, 1320][i], [300, 280, 520, 500, 160, 140][i], 1, (i % 2 ? 6 : -6))); }; });
+B(g => { const f1 = actor(g, ['hair'], 30), f2 = actor(g, ['bun'], 31);
+  return lt => { hero(960, P(lt, [[0, 'stand'], [1.2, 'sad']]), Ex(lt, [[0, 'happy'], [1.2, 'sad']]), lt); drawStick(f1, 520 - seg(lt, 1, 3) * 80, FLOOR, P(lt, [[0, 'stand'], [.6, 'cross']]), 'incredulous', { s: 1.05, t: lt }); drawStick(f2, 1400 + seg(lt, 1, 3) * 80, FLOOR, P(lt, [[0, 'stand'], [.8, 'hips']]), 'confused', { s: 1.05, t: lt + 2 }); }; });
+
+// ===== DIA 3 (biblioteca) =====
+B(g => { return lt => { hero(960, P(lt, [[0, 'stand'], [.5, 'read']]), 'pensive', lt); }; });
+B(g => { const books = Array.from({ length: 14 }, (_, i) => prop(g, 'book'));
+  return lt => { hero(960, P(lt, [[0, 'stand'], [.3, 'celebrate']]), Ex(lt, [[0, 'shocked'], [1.5, 'excited']]), lt); books.forEach((b, i) => { const ph = ((lt * .9 + i * .23) % 1); const sx = i % 2 ? 1700 : 220, sy = 300 + (i * 97) % 500; place(b, lerp(sx, 960, ph), lerp(sy, 470, ph), lerp(.9, .2, ph), ph * 360, lt > i * .12); }); }; });
+B(g => { const fs = ['E = mc²', 'π ≈ 3,14159', 'a² + b² = c²', 'e^(iπ) + 1 = 0', '∑ 1/n²  = π²/6', '∫ e^x dx'].map(s => T(g, s, 0, 0, 56));
+  return lt => { hero(960, P(lt, [[0, 'sitThink']]), Ex(lt, [[0, 'pensive'], [2.4, 'confident']]), lt); fs.forEach((f, i) => { const a = i / fs.length * 6.283 + lt * .4; place(f, 960 + Math.cos(a) * 560, 520 + Math.sin(a) * 300, 1, 0, lt > .2 + i * .3); }); }; });
+B(g => { const ps = [0, 1, 2, 3].map(i => actor(g, i % 2 ? ['hair'] : ['bun'], 40 + i)), t = hl(g, 'SOZINHO', 960, 200, 100, { t0: 3.0, color: '#d6e9ff' });
+  return lt => { hero(960, P(lt, [[0, 'stand'], [2.8, 'sad']]), Ex(lt, [[0, 'calm'], [2.8, 'sad']]), lt); ps.forEach((p, i) => { const side = i % 2 ? 1 : -1; drawStick(p.c ?? p, 960 + side * (280 + i * 120) + side * seg(lt, 1.2, 3.5) * 900, FLOOR, walkPose(lt + i, .9), 'calm', { s: .95, t: lt + i, flip: side < 0 }); }); t(lt); }; });
+B(g => { const ps = [0, 1].map(i => actor(g, ['glasses'], 50 + i)), calc = prop(g, 'calc');
+  return lt => { hero(760, wobble(POSES.talk, lt, 10), Ex(lt, [[0, 'excited'], [3, 'tired']]), lt); ps.forEach((p, i) => drawStick(p, 1260 + i * 260, FLOOR, POSES.stand, Ex(lt, [[0, 'incredulous'], [2, 'bored']]), { s: 1.05, t: lt + i })); pop(calc, lt, 2.4, 1390, 330, 1.6); }; });
+B(g => { const pa = actor(g, ['glasses'], 60), ma = actor(g, ['bun'], 61), bub = S('g', {}, g); S('path', { ...INK, 'stroke-width': 5, fill: '#fffdf7', d: 'M-200 -60 Q-200 -110 0 -110 Q200 -110 200 -60 Q200 -10 30 -10 L0 30 L-10 -10 Q-200 -10 -200 -60 Z' }, bub); const bt = T(bub, '', 0, -45, 46);
+  return lt => { hero(600, wobble(POSES.talk, lt), Ex(lt, [[0, 'excited'], [3.2, 'sad']]), lt); const nod = Math.sin(lt * 8) * 6; drawStick(pa, 1180, FLOOR, POSES.stand, Ex(lt, [[0, 'happy'], [2.8, 'calm']]), { s: 1.05, t: lt, headTilt: nod }); drawStick(ma, 1430, FLOOR, P(lt, [[0, 'stand'], [3, 'talk']]), 'happy', { s: 1, t: lt + 1, headTilt: -nod }); pop(bub, lt, 2.9, 1330, 380, 1); bt.textContent = 'E o jantar?'; }; });
+B(g => { return lt => { hero(960, P(lt, [[0, 'sitThink']]), Ex(lt, [[0, 'pensive'], [3, 'sad']]), lt); }; });
+
+// ===== DIA 4 (laboratório) =====
+B(g => { return lt => { hero(960, P(lt, [[0, 'stand'], [.6, 'hips']]), 'confident', lt); }; });
+B(g => { const sc = [0, 1, 2].map(i => actor(g, ['glasses', 'coat'], 70 + i)), b = prop(g, 'bulb');
+  return lt => { hero(560, P(lt, [[0, 'stand'], [1.5, 'point']]), 'confident', lt); sc.forEach((c, i) => drawStick(c, 1100 + i * 230, FLOOR, P(lt, [[0, 'stand'], [2.5, i === 1 ? 'celebrate' : 'scared']]), Ex(lt, [[0, 'serious'], [2.5, 'shocked']]), { s: 1, t: lt + i })); pop(b, lt, 1.5, 860, 330, 1.2); }; });
+B(g => { const eq = T(g, 'Ψ = ∮ ∇·Φ dτ  ÷ ℏ²', 1260, 280, 64), sc = actor(g, ['glasses', 'coat'], 80), ph = prop(sc.hand.R, 'phone'), flash = S('rect', { x: 0, y: 0, width: W, height: H, fill: '#fff' }, g);
+  return lt => { hero(860, P(lt, [[0, 'write']]), 'confident', lt); typeOn(eq, 'Ψ = ∮ ∇·Φ dτ  ÷ ℏ²', lt, .2, 10); drawStick(sc, 1560, FLOOR, P(lt, [[0, 'stand'], [2.6, 'phone']]), Ex(lt, [[0, 'shocked'], [4, 'confused']]), { s: 1.05, t: lt }); ph.setAttribute('visibility', lt > 2.6 ? 'visible' : 'hidden'); flash.setAttribute('opacity', lt > 3.1 && lt < 3.4 ? 1 - seg(lt, 3.1, 3.4) : 0); }; });
+B(g => { const bat = prop(g, 'battery'), mot = S('g', {}, g); S('circle', { ...INK, fill: '#fffdf7', cx: 0, cy: 0, r: 60 }, mot); for (let i = 0; i < 6; i++) line(mot, `M0 0 L${Math.cos(i) * 55} ${Math.sin(i) * 55}`, 4); const l1 = T(g, '-50%', 560, 330, 70, { font: 'Permanent Marker' }), l2 = T(g, '7 DIAS', 1380, 330, 70, { font: 'Permanent Marker' });
+  return lt => { hero(960, P(lt, [[0, 'stand'], [.4, 'presentL'], [2.6, 'present']]), 'excited', lt); pop(mot, lt, .5, 560, 520, 1.3); mot.setAttribute('transform', mot.getAttribute('transform') + ` rotate(${lt * 200})`); l1.setAttribute('visibility', lt > 1.5 ? 'visible' : 'hidden'); pop(bat, lt, 2.7, 1380, 520, 1.6); l2.setAttribute('visibility', lt > 3.4 ? 'visible' : 'hidden'); }; });
+B(g => { const nap = prop(HERO.hand.R, 'napkin');
+  return lt => { hero(960, P(lt, [[0, 'sitWrite']]), Ex(lt, [[0, 'happy']]), lt); nap.setAttribute('transform', `rotate(${Math.sin(lt * 12) * 6}) scale(1.2)`); }; });
+B(g => { const ph = prop(g, 'phone'), rings = [0, 1, 2].map(i => line(g, `M${30 + i * 26} -60 q30 60 0 120`, 6));
+  return lt => { hero(700, P(lt, [[0, 'stand'], [1.2, 'scared']]), Ex(lt, [[0, 'calm'], [1, 'nervous']]), lt); place(ph, 1250 + Math.sin(lt * 60) * 6, 500, 2.2, Math.sin(lt * 50) * 6, true); rings.forEach((r, i) => { r.setAttribute('transform', 'translate(1250 500)'); r.setAttribute('opacity', Math.sin(lt * 10 - i) > 0 ? 1 : .2); }); }; });
+
+// ===== DIA 5 (estúdio) =====
+B(g => { return lt => { hero(960, P(lt, [[0, 'stand'], [.6, 'wave']]), 'happy', lt); }; });
+B(g => { const anc = actor(g, ['tie'], 90), mic = prop(anc.hand.R, 'mic'), scr = S('g', {}, g); const face = makeStick(scr, { seed: 5 }); const t = hl(g, 'QUEM É O JOVEM?', 960, 150, 70, { t0: 1.2, color: '#ffb3a7' });
+  return lt => { drawStick(anc, 640, FLOOR, wobble(POSES.phone, lt, 4), 'serious', { s: 1.1, t: lt }); drawStick(face, 0, 150, POSES.stand, 'confident', { s: .42, t: lt }); place(scr, 1300, 600, 1, 0, true); t(lt); }; });
+B(g => { const ph = prop(HERO.hand.R, 'phone'), notes = Array.from({ length: 8 }, (_, i) => { const gg = S('g', {}, g); S('rect', { ...INK, 'stroke-width': 4, fill: '#fffdf7', x: -150, y: -30, width: 300, height: 60, rx: 14 }, gg); T(gg, ['Google', 'NASA', 'MIT', 'Governo', 'Harvard', 'Banco', 'ONU', 'Startup'][i] + ' ligou', 0, 14, 36); return gg; });
+  return lt => { hero(700, P(lt, [[0, 'phone']]), Ex(lt, [[0, 'shocked'], [2, 'nervous']]), lt); notes.forEach((n, i) => pop(n, lt, .3 + i * .45, 1350 + (i % 2) * 60, 180 + i * 85, 1)); }; });
+B(g => { const pp = [0, 1].map(i => actor(g, i ? ['bun'] : ['tie'], 95 + i)), bubs = [0, 1].map(i => { const gg = S('g', {}, g); S('path', { ...INK, 'stroke-width': 5, fill: '#fffdf7', d: 'M-120 -50 Q-120 -90 0 -90 Q120 -90 120 -50 Q120 -10 20 -10 L0 20 L-10 -10 Q-120 -10 -120 -50 Z' }, gg); T(gg, '...', 0, -40, 60); return gg; }), tb = S('g', {}, g); for (const [x, y, r] of [[0, 0, 70], [-80, 60, 18], [-110, 90, 10]]) S('ellipse', { ...INK, 'stroke-width': 5, fill: '#fffdf7', cx: x, cy: y, rx: r * 1.6, ry: r }, tb); const tt = T(tb, '"vai dizer olá"', 0, 12, 40);
+  return lt => { hero(640, P(lt, [[0, 'think']]), Ex(lt, [[0, 'pensive'], [2, 'smug']]), lt); pp.forEach((p, i) => drawStick(p, 1200 + i * 300, FLOOR, P(lt, [[0, 'stand'], [3.4, 'wave']]), Ex(lt, [[0, 'calm'], [3.4, 'happy']]), { s: 1.05, t: lt + i })); pop(tb, lt, 1.0, 760, 280, 1); bubs.forEach((b, i) => pop(b, lt, 3.4 + i * .2, 1200 + i * 300, 330, 1)); }; });
+
+// ===== DIA 6 (sala do governo) =====
+B(g => { return lt => { hero(960, P(lt, [[0, 'stand']]), 'serious', lt); }; });
+B(g => { const off = [0, 1, 2].map(i => actor(g, ['tie', 'glasses'], 100 + i)), q1 = hl(g, 'OPORTUNIDADE?', 600, 190, 70, { t0: 1.8 }), q2 = hl(g, 'AMEAÇA?', 1350, 190, 80, { t0: 3.4, color: '#ffb3a7' });
+  return lt => { hero(500, P(lt, [[0, 'stand']]), Ex(lt, [[0, 'calm'], [3.5, 'nervous']]), lt); off.forEach((o, i) => drawStick(o, 1050 + i * 260, FLOOR, P(lt, [[0, 'cross']]), Ex(lt, [[0, 'serious'], [3.4, 'angry']]), { s: 1.05, t: lt + i })); q1(lt); q2(lt); }; });
+B(g => { const cl = T(g, '', 1400, 300, 110, { font: 'Permanent Marker' });
+  return lt => { hero(800, wobble(POSES.present, lt, 5), Ex(lt, [[0, 'confident']]), lt); cl.textContent = '0:' + String(Math.min(10, Math.floor(lt * 2.6))).padStart(2, '0'); }; });
+B(g => { const off = [0, 1, 2].map(i => actor(g, ['tie', 'glasses'], 110 + i)), cal = T(g, '365 DIAS', 960, 220, 100, { font: 'Permanent Marker' }), st = prop(g, 'notebook');
+  return lt => { off.forEach((o, i) => drawStick(o, 600 + i * 330, FLOOR, P(lt, [[0, i === 1 ? 'read' : 'sitThink']]), Ex(lt, [[0, i === 2 ? 'sleep' : 'tired']]), { s: 1.05, t: lt + i })); cal.setAttribute('visibility', lt > .6 ? 'visible' : 'hidden'); pop(st, lt, .2, 930, 680, .9); }; });
+B(g => { const off = [0, 1].map(i => actor(g, ['tie', 'glasses'], 120 + i)), qs = [0, 1].map(i => T(g, '?', 0, 0, 120, { font: 'Permanent Marker' }));
+  return lt => { hero(600, P(lt, [[0, 'cross']]), Ex(lt, [[0, 'bored']]), lt); off.forEach((o, i) => drawStick(o, 1200 + i * 280, FLOOR, P(lt, [[0, 'confused']]), 'confused', { s: 1.05, t: lt + i })); qs.forEach((q, i) => place(q, 1200 + i * 280, 360 + Math.sin(lt * 3 + i) * 12, 1, 0, lt > .6)); }; });
+
+// ===== DIA 7 (hospital) =====
+B(g => { return lt => { hero(960, P(lt, [[0, 'stand'], [2.5, 'sick']]), Ex(lt, [[0, 'calm'], [2.6, 'sick']]), lt); }; });
+B(g => { const pie = (x, pct, lbl) => { const gg = S('g', {}, g); S('circle', { ...INK, fill: '#fffdf7', cx: 0, cy: 0, r: 110 }, gg); const a = pct / 100 * 6.283; S('path', { ...INK, fill: '#ffb3a7', d: `M0 0 L0 -110 A110 110 0 ${pct > 50 ? 1 : 0} 1 ${Math.sin(a) * 110} ${-Math.cos(a) * 110} Z` }, gg); T(gg, pct + '%', 0, 190, 70, { font: 'Permanent Marker' }); T(gg, lbl, 0, 250, 46); return gg; };
+  const p1 = pie(0, 2, 'do peso'), p2 = pie(0, 20, 'da energia');
+  return lt => { hero(960, P(lt, [[0, 'presentL'], [3, 'present']]), 'serious', lt, { s: 1 }); pop(p1, lt, .4, 460, 420, 1); pop(p2, lt, 2.8, 1460, 420, 1); }; });
+B(g => { const bat = prop(g, 'battery'), lvl = bat.querySelector('rect:nth-of-type(2)');
+  return lt => { hero(700, P(lt, [[0, 'think']]), 'pensive', lt); pop(bat, lt, .2, 1300, 480, 2); const k = 1 - seg(lt, .8, 3); lvl && lvl.setAttribute('width', 90 * k); lvl && lvl.setAttribute('fill', k < .3 ? '#ff5a4f' : '#7ddc7a'); }; });
+B(g => { const th = prop(g, 'therm');
+  return lt => { const lie = seg(lt, 3.4, 4.2); hero(lerp(800, 960, lie), P(lt, [[0, 'sick'], [1.2, 'confused']]), Ex(lt, [[0, 'sick'], [3.4, 'sleep']]), lt, { rot: -90 * ease(lie), y: lerp(FLOOR, 790, ease(lie)) }); pop(th, lt, 2.2, 1300, 420, 1.8); }; });
+B(g => { const docs = [0, 1].map(i => actor(g, ['glasses', 'coat'], 130 + i));
+  return lt => { hero(800, P(lt, [[0, 'sit'], [2.8, 'talk']]), Ex(lt, [[0, 'tired'], [2.8, 'confident']]), lt); docs.forEach((d, i) => drawStick(d, 1250 + i * 260, FLOOR, P(lt, [[0, 'confused'], [3.2, 'listen']]), Ex(lt, [[0, 'confused'], [3.2, 'shocked']]), { s: 1.05, t: lt + i })); }; });
+B(g => { const items = ['✓ comer', '✓ dormir 8h', '✓ respirar', '✓ combustível'].map(s => T(g, s, 1250, 0, 64, { anchor: 'start' }));
+  return lt => { hero(800, P(lt, [[0, 'sitWrite']]), 'serious', lt); items.forEach((it, i) => { it.setAttribute('y', 260 + i * 110); it.setAttribute('visibility', lt > .5 + i * 1.2 ? 'visible' : 'hidden'); }); }; });
+
+// ===== DIA 8 (sala de aula) =====
+B(g => { return lt => { hero(960, P(lt, [[0, 'stand'], [.6, 'hips']]), 'smug', lt); }; });
+B(g => { const tch = [0, 1, 2].map(i => actor(g, ['glasses', 'tie'], 140 + i));
+  return lt => { hero(960, P(lt, [[0, 'present']]), 'confident', lt); tch.forEach((t, i) => drawStick(t, 300 + i * 160, FLOOR, P(lt, [[0, 'stand'], [1 + i * .3, 'raise']]), 'curious', { s: .95, t: lt + i })); }; });
+B(g => { const q = Array.from({ length: 6 }, (_, i) => actor(g, i % 2 ? ['glasses', 'tie'] : ['hair'], 150 + i)), bubs = Array.from({ length: 6 }, (_, i) => T(g, '✓', 0, 0, 70, { font: 'Permanent Marker', fill: '#2b9a3b' }));
+  return lt => { hero(450, wobble(POSES.talk, lt, 14), Ex(lt, [[0, 'excited']]), lt); q.forEach((c, i) => drawStick(c, 760 + i * 190, FLOOR, P(lt, [[0, 'stand'], [.5 + i * .4, 'raise']]), Ex(lt, [[0, 'curious'], [1.6 + i * .3, 'happy']]), { s: .95, t: lt + i })); bubs.forEach((b, i) => place(b, 760 + i * 190, 400, 1, 0, lt > 1.6 + i * .3)); }; });
+
+// ===== DIA 10 (telhado) =====
+B(g => { return lt => { hero(960, P(lt, [[0, 'stand']]), 'calm', lt); }; });
+B(g => { const pp = actor(g, ['hair'], 160), clk = S('g', {}, g); S('circle', { ...INK, fill: '#fffdf7', cx: 0, cy: 0, r: 100 }, clk); const hnd = line(clk, 'M0 0 L0 -80', 8);
+  return lt => { hero(600, P(lt, [[0, 'cross']]), Ex(lt, [[0, 'bored'], [2, 'tired']]), lt); drawStick(pp, 1200, FLOOR, wobble(POSES.talk, lt * .25, 6), 'happy', { s: 1.05, t: lt * .25 }); place(clk, 1550, 330, 1, 0, true); hnd.setAttribute('transform', `rotate(${lt * 6})`); }; });
+B(g => { const sb = S('g', {}, g); S('path', { ...INK, 'stroke-width': 5, fill: '#fffdf7', d: 'M-160 -60 Q-160 -110 0 -110 Q160 -110 160 -60 Q160 -10 30 -10 L0 30 L-10 -10 Q-160 -10 -160 -60 Z' }, sb); const st = T(sb, '', 0, -45, 46); const tb = S('g', {}, g); for (const [x, y, r] of [[0, 0, 90], [-110, 80, 20], [-150, 120, 10]]) S('ellipse', { ...INK, 'stroke-width': 5, fill: '#fffdf7', cx: x, cy: y, rx: r * 1.6, ry: r }, tb); const tt = T(tb, '', 0, 14, 44);
+  return lt => { hero(860, P(lt, [[0, 'think']]), Ex(lt, [[0, 'tired'], [3.5, 'pensive']]), lt); pop(sb, lt, .2, 560, 300, 1); typeOn(st, 'o-l-á . . .', lt, .3, 2); pop(tb, lt, 2.6, 1300, 300, 1); typeOn(tt, '∑ ∫ π 2⁵ ✓ ✓ ✓ ✓ ✓', lt, 2.8, 40); }; });
+B(g => { const pts = Array.from({ length: 16 }, (_, i) => [200 + (i * 431) % 1500, 180 + (i * 263) % 600]), lines = pts.slice(1).map((p, i) => line(g, `M${pts[i][0]} ${pts[i][1]} L${p[0]} ${p[1]}`, 4, { stroke: '#e8a800' })), dots = pts.map(p => S('circle', { cx: p[0], cy: p[1], r: 10, fill: '#111' }, g)), lbl = ['TRÂNSITO', 'CLIMA', 'MERCADOS', 'PESSOAS'].map((s, i) => T(g, s, 260 + i * 460, 980, 52, { font: 'Permanent Marker' }));
+  return lt => { hero(960, P(lt, [[0, 'stand'], [.6, 'think']]), Ex(lt, [[0, 'curious'], [2, 'excited']]), lt, { s: .95 }); lines.forEach((l, i) => drawOn(l, lt, .3 + i * .22, .6 + i * .22)); dots.forEach((d, i) => d.setAttribute('visibility', lt > .2 + i * .2 ? 'visible' : 'hidden')); lbl.forEach((l, i) => l.setAttribute('visibility', lt > .8 + i * .7 ? 'visible' : 'hidden')); }; });
+B(g => { const orb = [0, 1, 2, 3].map(i => S('ellipse', { ...INK, 'stroke-width': 4, 'stroke-dasharray': '10 12', cx: 0, cy: 0, rx: 160 + i * 90, ry: 60 + i * 34 }, g));
+  return lt => { hero(500, P(lt, [[0, 'sitThink']]), Ex(lt, [[0, 'pensive'], [3, 'happy']]), lt, { y: 820 }); orb.forEach((o, i) => { o.setAttribute('transform', `translate(1350 320) rotate(${-15 + lt * (6 + i * 3)})`); o.setAttribute('visibility', lt > .6 + i * .6 ? 'visible' : 'hidden'); }); }; });
+
+// ===== DIA 12 (rua) =====
+B(g => { return lt => { hero(960, P(lt, [[0, 'stand']]), 'serious', lt); }; });
+B(g => { const ps = [0, 1, 2].map(i => actor(g, [['hair'], ['bun'], ['tie']][i], 170 + i));
+  return lt => { hero(500, P(lt, [[0, 'stand'], [2, 'shrug']]), Ex(lt, [[0, 'calm'], [2, 'sad']]), lt); ps.forEach((p, i) => drawStick(p, 1000 + i * 220 + seg(lt, .4, 4) * 900, FLOOR, walkPose(lt + i * .3, 1, .9), 'scared', { s: .95, t: lt + i })); }; });
+B(g => { const a = actor(g, ['hair'], 180), b = actor(g, ['tie', 'glasses'], 181), sa = prop(a.hand.R, 'sign', 'GÉNIO'), sb = prop(b.hand.L, 'sign', 'PERIGO');
+  return lt => { hero(960, P(lt, [[0, 'stand']]), Ex(lt, [[0, 'calm'], [2.2, 'confused']]), lt); drawStick(a, 440, FLOOR, POSES.raise, 'excited', { s: 1, t: lt }); drawStick(b, 1480, FLOOR, P(lt, [[0, 'stand'], [1.8, { ...POSES.raise, aL: [-165, -178], aR: [12, 6] }]]), 'angry', { s: 1, t: lt + 1 }); sa.setAttribute('visibility', lt > .3 ? 'visible' : 'hidden'); sb.setAttribute('visibility', lt > 1.9 ? 'visible' : 'hidden'); }; });
+B(g => { const w1 = T(g, 'GÉNIO', 0, 0, 100, { font: 'Permanent Marker' }), w2 = T(g, 'PERIGO', 0, 0, 100, { font: 'Permanent Marker', fill: '#c0392b' });
+  return lt => { hero(960, P(lt, [[0, 'think']]), 'pensive', lt); const k = ease(seg(lt, .5, 3.5)); place(w1, lerp(420, 860, k), 280, 1, 0, true); place(w2, lerp(1500, 1080, k), 280 + k * 0, 1, 0, true); }; });
+
+// ===== DIA 15 (rua) =====
+B(g => { return lt => { hero(960, P(lt, [[0, 'stand']]), 'calm', lt); }; });
+B(g => { const bus = S('g', {}, g); S('rect', { ...INK, fill: '#ffe066', x: -260, y: -170, width: 520, height: 190, rx: 24 }, bus); for (let i = 0; i < 4; i++) S('rect', { ...INK, fill: '#fffdf7', x: -230 + i * 120, y: -140, width: 90, height: 70 }, bus); S('circle', { ...INK, fill: '#fffdf7', cx: -160, cy: 30, r: 34 }, bus); S('circle', { ...INK, fill: '#fffdf7', cx: 160, cy: 30, r: 34 }, bus); const snd = [0, 1, 2].map(i => line(g, `M0 ${-40 - i * 20} q-30 ${40 + i * 20} 0 ${80 + i * 40}`, 5));
+  return lt => { hero(600, P(lt, [[0, 'listen']]), Ex(lt, [[0, 'pensive'], [4, 'smug']]), lt); place(bus, lerp(2300, 1350, ease(seg(lt, 3.6, 5.6))), FLOOR - 40, 1, 0, true); snd.forEach((s, i) => { s.setAttribute('transform', `translate(${820 + i * 40} 420)`); s.setAttribute('opacity', Math.sin(lt * 8 - i) > 0 ? 1 : .2); }); }; });
+B(g => { const bk = prop(g, 'book'), p = actor(g, ['hair'], 190);
+  return lt => { hero(800, P(lt, [[0, 'read'], [1.2, 'shrug']]), Ex(lt, [[0, 'bored']]), lt); const th = seg(lt, 1.2, 2); place(bk, lerp(800, 1500, th), lerp(560, 900, th) - Math.sin(th * Math.PI) * 200, 1, th * 400, true); drawStick(p, 1350, FLOOR, P(lt, [[0, 'stand'], [2.4, 'celebrate']]), 'excited', { s: 1, t: lt, op: lt > 2.2 ? 1 : 0 }); }; });
+B(g => { const rain = Array.from({ length: 40 }, (_, i) => line(g, 'M0 0 L-10 40', 3, { opacity: .5 })), bench = line(g, 'M760 840 L1160 840 M780 840 L780 930 M1140 840 L1140 930', 8);
+  return lt => { hero(960, P(lt, [[0, 'sit']]), Ex(lt, [[0, 'sad']]), lt, { y: FLOOR - 20 }); rain.forEach((r, i) => r.setAttribute('transform', `translate(${(i * 197) % 1920 - ((lt * 200) % 40)} ${((i * 131) + lt * 700) % 1080})`)); }; });
+
+// ===== DIA 20 (espaço) =====
+B(g => { return lt => { hero(960, P(lt, [[0, 'stand']]), 'calm', lt); }; });
+B(g => { const hw = S('g', {}, g); S('rect', { ...INK, fill: '#fffdf7', x: -230, y: -260, width: 460, height: 520 }, hw); const items = ['FOME', 'DOENÇAS', 'ENERGIA', 'POBREZA'].map((s, i) => T(hw, '☐ ' + s, -180, -160 + i * 110, 60, { anchor: 'start' }));
+  return lt => { hero(560, P(lt, [[0, 'sitWrite']]), 'bored', lt); pop(hw, lt, .2, 1280, 520, 1); items.forEach((it, i) => it.textContent = (lt > 1 + i * .7 ? '☑ ' : '☐ ') + ['FOME', 'DOENÇAS', 'ENERGIA', 'POBREZA'][i]); }; });
+B(g => { const sun = S('g', {}, g); S('circle', { ...INK, fill: '#ffe066', cx: 0, cy: 0, r: 70 }, sun); for (let i = 0; i < 10; i++) line(sun, `M${Math.cos(i * .63) * 90} ${Math.sin(i * .63) * 90} L${Math.cos(i * .63) * 120} ${Math.sin(i * .63) * 120}`, 5); const pill = S('g', {}, g); S('rect', { ...INK, fill: '#ffb3a7', x: -80, y: -34, width: 160, height: 68, rx: 34 }, pill); line(pill, 'M0 -34 L0 34'); const rk = S('g', {}, g); S('path', { ...INK, fill: '#fffdf7', d: 'M0 -120 Q50 -60 40 60 L-40 60 Q-50 -60 0 -120 Z M-40 20 L-80 80 L-40 60 M40 20 L80 80 L40 60' }, rk); S('circle', { ...INK, cx: 0, cy: -30, r: 22, fill: '#9fd3ff' }, rk);
+  return lt => { hero(960, P(lt, [[0, 'stand'], [3.6, 'celebrate']]), Ex(lt, [[0, 'confident'], [3.6, 'excited']]), lt); pop(sun, lt, .2, 420, 360, 1); pop(pill, lt, 1.2, 960, 260, 1); pop(rk, lt, 2.2, 1500, 380 - seg(lt, 3, 6) * 200, 1); }; });
+B(g => { const ps = [0, 1, 2].map(i => actor(g, [['hair'], ['tie'], ['bun']][i], 200 + i));
+  return lt => { hero(1450, P(lt, [[0, 'stand'], [1, 'pointL']]), Ex(lt, [[0, 'calm'], [2, 'sad']]), lt); ps.forEach((p, i) => drawStick(p, 200 + i * 170 + lt * 10, FLOOR, walkPose(lt + i, .4), 'tired', { s: .55, t: lt + i })); }; });
+B(g => { const nbs = Array.from({ length: 12 }, () => prop(g, 'notebook'));
+  return lt => { hero(700, P(lt, [[0, 'sitWrite']]), 'serious', lt); nbs.forEach((n, i) => place(n, 1300 + (i % 2) * 14, FLOOR - 40 - i * 34, 1.3, 90 + (i % 3 - 1) * 4, lt > .3 + i * .35)); }; });
+
+// ===== DIA 25 (espaço) =====
+B(g => { return lt => { hero(960, P(lt, [[0, 'stand']]), 'calm', lt); }; });
+B(g => { const probs = ['?', '∑', '!', '%', '∞'].map(s => T(g, s, 0, 0, 120, { font: 'Permanent Marker' }));
+  return lt => { hero(960, P(lt, [[0, 'stand'], [.5, 'cross']]), Ex(lt, [[0, 'calm'], [1, 'laughing'], [3, 'calm']]), lt); probs.forEach((p, i) => { const a = i / 5 * 6.283 + lt * .5, k = seg(lt, 2 + i * .4, 3 + i * .4); place(p, 960 + Math.cos(a) * 450, 450 + Math.sin(a) * 260, 1 - k, k * 180, k < 1); }); }; });
+
+// ===== DIA 30 (cosmos) =====
+B(g => { return lt => { hero(960, P(lt, [[0, 'stand']]), 'calm', lt, { hs: 1.1 }); }; });
+B(g => { const n1 = T(g, '107 374 182 400', 960, 220, 90, { font: 'Permanent Marker' }), n2 = T(g, '86 000 000 000  neurónios', 960, 330, 60);
+  return lt => { hero(960, P(lt, [[0, 'presentL']]), 'shocked', lt); n1.setAttribute('visibility', lt > .2 ? 'visible' : 'hidden'); typeOn(n2, '86 000 000 000  neurónios', lt, 2.2, 22); }; });
+B(g => { const globe = S('g', {}, g); S('circle', { ...INK, fill: '#dff1ff', cx: 0, cy: 0, r: 150 }, globe); line(globe, 'M-110 -60 q50 -30 90 0 t80 30 M-130 40 q60 30 110 0 t90 -20 M-40 -140 q40 140 0 280', 5);
+  return lt => { hero(960, P(lt, [[0, 'celebrate']]), Ex(lt, [[0, 'calm']]), lt, { hs: 1.2 }); pop(globe, lt, .3, 960, 330, 1 + Math.sin(lt * 2) * .04); globe.setAttribute('transform', globe.getAttribute('transform') + ` rotate(${lt * 10})`); }; });
+B(g => { const kid = makeStick(g, { seed: 9 }), key = prop(g, 'key'), frame = S('rect', { ...INK, 'stroke-width': 8, 'stroke-dasharray': '18 14', x: 1180, y: 280, width: 560, height: 640, fill: '#fffdf7' }, g);
+  return lt => { hero(600, P(lt, [[0, 'stand'], [2, 'sad']]), Ex(lt, [[0, 'pensive'], [3, 'crying']]), lt, { hs: 1.15 }); frame.setAttribute('visibility', lt > .5 ? 'visible' : 'hidden'); drawStick(kid, 1460, 880, P(lt, [[0, 'confused']]), 'confused', { s: .85, t: lt, op: lt > .8 ? 1 : 0 }); place(key, 1640, 860, 1, 30, lt > 1); }; });
+
+// ===== TWIST (quarto) =====
+B(g => { const st = hl(g, 'MAS...', 960, 220, 140, { t0: 0 });
+  return lt => { st(lt); curDay = 0; hero(960, P(lt, [[0, 'stand'], [2.5, 'shrug']]), Ex(lt, [[0, 'shocked'], [2.5, 'calm']]), lt, { noGrow: true }); }; });
+B(g => { const b = prop(g, 'bulb');
+  return lt => { hero(860, P(lt, [[0, 'raise']]), 'happy', lt, { noGrow: true }); pop(b, lt, .3, 1200, 330, 1.3); }; });
+B(g => { const btn = prop(g, 'button'), plus = T(g, '', 1300, 380, 90, { font: 'Permanent Marker', fill: '#2b9a3b' });
+  return lt => { pop(btn, lt, .1, 1300, FLOOR - 200, 1.6); const press = (lt * 1.4) % 1 < .25 && lt > 2.2; hero(1060, P(lt, [[0, 'stand'], [2.2, 'point']]), Ex(lt, [[0, 'curious'], [2.2, 'happy']]), lt, { noGrow: true }); plus.textContent = lt > 2.2 ? '+1%' : ''; plus.setAttribute('transform', `translate(0 ${-((lt * 1.4) % 1) * 60})`); }; });
+B(g => { const ax = line(g, 'M300 900 L300 250 M300 900 L1650 900', 6), cv = line(g, 'M300 880 C800 860 1100 760 1600 380', 9, { stroke: '#2b9a3b' }), l1 = T(g, '1 ano', 1600, 960, 52), x3 = T(g, '× 3 ?', 1300, 520, 90, { font: 'Permanent Marker' }), cross = line(g, 'M1200 450 L1420 560 M1420 450 L1200 560', 10, { stroke: '#ff5a4f' });
+  return lt => { drawOn(cv, lt, .4, 3); x3.setAttribute('visibility', lt > 3.4 ? 'visible' : 'hidden'); drawOn(cross, lt, 4.4, 4.8); hero(170, POSES.point, 'pensive', lt, { s: .8, noGrow: true }); }; });
+B(g => { const eq = T(g, '1,01³⁶⁵ ≈ 37,8', 960, 360, 150, { font: 'Permanent Marker' }), big = T(g, '× 37', 960, 620, 200, { font: 'Permanent Marker', fill: '#2b9a3b' });
+  return lt => { eq.setAttribute('visibility', lt > 2.4 ? 'visible' : 'hidden'); pop(big, lt, .2, 0, 0, 1); hero(300, P(lt, [[0, 'celebrate']]), 'excited', lt, { noGrow: true }); }; });
+B(g => { const eq = T(g, '0,99³⁶⁵ ≈ 0,03', 960, 330, 140, { font: 'Permanent Marker', fill: '#c0392b' }), dn = line(g, 'M400 420 C800 450 1100 700 1600 880', 9, { stroke: '#c0392b' });
+  return lt => { eq.setAttribute('visibility', lt > .3 ? 'visible' : 'hidden'); drawOn(dn, lt, .5, 2.5); const fall = seg(lt, 2.4, 3.2); hero(1500, P(lt, [[0, 'scared']]), Ex(lt, [[0, 'nervous'], [2.4, 'shocked']]), lt, { rot: fall * 80, noGrow: true }); }; });
+B(g => { const up = line(g, 'M300 600 C800 590 1200 500 1650 220', 9, { stroke: '#2b9a3b' }), dn = line(g, 'M300 600 C800 610 1200 700 1650 900', 9, { stroke: '#c0392b' }), d1 = T(g, 'dia 1: quase igual', 560, 520, 52), d365 = T(g, 'dia 365: tudo diferente', 1320, 590, 52);
+  return lt => { drawOn(up, lt, .2, 3); drawOn(dn, lt, .2, 3); d1.setAttribute('visibility', lt > .8 ? 'visible' : 'hidden'); d365.setAttribute('visibility', lt > 3 ? 'visible' : 'hidden'); }; });
+
+// ===== OUTRO (papel) =====
+B(g => { const items = ['- 10 páginas', '- 1 palavra nova', '- 1 problema'].map((s, i) => T(g, s, 1150, 330 + i * 150, 80, { anchor: 'start' })), bk = prop(HERO.hand.R, 'book');
+  return lt => { hero(650, P(lt, [[0, 'read']]), 'happy', lt, { noGrow: true }); items.forEach((it, i) => it.setAttribute('visibility', lt > 1.2 + i * 1.3 ? 'visible' : 'hidden')); }; });
+B(g => { const steps = line(g, 'M200 960 L520 960 L520 860 L840 860 L840 760 L1160 760 L1160 660 L1480 660 L1480 560 L1800 560', 8);
+  return lt => { const k = seg(lt, 0, 3.6), x = lerp(320, 1650, k), stepY = 960 - Math.floor((x - 200) / 320) * 100; hero(x, walkPose(lt, .9), 'happy', lt, { y: stepY, s: .8, noGrow: true }); }; });
+B(g => { const like = S('g', {}, g); S('rect', { ...INK, fill: '#fffdf7', x: -160, y: -60, width: 320, height: 120, rx: 60 }, like); T(like, 'LIKE', 0, 22, 64, { font: 'Permanent Marker' }); const sub = S('g', {}, g); S('rect', { ...INK, fill: '#ff5a4f', x: -230, y: -60, width: 460, height: 120, rx: 18 }, sub); T(sub, 'SUBSCREVER', 0, 22, 64, { font: 'Permanent Marker', fill: '#fff' }); const cm = S('g', {}, g); S('path', { ...INK, 'stroke-width': 5, fill: '#fffdf7', d: 'M-260 -70 Q-260 -130 0 -130 Q260 -130 260 -70 Q260 -10 40 -10 L0 40 L-10 -10 Q-260 -10 -260 -70 Z' }, cm); const ct = T(cm, '', 0, -55, 52);
+  return lt => { hero(500, P(lt, [[0, 'wave'], [2.6, 'point']]), Ex(lt, [[0, 'happy'], [4, 'excited']]), lt, { noGrow: true }); pop(like, lt, .8, 1150, 300, 1); pop(sub, lt, 1.6, 1550, 300, 1); pop(cm, lt, 3, 1350, 640, 1); typeOn(ct, 'No dia 1 eu...', lt, 3.4, 10); }; });
+
+// ---------- montar grupos por beat ----------
+const boil = S('g', {}, world); world.insertBefore(boil, heroLayer);
+const handKids = () => [...HERO.hand.L.children, ...HERO.hand.R.children];
+const beatG = BEATS.map((fn, i) => { const before = new Set(handKids()); const g = S('g', { display: 'none' }, boil); const upd = fn(g); for (const ch of handKids()) if (!before.has(ch)) ch.__beat = i; return { g, upd }; });
+world.appendChild(heroLayer);
+const heroProps = BEATS.map(() => []);   // adereços nas mãos do herói ficam só no beat que os criou
+{ let seen = new Set(); BEATS.forEach((_, i) => { for (const k of ['L', 'R']) for (const ch of HERO.hand[k].children) if (!seen.has(ch)) { /* atribuídos na construção abaixo */ } }); }
+
+// ---------- HUD ----------
+const hudDay = T(hud, '', 70, 110, 72, { font: 'Permanent Marker', anchor: 'start', stroke: true }), hudIQ = T(hud, '', 1850, 110, 64, { font: 'Permanent Marker', anchor: 'end', stroke: true });
+const hudBar = S('rect', { x: 70, y: 140, height: 14, width: 0, fill: '#ffe066', stroke: '#111', 'stroke-width': 3 }, hud);
+// ---------- cartão de título dos dias ----------
+const cardBg = S('rect', { x: -460, y: -260, width: 920, height: 520, fill: '#fffdf7', stroke: '#111', 'stroke-width': 8, rx: 10 }, card);
+const cardDay = T(card, '', 0, -40, 190, { font: 'Permanent Marker' }), cardIQ = T(card, '', 0, 120, 92, { font: 'Patrick Hand' }), cardX2 = T(card, '× 2', 330, -150, 70, { font: 'Permanent Marker', fill: '#e8a800' });
+
+// ---------- SEEK ----------
+const lineIdx = t => { let i = 0; for (let k = 0; k < TL.lines.length; k++) if (TL.lines[k][0] <= t + 1e-6) i = k; return i; };
+// atribuir adereços das mãos do herói ao beat certo: guardamos os filhos criados por cada builder
+const HP = []; { const all = [...HERO.hand.L.children, ...HERO.hand.R.children]; }
+window.seek = function (t) {
+  t = clamp(t, 0, DUR - 1e-4);
+  const li = lineIdx(t), sc = TL.scenes[TL.lines[li][2]];
+  curDay = sc.day;
+  // fundo
+  const isPaper = ['paper', 'space', 'cosmos'].includes(sc.bg);
+  if (!isPaper) { if (bgImg.__src !== sc.bg) { bgImg.setAttribute('href', `assets/${sc.bg}.jpg`); bgImg.__src = sc.bg; } bgImg.setAttribute('visibility', 'visible'); } else bgImg.setAttribute('visibility', 'hidden');
+  for (const k in paperGroups) paperGroups[k].setAttribute('visibility', k === sc.bg ? 'visible' : 'hidden');
+  // câmara: push-in lento por frase + deriva
+  const L = TL.lines[li], lt = t - L[0], next = TL.lines[li + 1] ? TL.lines[li + 1][0] : DUR, d = next - L[0];
+  const z = 1 + seg(lt, 0, d) * .035, dx = Math.sin(t * .13) * 14, dy = Math.cos(t * .11) * 8;
+  cam.setAttribute('transform', `translate(960 540) scale(${z.toFixed(4)}) translate(${(-960 + dx).toFixed(1)} ${(-540 + dy).toFixed(1)})`);
+  // beat ativo
+  beatG.forEach((b, i) => b.g.setAttribute('display', i === li ? 'inline' : 'none'));
+  for (const k of ['L', 'R']) for (const ch of HERO.hand[k].children) ch.setAttribute('display', ch.__beat === li ? 'inline' : 'none');
+  HERO.g.setAttribute('display', 'none'); aura.setAttribute('visibility', 'hidden'); card.setAttribute('display', 'inline');
+  beatG[li].upd(lt, d);
+  // boil: 8 imagens/s
+  const bf = `url(#boil${Math.floor(t * 8) % 3})`; world.setAttribute('filter', bf);
+  // HUD
+  const showHud = sc.name.startsWith('d');
+  hud.setAttribute('visibility', showHud ? 'visible' : 'hidden');
+  if (showHud) { hudDay.textContent = 'DIA ' + sc.day; hudIQ.textContent = 'QI ' + fmt(IQ(sc.day)); hudBar.setAttribute('width', Math.min(1780, 60 + Math.log2(IQ(sc.day) / 100 + 1) * 56)); }
+  // cartão de título no início de cada dia
+  const isDay = sc.name.startsWith('d') && sc.name !== 'd0';
+  const firstL = TL.lines[sc.first], c0 = sc.t0, c1 = firstL[0] + Math.min(firstL[1], 2.6);
+  if (isDay && t >= c0 && t < c1 + .45) {
+    const kin = spring(t - c0, 12, .6), kout = ease(seg(t, c1, c1 + .45));
+    card.setAttribute('visibility', 'visible'); card.setAttribute('transform', `translate(${960 + kout * 1400} 540) rotate(${lerp(-8, -2, kin) + kout * 25}) scale(${lerp(.4, 1, kin)})`);
+    cardDay.textContent = 'DIA ' + sc.day; const prevDay = TL.scenes[TL.lines[sc.first][2] - 1].day;
+    const shown = lerp(IQ(prevDay), IQ(sc.day), easeOut(seg(t, c0 + .3, c0 + 1.3)));
+    cardIQ.textContent = 'QI: ' + fmt(shown); cardX2.textContent = sc.day - prevDay > 1 ? '× ' + fmt(Math.pow(2, sc.day - prevDay)) : '× 2';
+  } else card.setAttribute('visibility', 'hidden');
+};
+// marcar os adereços das mãos do herói com o beat que os criou
+(function tagHeroProps() { let seen = new Set(); })();
+
+// ================= ÁUDIO =================
+function b64buf(s) { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u.buffer; }
+window.buildAudio = async function (ctx) {
+  const sfx = {}; for (const k in SFX) sfx[k] = await ctx.decodeAudioData(b64buf(SFX[k]));
+  const vo = await ctx.decodeAudioData(b64buf(VO));
+  const master = ctx.createGain(); master.gain.value = .9; master.connect(ctx.destination);
+  const music = ctx.createGain(); music.connect(master);
+  const fxBus = ctx.createGain(); fxBus.gain.value = .45; fxBus.connect(master);
+  const voBus = ctx.createGain(); voBus.gain.value = 1.4; voBus.connect(master);
+  { const s = ctx.createBufferSource(); s.buffer = vo; s.connect(voBus); s.start(0); }
+  const mg = music.gain; mg.setValueAtTime(.5, 0);
+  for (const [a, d] of TL.lines) { mg.setTargetAtTime(.22, a - .05, .08); mg.setTargetAtTime(.4, a + d, .3); }
+  mg.setTargetAtTime(0, DUR - 1.5, .5);
+  const play = (n, at, g = 1, rate = 1) => { if (!sfx[n]) return; const s = ctx.createBufferSource(); s.buffer = sfx[n]; s.playbackRate.value = rate; const gg = ctx.createGain(); gg.gain.value = g; s.connect(gg); gg.connect(fxBus); s.start(Math.max(0, at)); };
+  // lo-fi a 82 BPM; o humor muda por secção
+  const B = 60 / 82, BAR = B * 4;
+  const MOOD = { intro: 'curious', d0: 'warm', d1: 'warm', d2: 'warm', d3: 'lonely', d4: 'warm', d5: 'busy', d6: 'tense', d7: 'tense', d8: 'busy', d10: 'wonder', d12: 'tense', d15: 'lonely', d20: 'wonder', d25: 'wonder', d30: 'wonder', twist: 'warm', outro: 'busy' };
+  const PROG = { curious: [[220, 261.6, 329.6], [174.6, 220, 261.6], [261.6, 329.6, 392], [196, 246.9, 293.7]], warm: [[261.6, 329.6, 392], [196, 246.9, 293.7], [220, 261.6, 329.6], [174.6, 220, 261.6]], lonely: [[220, 261.6, 329.6], [164.8, 196, 246.9], [174.6, 220, 261.6], [261.6, 329.6, 392]], tense: [[146.8, 174.6, 220], [233.1, 293.7, 349.2], [146.8, 174.6, 220], [220, 277.2, 329.6]], busy: [[261.6, 329.6, 392], [220, 261.6, 329.6], [174.6, 220, 261.6], [196, 246.9, 293.7]], wonder: [[174.6, 220, 261.6, 329.6], [261.6, 329.6, 392, 493.9], [220, 261.6, 329.6, 392], [196, 246.9, 293.7, 392]] };
+  const R = (() => { let s = 9; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
+  const noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate); { const d = noise.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = R() * 2 - 1; }
+  const keys = (at, f, len, v) => [1, 2].forEach((h, i) => { const o = ctx.createOscillator(), g = ctx.createGain(), lp = ctx.createBiquadFilter(); o.type = i ? 'triangle' : 'sine'; o.frequency.value = f * h; lp.type = 'lowpass'; lp.frequency.value = 1800; g.gain.setValueAtTime(0, at); g.gain.linearRampToValueAtTime(v / (h * 1.5), at + .02); g.gain.exponentialRampToValueAtTime(.0008, at + len); o.connect(lp); lp.connect(g); g.connect(music); o.start(at); o.stop(at + len + .05); });
+  const pad = (at, fs, len, v = .025) => fs.forEach(f => { const o = ctx.createOscillator(), lp = ctx.createBiquadFilter(), g = ctx.createGain(); o.type = 'sawtooth'; o.frequency.value = f / 2; lp.type = 'lowpass'; lp.frequency.value = 900; g.gain.setValueAtTime(0, at); g.gain.linearRampToValueAtTime(v, at + .8); g.gain.setValueAtTime(v, at + len - .6); g.gain.linearRampToValueAtTime(0, at + len); o.connect(lp); lp.connect(g); g.connect(music); o.start(at); o.stop(at + len + .1); });
+  const kick = (at, v = .55) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.setValueAtTime(110, at); o.frequency.exponentialRampToValueAtTime(45, at + .12); g.gain.setValueAtTime(v, at); g.gain.exponentialRampToValueAtTime(.001, at + .3); o.connect(g); g.connect(music); o.start(at); o.stop(at + .32); };
+  const hat = (at, v = .05) => { const s = ctx.createBufferSource(); s.buffer = noise; const f = ctx.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 7000; const g = ctx.createGain(); g.gain.setValueAtTime(v, at); g.gain.exponentialRampToValueAtTime(.001, at + .05); s.connect(f); f.connect(g); g.connect(music); s.start(at, R() * .5, .06); };
+  const snare = (at, v = .12) => { const s = ctx.createBufferSource(); s.buffer = noise; const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1800; const g = ctx.createGain(); g.gain.setValueAtTime(v, at); g.gain.exponentialRampToValueAtTime(.001, at + .16); s.connect(f); f.connect(g); g.connect(music); s.start(at, R() * .5, .18); };
+  const bass = (at, f, len, v = .16) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sine'; o.frequency.value = f / 4; g.gain.setValueAtTime(v, at); g.gain.setTargetAtTime(0, at + len - .1, .08); o.connect(g); g.connect(music); o.start(at); o.stop(at + len + .3); };
+  for (let bar = 0; bar * BAR < DUR - 2; bar++) {
+    const t0 = bar * BAR, li = lineIdx(t0), sc = TL.scenes[TL.lines[li][2]], mood = MOOD[sc.name], ch = PROG[mood][bar % 4];
+    if (mood === 'wonder' || mood === 'lonely') { pad(t0, ch, BAR + .1, mood === 'wonder' ? .03 : .022); ch.forEach((f, i) => keys(t0 + i * B * 1.33, f * 2, 2.2, .045)); bass(t0, ch[0], BAR); continue; }
+    pad(t0, ch, BAR + .1, .016); bass(t0, ch[0], B * 2); bass(t0 + B * 2.5, ch[0], B * 1.4, .12);
+    [0, 1.5, 2, 3].forEach((b, i) => keys(t0 + b * B, ch[i % ch.length] * 2, 1.4, .05));
+    kick(t0); kick(t0 + B * 2.5, .4); snare(t0 + B, mood === 'tense' ? .16 : .1); snare(t0 + B * 3, mood === 'tense' ? .16 : .1);
+    for (let i = 0; i < 8; i++) hat(t0 + i * B / 2 + (i % 2 ? .03 : 0), i % 2 ? .03 : .05);
+  }
+  // efeitos: virar página nos cartões, "pop" no arranque de cada frase, ding em lâmpadas
+  TL.scenes.forEach((s, i) => { if (i && s.name.startsWith('d') && s.name !== 'd0') { play('paper_flip', s.t0, .9); play('whoosh', s.t0 + .05, .5); play('paper_slide', TL.lines[s.first][0] + Math.min(TL.lines[s.first][1], 2.6), .6); } else if (i) play('paper_slide', s.t0 + .1, .5); });
+  TL.lines.forEach((l, i) => play(i % 3 ? 'pop2' : 'pluck', l[0] + .15, .3));
+  const DING = [5, 15, 30, 78], RING = [34, 37], IMPACT = [2, 25, 59, 77, 82], WHOOSH = [23, 54, 74];
+  DING.forEach(i => play('ding', TL.lines[i][0] + .4, .55)); RING.forEach(i => { for (let k = 0; k < 4; k++) play('ring', TL.lines[i][0] + .3 + k * .6, .35); });
+  IMPACT.forEach(i => play('impact', TL.lines[i][0] + .2, .6)); WHOOSH.forEach(i => play('whoosh', TL.lines[i][0] + .2, .5));
+  play('boom', TL.lines[77][0], .5); play('click', TL.lines[79][0] + 2.2, .7);
+};
+
+// ================= PREVIEW =================
+let buf, ac, src, startAt = 0, offset = 0, playing = false;
+async function play() { ac ??= new AudioContext(); if (!buf) { const off = new OfflineAudioContext(2, Math.ceil(48000 * DUR), 48000); await buildAudio(off); buf = await off.startRendering(); } src = ac.createBufferSource(); src.buffer = buf; src.connect(ac.destination); src.start(0, offset % DUR); startAt = ac.currentTime; playing = true; }
+function pause() { if (!playing) return; offset += ac.currentTime - startAt; src.stop(); playing = false; }
+function now() { return playing ? (offset + ac.currentTime - startAt) % DUR : offset; }
+if (!location.search.includes('render')) {
+  const st = document.getElementById('stage'), fit = () => { const k = Math.min(innerWidth / W, (innerHeight - 40) / H); st.style.transform = `scale(${k})`; }; fit(); addEventListener('resize', fit);
+  const pp = document.getElementById('pp'), sc = document.getElementById('scrub'), tcEl = document.getElementById('tc');
+  pp.onclick = () => { playing ? pause() : play(); pp.textContent = playing ? '❚❚' : '▶'; };
+  sc.oninput = () => { const p = playing; pause(); offset = sc.value / 1000 * DUR; if (p) play(); };
+  (function loop() { const t = now(); seek(t); sc.value = t / DUR * 1000; tcEl.textContent = t.toFixed(2); requestAnimationFrame(loop); })();
+} else seek(0);
+</script>
+</body>
+</html>

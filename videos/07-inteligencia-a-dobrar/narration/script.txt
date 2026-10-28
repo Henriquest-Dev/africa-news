@@ -1,0 +1,105 @@
+#intro paper 0
+E se, a partir de amanhã, a tua inteligência dobrasse todos os dias?
+No primeiro dia, já serias mais inteligente do que o Einstein.
+Mas no dia trinta... já não serias propriamente humano.
+E o mais assustador não é o que tu vais conseguir fazer. É o que vai acontecer à tua volta.
+Mas antes, uma pergunta. Se te dessem um botão que fizesse isto, carregavas?
+Pensa bem. No fim do vídeo vais perceber porque é que a resposta importa.
+Vamos ver, dia a dia.
+#d0 bedroom 0
+Olha bem para ti. Uma pessoa normal. Inteligência: cem pontos. Exatamente a média.
+Esqueces-te das chaves, adias os trabalhos, e ainda não percebeste todas as funções do teu próprio telemóvel.
+Vais dormir. E durante a noite, alguma coisa muda dentro da tua cabeça.
+#d1 bedroom 1
+Dia um. Acordas com uma inteligência de duzentos pontos.
+Para teres uma ideia, estima-se que o Einstein andava à volta de cento e sessenta.
+Pegas no cubo mágico que está esquecido na gaveta há anos... e resolves em segundos. Sem saber nenhuma técnica.
+Lês um livro inteiro ao pequeno-almoço. E lembras-te de cada página.
+Sais à rua e reparas em coisas que nunca tinhas visto. A forma como as nuvens se mexem. O ritmo dos semáforos.
+De repente, tudo parece fazer sentido.
+#d2 classroom 2
+Dia dois. Quatrocentos.
+Na escola, vês os erros no quadro antes de o professor acabar de os escrever.
+Fazes o teste de matemática em cinco minutos. O professor acha que copiaste.
+Explicas três maneiras diferentes de chegar à resposta. E ele fica calado.
+Aprendes uma língua nova numa tarde. Depois outra. Depois mais três, só porque estavas aborrecido.
+E os teus amigos começam a achar que és estranho.
+#d3 library 3
+Dia três. Oitocentos.
+Já leste a biblioteca inteira. E não só leste. Entendeste tudo.
+A matemática que levou séculos a construir, tu entendes numa só manhã.
+Mas começa a acontecer uma coisa de que ninguém fala. Ficas sozinho.
+Quando tentas explicar o que vês, as pessoas olham para ti como tu olhavas para uma calculadora.
+Tentas contar aos teus pais o que descobriste. Eles sorriem, acenam, e mudam de assunto.
+E pela primeira vez, percebes que ser o mais inteligente da sala não é bem o que imaginavas.
+#d4 lab 4
+Dia quatro. Mil e seiscentos.
+Escreves uma equação no quadro. Os cientistas fotografam o quadro... e passam a semana inteira a tentar perceber.
+E desenhas tudo em guardanapos de papel.
+Começas a melhorar tudo à tua volta. Um motor que gasta metade. Uma bateria que dura uma semana.
+E desenhas tudo em guardanapos.
+E é aqui que começam os telefonemas.
+#d5 studio 5
+Estás em todos os noticiários. Quem é o jovem que resolveu o impossível?
+Estás em todos os noticiários. Quem é o miúdo que resolveu o impossível?
+O teu telemóvel não pára de tocar. Empresas, universidades, governos. Toda a gente quer um pedaço de ti.
+E tu reparas numa coisa. Consegues prever o que cada pessoa vai dizer, antes de ela abrir a boca.
+#d6 govroom 6
+Levam-te para uma sala cheia de gente muito importante. Querem saber se és uma oportunidade... ou uma ameaça.
+Pedem a tua ajuda num problema que está nas notícias há meses. E tu resolves em dez minutos.
+Mas eles precisam de um ano inteiro só para aprovar a solução.
+Mas eles precisam de um ano só para a aprovar.
+Tu já sabes a resposta. E eles ainda nem perceberam a pergunta.
+#d7 hospital 7
+Dia sete. Doze mil e oitocentos. E o teu corpo começa a protestar.
+O cérebro pesa só uns dois por cento do teu corpo, mas gasta perto de vinte por cento da tua energia.
+Agora imagina um cérebro que trabalha o dobro, todos os dias.
+Tens fome a toda a hora. Dores de cabeça. Febre. E acordas numa cama de hospital.
+Os médicos não sabem o que tens. Mas tu sabes. E explicas aos médicos como te tratar.
+A partir daqui, planeias tudo. O que comes, quanto dormes, como respiras. O teu cérebro virou uma máquina que precisa de combustível.
+#d8 classroom 8
+Dia oito. Vinte e cinco mil e seiscentos.
+Já não vais à escola. A escola é que te vem pedir ajuda.
+Os melhores professores do mundo fazem fila para te fazer perguntas. E tu respondes a todos ao mesmo tempo.
+#d10 rooftop 10
+Dia dez. Cento e dois mil e quatrocentos.
+O tempo parece andar em câmara lenta. Uma conversa de um minuto parece durar uma hora.
+Falar ficou lento demais. Escrever ficou lento demais. Só pensar é que te acompanha.
+E começas a ver padrões em tudo. No trânsito, no clima, nos mercados, nas pessoas.
+À noite, vais para o telhado, e calculas de cabeça a órbita de cada ponto de luz no céu.
+#d12 street 12
+Dia doze. Quatrocentos e nove mil e seiscentos.
+As pessoas começam a ter medo de ti. Não pelo que fizeste. Pelo que podias fazer.
+Uns dizem que és um génio. Outros dizem que és um perigo.
+E tu percebes que as duas palavras, afinal, estão muito mais perto do que parecia.
+#d15 street 15
+Dia quinze. Mais de três milhões.
+Andas na rua e sabes quando o próximo autocarro vai chegar, só pelo barulho do motor, a três ruas de distância.
+Já não há livro que te ensine nada. Já não há pessoa que te surpreenda.
+E isso, acredita, é a coisa mais solitária do mundo.
+#d20 space 20
+Dia vinte. Mais de cem milhões.
+Os maiores problemas da humanidade parecem trabalhos de casa.
+Energia limpa. Doenças. Viagens ao espaço. Tu tens as respostas.
+Mas há um problema. Ninguém consegue acompanhar-te o suficiente para as usar.
+Por isso escreves tudo. Cadernos e mais cadernos de soluções, para que um dia alguém os consiga ler.
+#d25 space 25
+Dia vinte e cinco. Mais de três mil milhões.
+Já não precisas de olhar para um problema para o resolver. Basta saberes que ele existe.
+#d30 cosmos 30
+Dia trinta. Cem pontos, a dobrar trinta vezes seguidas. Mais de cem mil milhões.
+É mais do que o número de neurónios do teu cérebro, que são cerca de oitenta e seis mil milhões.
+Já não pensas como uma pessoa. Pensas como um planeta inteiro a pensar ao mesmo tempo.
+E olhas para trás, para o dia zero, para aquela pessoa que perdia as chaves. E sentes saudades.
+#twist bedroom 0
+Mas aqui vem a parte que importa. Isto não vai acontecer. A tua inteligência não vai dobrar de um dia para o outro.
+Só que existe uma versão real disto. E funciona.
+Lembras-te do botão do início? A verdade é que já carregas nele todos os dias. Só que este é muito mais lento.
+Se ficares só um por cento melhor por dia, ao fim de um ano não ficas três vezes melhor.
+Ficas trinta e sete vezes melhor. Porque um vírgula zero um, elevado a trezentos e sessenta e cinco, dá quase trinta e oito.
+E se ficares um por cento pior por dia? Terminas o ano quase a zero.
+A diferença entre os dois é tão pequena que não se vê num dia. Só se vê num ano.
+#outro paper 0
+Por isso, começa hoje. Lê dez páginas. Aprende uma palavra nova. Resolve um problema.
+Não precisas de dobrar. Só precisas de não parar.
+E se gostaste desta viagem, deixa o like, subscreve o canal, e escreve nos comentários: o que é que tu farias no dia um?

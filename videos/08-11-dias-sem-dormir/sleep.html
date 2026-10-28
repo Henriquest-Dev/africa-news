@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<title>11 Dias Sem Dormir</title>
+<link rel="stylesheet" href="fonts.css">
+<style>
+  html, body { margin: 0; background: #222; overflow: hidden; }
+  #stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; background: #faf8f2; overflow: hidden; }
+  svg { position: absolute; left: 0; top: 0; }
+  #ui { position: fixed; left: 0; right: 0; bottom: 0; padding: 8px; background: #000c; color: #ddd; font: 13px system-ui; display: flex; gap: 10px; align-items: center; }
+  #ui input { flex: 1; } .render #ui { display: none; }
+</style>
+</head>
+<body>
+<div id="stage"><svg id="sv" width="1920" height="1080" viewBox="0 0 1920 1080"></svg></div>
+<div id="ui"><button id="pp">▶</button><input id="scrub" type="range" min="0" max="1000" value="0"><span id="tc">0.00</span></div>
+<script src="timing.js"></script>
+<script src="sfx.js"></script>
+<script>
+/* "E se ficasses 11 dias sem dormir?" — 16:9, 5:00, SEM narração (texto para ElevenLabs em narracao_elevenlabs.txt).
+   Cada cena = 2 desenhos gerados na Pollinations (flux-2-dev-free) com as folhas de poses/expressões como referência:
+   pose A e pose B (B é uma edição de A, mesmo cenário). Animação pose-a-pose A↔B, traço a "ferver" a 8 i/s, câmara lenta. */
+const W = 1920, H = 1080, DUR = TL.dur;
+window.VIDEO = { w: W, h: H, duration: DUR };
+if (location.search.includes('render')) document.documentElement.classList.add('render');
+const NS = 'http://www.w3.org/2000/svg', sv = document.getElementById('sv');
+const S = (tag, a = {}, p = sv) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); p.appendChild(e); return e; };
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x)), lerp = (a, b, k) => a + (b - a) * k, seg = (t, a, b) => clamp((t - a) / (b - a));
+const ease = x => (x = clamp(x), x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+function spring(t, w = 14, z = .6) { if (t <= 0) return 0; const wd = w * Math.sqrt(1 - z * z); return 1 - Math.exp(-z * w * t) * (Math.cos(wd * t) + (z * w / wd) * Math.sin(wd * t)); }
+
+const defs = S('defs');
+for (let i = 0; i < 3; i++) { const f = S('filter', { id: 'boil' + i, x: '-2%', y: '-2%', width: '104%', height: '104%' }, defs); S('feTurbulence', { type: 'fractalNoise', baseFrequency: '0.018', numOctaves: 2, seed: 4 + i * 9, result: 'n' }, f); S('feDisplacementMap', { in: 'SourceGraphic', in2: 'n', scale: 3.2, xChannelSelector: 'R', yChannelSelector: 'G' }, f); }
+const cam = S('g'), art = S('g', {}, cam);
+const imgA = S('image', { x: 0, y: 0, width: W, height: H }, art), imgB = S('image', { x: 0, y: 0, width: W, height: H }, art);
+// cartão de capítulo (papel com fita-cola)
+const card = S('g', { display: 'none' }), cardShadow = S('rect', { x: -470, y: -190, width: 960, height: 400, fill: 'rgba(0,0,0,.12)', rx: 6 }, card);
+S('rect', { x: -480, y: -200, width: 960, height: 400, fill: '#fffdf6', stroke: '#111', 'stroke-width': 7, rx: 6 }, card);
+for (const x of [-380, 300]) S('rect', { x, y: -226, width: 120, height: 46, fill: 'rgba(255,224,102,.85)', transform: `rotate(${x < 0 ? -8 : 7} ${x + 60} -203)` }, card);
+const cardT = S('text', { x: 0, y: 40, 'text-anchor': 'middle', 'font-family': 'Permanent Marker', 'font-size': 120, fill: '#111' }, card);
+const zz = S('g', { display: 'none' }); for (let i = 0; i < 3; i++) { const t = S('text', { 'font-family': 'Permanent Marker', 'font-size': 60 + i * 20, fill: '#111' }, zz); t.textContent = 'z'; }
+// selo do capítulo no canto
+const badge = S('g'), badgeR = S('rect', { x: 50, y: 40, width: 0, height: 74, fill: '#fffdf6', stroke: '#111', 'stroke-width': 5, rx: 8 }, badge), badgeT = S('text', { x: 72, y: 96, 'font-family': 'Permanent Marker', 'font-size': 46, fill: '#111' }, badge);
+
+const scenes = TL.items.filter(i => i.type === 'scene'), cards = TL.items.filter(i => i.type === 'card');
+const src = (i, p) => `frames/s${String(i).padStart(2, '0')}${p}.jpg`;
+// troca de pose: em cenas curtas A→B a meio; em cenas longas A→B→A→B a cada ~2,4 s
+function poseAt(it, t) { const d = it.t1 - it.t0, lt = t - it.t0; if (d < 4.2) return lt > d * .45 ? 1 : 0; const n = Math.max(2, Math.round(d / 2.4)); return Math.floor(lt / (d / n)) % 2; }
+function chapter(t) { let c = null; for (const k of cards) if (k.t0 <= t) c = k; return c; }
+
+window.seek = function (t) {
+  t = clamp(t, 0, DUR - 1e-4);
+  const it = TL.items.find(i => t >= i.t0 && t < i.t1) || TL.items[TL.items.length - 1];
+  const bf = `url(#boil${Math.floor(t * 8) % 3})`; art.setAttribute('filter', bf);
+  if (it.type === 'scene') {
+    card.setAttribute('display', 'none');
+    const a = src(it.i, 'a'), b = src(it.i, 'b');
+    if (imgA.__s !== a) { imgA.setAttribute('href', a); imgA.__s = a; } if (imgB.__s !== b) { imgB.setAttribute('href', b); imgB.__s = b; }
+    const p = poseAt(it, t);
+    imgA.setAttribute('display', p ? 'none' : 'inline'); imgB.setAttribute('display', p ? 'inline' : 'none');
+    // câmara: entrada suave + push-in lento + pequeno "salto" na troca de pose
+    const lt = t - it.t0, d = it.t1 - it.t0, inK = ease(seg(lt, 0, .35));
+    const z = 1.0 + seg(lt, 0, d) * .05 + (1 - inK) * .04, dx = Math.sin(t * .17 + it.i) * 10, dy = Math.cos(t * .13 + it.i) * 6;
+    cam.setAttribute('transform', `translate(960 560) scale(${z.toFixed(4)}) translate(${(-960 + dx).toFixed(1)} ${(-560 + dy).toFixed(1)})`);
+    cam.setAttribute('opacity', inK.toFixed(3));
+  } else {
+    imgA.setAttribute('display', 'none'); imgB.setAttribute('display', 'none'); cam.setAttribute('opacity', 1);
+    const lt = t - it.t0, d = it.t1 - it.t0, k = spring(lt, 11, .55), out = ease(seg(lt, d - .35, d));
+    card.setAttribute('display', 'inline');
+    card.setAttribute('transform', `translate(${960 + out * 1500} ${540 + Math.sin(t * 3) * 4}) rotate(${lerp(-12, -2, k) + out * 20}) scale(${lerp(.3, 1, k).toFixed(3)})`);
+    const big = it.text.length > 14; cardT.textContent = ''; while (cardT.firstChild) cardT.firstChild.remove();
+    if (big) { const words = it.text.split(' '), half = Math.ceil(words.length / 2); [words.slice(0, half).join(' '), words.slice(half).join(' ')].forEach((ln, k) => { const ts = S('tspan', { x: 0, y: -30 + k * 110 }, cardT); ts.textContent = ln; }); cardT.setAttribute('font-size', 92); }
+    else { cardT.textContent = it.text; cardT.setAttribute('font-size', 130); cardT.setAttribute('y', 46); }
+  }
+  // zz a flutuar no título e no fim
+  const showZ = (it === TL.items[0]) || (it.type === 'scene' && /vai dormir|catorze/.test(it.text));
+  zz.setAttribute('display', showZ ? 'inline' : 'none');
+  if (showZ) [...zz.children].forEach((z, i) => { const ph = (t * .5 + i * .33) % 1; z.setAttribute('x', 1500 + i * 60 + Math.sin(ph * 6) * 20); z.setAttribute('y', 330 - ph * 200 - i * 40); z.setAttribute('opacity', Math.sin(ph * Math.PI)); });
+  const ch = chapter(t), showB = ch && ch !== cards[0] && it.type === 'scene';
+  badge.setAttribute('display', showB ? 'inline' : 'none');
+  if (showB) { badgeT.textContent = ch.text; badgeR.setAttribute('width', badgeT.getComputedTextLength() + 44); }
+};
+
+// ================= ÁUDIO (música + efeitos; a narração entra depois, no editor) =================
+function b64buf(s) { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u.buffer; }
+window.buildAudio = async function (ctx) {
+  const sfx = {}; for (const k in SFX) sfx[k] = await ctx.decodeAudioData(b64buf(SFX[k]));
+  const master = ctx.createGain(); master.gain.value = .9; master.connect(ctx.destination);
+  const music = ctx.createGain(); music.gain.value = .55; music.connect(master);   // música já baixa: há espaço para a voz
+  const fx = ctx.createGain(); fx.gain.value = .5; fx.connect(master);
+  const play = (n, at, g = 1, rate = 1) => { if (!sfx[n]) return; const s = ctx.createBufferSource(); s.buffer = sfx[n]; s.playbackRate.value = rate; const gg = ctx.createGain(); gg.gain.value = g; s.connect(gg); gg.connect(fx); s.start(Math.max(0, at)); };
+  let seed = 7; const R = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate); { const d = noise.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = R() * 2 - 1; }
+  const keys = (at, f, len, v) => [1, 2].forEach((h, i) => { const o = ctx.createOscillator(), g = ctx.createGain(), lp = ctx.createBiquadFilter(); o.type = i ? 'triangle' : 'sine'; o.frequency.value = f * h; lp.type = 'lowpass'; lp.frequency.value = 1600; g.gain.setValueAtTime(0, at); g.gain.linearRampToValueAtTime(v / (h * 1.6), at + .02); g.gain.exponentialRampToValueAtTime(.0008, at + len); o.connect(lp); lp.connect(g); g.connect(music); o.start(at); o.stop(at + len + .05); });
+  const pad = (at, fs, len, v = .02) => fs.forEach(f => { const o = ctx.createOscillator(), lp = ctx.createBiquadFilter(), g = ctx.createGain(); o.type = 'sawtooth'; o.frequency.value = f / 2; lp.type = 'lowpass'; lp.frequency.value = 800; g.gain.setValueAtTime(0, at); g.gain.linearRampToValueAtTime(v, at + .8); g.gain.setValueAtTime(v, at + len - .6); g.gain.linearRampToValueAtTime(0, at + len); o.connect(lp); lp.connect(g); g.connect(music); o.start(at); o.stop(at + len + .1); });
+  const kick = (at, v = .45) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.setValueAtTime(100, at); o.frequency.exponentialRampToValueAtTime(42, at + .12); g.gain.setValueAtTime(v, at); g.gain.exponentialRampToValueAtTime(.001, at + .3); o.connect(g); g.connect(music); o.start(at); o.stop(at + .32); };
+  const hat = (at, v = .04) => { const s = ctx.createBufferSource(); s.buffer = noise; const f = ctx.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 7000; const g = ctx.createGain(); g.gain.setValueAtTime(v, at); g.gain.exponentialRampToValueAtTime(.001, at + .05); s.connect(f); f.connect(g); g.connect(music); s.start(at, R() * .5, .06); };
+  const snare = (at, v = .09) => { const s = ctx.createBufferSource(); s.buffer = noise; const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1800; const g = ctx.createGain(); g.gain.setValueAtTime(v, at); g.gain.exponentialRampToValueAtTime(.001, at + .16); s.connect(f); f.connect(g); g.connect(music); s.start(at, R() * .5, .18); };
+  const bass = (at, f, len, v = .14) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sine'; o.frequency.value = f / 4; g.gain.setValueAtTime(v, at); g.gain.setTargetAtTime(0, at + len - .1, .08); o.connect(g); g.connect(music); o.start(at); o.stop(at + len + .3); };
+  // lo-fi 78 BPM; a partir do dia 4 fica mais estranho (acordes menores/desafinados), volta a ser quente no fim
+  const B = 60 / 78, BAR = B * 4;
+  const WARM = [[261.6, 329.6, 392], [220, 261.6, 329.6], [174.6, 220, 261.6], [196, 246.9, 293.7]];
+  const EERIE = [[220, 261.6, 311.1], [207.7, 246.9, 311.1], [174.6, 207.7, 261.6], [164.8, 207.7, 246.9]];
+  const strange = t => { const c = chapter(t); return c && /DIA (4|5|7|8|10)/.test(c.text); };
+  for (let bar = 0; bar * BAR < DUR - 1; bar++) {
+    const t0 = bar * BAR, ch = (strange(t0) ? EERIE : WARM)[bar % 4], det = strange(t0) ? 1.006 : 1;
+    pad(t0, ch, BAR + .1); bass(t0, ch[0], B * 2); bass(t0 + B * 2.5, ch[0], B * 1.2, .1);
+    [0, 1.5, 2, 3].forEach((b, i) => keys(t0 + b * B, ch[i % 3] * 2 * (i % 2 ? det : 1), 1.3, .045));
+    if (bar >= 1) { kick(t0); kick(t0 + B * 2.5, .3); snare(t0 + B); snare(t0 + B * 3); for (let i = 0; i < 8; i++) hat(t0 + i * B / 2 + (i % 2 ? .03 : 0), i % 2 ? .025 : .04); }
+  }
+  // efeitos: folha nos cartões, "pop" suave nas trocas de pose, zz/relógio em momentos-chave
+  for (const c of cards) { play('paper_flip', c.t0, .9); play('paper_slide', c.t1 - .35, .6); }
+  for (const s of scenes) { play('paper_slide', s.t0, .25); const d = s.t1 - s.t0; if (d < 4.2) play('pop2', s.t0 + d * .45, .35); else { const n = Math.max(2, Math.round(d / 2.4)); for (let k = 1; k < n; k++) play(k % 2 ? 'pop2' : 'pluck', s.t0 + k * d / n, .3); } }
+  for (const s of scenes) { if (/microssonos|relógio|Cada hora/.test(s.text)) for (let k = 0; k < 6; k++) play('tick', s.t0 + .3 + k * .5, .4); if (/consegue\.$/.test(s.text)) play('ding', s.t0 + .5, .6); if (/vai dormir/.test(s.text)) play('drop', s.t0 + .4, .6); }
+};
+
+// ================= PREVIEW =================
+let buf, ac, srcN, startAt = 0, offset = 0, playing = false;
+async function play() { ac ??= new AudioContext(); if (!buf) { const off = new OfflineAudioContext(2, Math.ceil(48000 * DUR), 48000); await buildAudio(off); buf = await off.startRendering(); } srcN = ac.createBufferSource(); srcN.buffer = buf; srcN.connect(ac.destination); srcN.start(0, offset % DUR); startAt = ac.currentTime; playing = true; }
+function pause() { if (!playing) return; offset += ac.currentTime - startAt; srcN.stop(); playing = false; }
+function now() { return playing ? (offset + ac.currentTime - startAt) % DUR : offset; }
+if (!location.search.includes('render')) {
+  const st = document.getElementById('stage'), fit = () => { const k = Math.min(innerWidth / W, (innerHeight - 40) / H); st.style.transform = `scale(${k})`; }; fit(); addEventListener('resize', fit);
+  const pp = document.getElementById('pp'), sc = document.getElementById('scrub'), tcEl = document.getElementById('tc');
+  pp.onclick = () => { playing ? pause() : play(); pp.textContent = playing ? '❚❚' : '▶'; };
+  sc.oninput = () => { const p = playing; pause(); offset = sc.value / 1000 * DUR; if (p) play(); };
+  (function loop() { const t = now(); seek(t); sc.value = t / DUR * 1000; tcEl.textContent = t.toFixed(2); requestAnimationFrame(loop); })();
+} else seek(0);
+</script>
+</body>
+</html>

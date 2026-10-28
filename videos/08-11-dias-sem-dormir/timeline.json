@@ -1,0 +1,353 @@
+[
+{
+"type": "card",
+"text": "E SE FICASSES 11 DIAS SEM DORMIR?",
+"t0": 0.3,
+"t1": 2.69
+},
+{
+"type": "scene",
+"i": 0,
+"text": "E se, a partir de hoje à noite, nunca mais fosses dormir? Nem uma hora. Nem um minuto.",
+"t0": 2.69,
+"t1": 11.07
+},
+{
+"type": "scene",
+"i": 1,
+"text": "Parece um superpoder. Mais tempo para jogar, estudar e fazer dinheiro.",
+"t0": 11.07,
+"t1": 16.54
+},
+{
+"type": "scene",
+"i": 2,
+"text": "Mas houve um rapaz que fez mesmo isto. E no dia onze, já não sabia bem quem era.",
+"t0": 16.54,
+"t1": 24.92
+},
+{
+"type": "card",
+"text": "1964",
+"t0": 24.92,
+"t1": 27.31
+},
+{
+"type": "scene",
+"i": 3,
+"text": "Em mil novecentos e sessenta e quatro, em San Diego, um estudante de dezassete anos chamado Randy Gardner decidiu fazer uma experiência para a feira de ciências.",
+"t0": 27.31,
+"t1": 39.43
+},
+{
+"type": "scene",
+"i": 4,
+"text": "O objetivo era bater o recorde mundial de tempo sem dormir.",
+"t0": 39.43,
+"t1": 44.9
+},
+{
+"type": "scene",
+"i": 5,
+"text": "Dois amigos ficaram com ele dia e noite para garantir que não havia batota.",
+"t0": 44.9,
+"t1": 51.62
+},
+{
+"type": "scene",
+"i": 6,
+"text": "E mais tarde juntou-se a eles um investigador do sono, da Universidade de Stanford.",
+"t0": 51.62,
+"t1": 58.33
+},
+{
+"type": "scene",
+"i": 7,
+"text": "Hora zero. Ele sente-se ótimo. Confiante. Afinal, quantas vezes já fizeste uma noitada?",
+"t0": 58.33,
+"t1": 64.63
+},
+{
+"type": "card",
+"text": "DIA 1",
+"t0": 64.63,
+"t1": 67.03
+},
+{
+"type": "scene",
+"i": 8,
+"text": "Dia um. Vinte e quatro horas acordado.",
+"t0": 67.03,
+"t1": 70.83
+},
+{
+"type": "scene",
+"i": 9,
+"text": "Estudos mostram que, ao fim de dezassete a dezanove horas acordado, os reflexos podem ficar tão lentos como os de quem bebeu álcool.",
+"t0": 70.83,
+"t1": 81.29
+},
+{
+"type": "scene",
+"i": 10,
+"text": "Ele fica irritado com tudo. Um barulho, uma luz, uma pergunta.",
+"t0": 81.29,
+"t1": 86.76
+},
+{
+"type": "scene",
+"i": 11,
+"text": "Isto acontece porque, enquanto estás acordado, o cérebro acumula uma substância chamada adenosina. Quanto mais horas acordado, mais pesada fica a cabeça.",
+"t0": 86.76,
+"t1": 96.8
+},
+{
+"type": "card",
+"text": "DIA 2",
+"t0": 96.8,
+"t1": 99.19
+},
+{
+"type": "scene",
+"i": 12,
+"text": "Dia dois. Os olhos começam a falhar. Tudo parece desfocado.",
+"t0": 99.19,
+"t1": 104.25
+},
+{
+"type": "scene",
+"i": 13,
+"text": "Os amigos mantêm-no ocupado o tempo todo, porque se ele fica parado, o corpo tenta desligar-se sozinho.",
+"t0": 104.25,
+"t1": 112.21
+},
+{
+"type": "card",
+"text": "DIA 3",
+"t0": 112.21,
+"t1": 114.61
+},
+{
+"type": "scene",
+"i": 14,
+"text": "Dia três. O humor muda de um minuto para o outro. Agora ri-se. Agora está triste.",
+"t0": 114.61,
+"t1": 122.15
+},
+{
+"type": "scene",
+"i": 15,
+"text": "E aparecem os microssonos: segundos em que o cérebro desliga sozinho, mesmo com os olhos abertos.",
+"t0": 122.15,
+"t1": 129.7
+},
+{
+"type": "card",
+"text": "DIA 4",
+"t0": 129.7,
+"t1": 132.09
+},
+{
+"type": "scene",
+"i": 16,
+"text": "Dia quatro. As coisas começam a ficar estranhas.",
+"t0": 132.09,
+"t1": 136.32
+},
+{
+"type": "scene",
+"i": 17,
+"text": "Conta-se que, a certa altura, confundiu um sinal de trânsito com uma pessoa.",
+"t0": 136.32,
+"t1": 142.62
+},
+{
+"type": "scene",
+"i": 18,
+"text": "E a memória começa a falhar. Começa uma frase e esquece-se de como ela começou.",
+"t0": 142.62,
+"t1": 149.75
+},
+{
+"type": "scene",
+"i": 19,
+"text": "Os amigos já não sabem se hão de rir ou de ficar preocupados.",
+"t0": 149.75,
+"t1": 156.05
+},
+{
+"type": "card",
+"text": "DIA 5",
+"t0": 156.05,
+"t1": 158.44
+},
+{
+"type": "scene",
+"i": 20,
+"text": "Dia cinco. Durante o sono, o cérebro faz uma espécie de limpeza. Sem dormir, essa limpeza não acontece.",
+"t0": 158.44,
+"t1": 166.82
+},
+{
+"type": "scene",
+"i": 21,
+"text": "É como um quarto que nunca é arrumado. Ao fim de uns dias, já não encontras nada.",
+"t0": 166.82,
+"t1": 174.78
+},
+{
+"type": "card",
+"text": "DIA 7",
+"t0": 174.78,
+"t1": 177.18
+},
+{
+"type": "scene",
+"i": 22,
+"text": "Dia sete. Uma semana inteira. Ele já fala devagar e enrola as palavras.",
+"t0": 177.18,
+"t1": 183.48
+},
+{
+"type": "scene",
+"i": 23,
+"text": "E começa a desconfiar das pessoas à volta.",
+"t0": 183.48,
+"t1": 187.7
+},
+{
+"type": "card",
+"text": "DIA 8",
+"t0": 187.7,
+"t1": 190.09
+},
+{
+"type": "scene",
+"i": 24,
+"text": "Dia oito. Conta-se que chegou a acreditar que era um famoso jogador de futebol americano.",
+"t0": 190.09,
+"t1": 197.23
+},
+{
+"type": "card",
+"text": "DIA 10",
+"t0": 197.23,
+"t1": 199.62
+},
+{
+"type": "scene",
+"i": 25,
+"text": "Dia dez. Pedem-lhe para contar de cem para trás, de sete em sete. Ele começa... e esquece-se do que estava a fazer.",
+"t0": 199.62,
+"t1": 209.66
+},
+{
+"type": "scene",
+"i": 26,
+"text": "Cada hora parece um dia.",
+"t0": 209.66,
+"t1": 212.64
+},
+{
+"type": "scene",
+"i": 27,
+"text": "O corpo continua a funcionar. O coração bate, os pulmões respiram. Mas a mente está cada vez mais frágil.",
+"t0": 212.64,
+"t1": 221.43
+},
+{
+"type": "card",
+"text": "DIA 11",
+"t0": 221.43,
+"t1": 223.82
+},
+{
+"type": "scene",
+"i": 28,
+"text": "Dia onze. Duzentas e sessenta e quatro horas. Ele consegue.",
+"t0": 223.82,
+"t1": 228.88
+},
+{
+"type": "scene",
+"i": 29,
+"text": "E depois, finalmente, vai dormir.",
+"t0": 228.88,
+"t1": 231.85
+},
+{
+"type": "card",
+"text": "DEPOIS",
+"t0": 231.85,
+"t1": 234.25
+},
+{
+"type": "scene",
+"i": 30,
+"text": "Dormiu cerca de catorze horas seguidas. E, segundo os relatos, acordou bem.",
+"t0": 234.25,
+"t1": 240.13
+},
+{
+"type": "scene",
+"i": 31,
+"text": "Mas não te deixes enganar. Ele teve sorte, e estava a ser vigiado de perto.",
+"t0": 240.13,
+"t1": 247.26
+},
+{
+"type": "scene",
+"i": 32,
+"text": "Hoje, o Guinness já não aceita recordes de privação de sono. São considerados perigosos demais.",
+"t0": 247.26,
+"t1": 254.39
+},
+{
+"type": "card",
+"text": "E TU?",
+"t0": 254.39,
+"t1": 256.79
+},
+{
+"type": "scene",
+"i": 33,
+"text": "E agora, a parte que te diz respeito. Não precisas de ficar onze dias acordado para sentir isto.",
+"t0": 256.79,
+"t1": 265.17
+},
+{
+"type": "scene",
+"i": 34,
+"text": "Basta dormires cinco ou seis horas por noite, durante anos.",
+"t0": 265.17,
+"t1": 270.22
+},
+{
+"type": "scene",
+"i": 35,
+"text": "Os especialistas recomendam, para um adulto, entre sete e nove horas por noite.",
+"t0": 270.22,
+"t1": 276.52
+},
+{
+"type": "scene",
+"i": 36,
+"text": "Dormir não é tempo perdido. É quando o cérebro guarda o que aprendeste e se prepara para amanhã.",
+"t0": 276.52,
+"t1": 284.9
+},
+{
+"type": "scene",
+"i": 37,
+"text": "Por isso, esta noite, larga o telemóvel um pouco mais cedo.",
+"t0": 284.9,
+"t1": 290.37
+},
+{
+"type": "scene",
+"i": 38,
+"text": "E diz-me nos comentários: qual foi o máximo de horas que já ficaste sem dormir?",
+"t0": 290.37,
+"t1": 300.0
+}
+]

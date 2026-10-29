@@ -31,6 +31,10 @@
   #calc span { display: inline-block; }
 
   #flash { inset: 0; background: #fff; opacity: 0; }
+  /* legendas dos Shorts */
+  #cap { left: 50%; top: 66%; width: 92vw; text-align: center; font: 900 6.2vw/1.15 Inter, sans-serif; color: #fff; text-transform: uppercase;
+    -webkit-text-stroke: 1.6vw #111; paint-order: stroke fill; letter-spacing: -0.01em; transform-origin: center; z-index: 5; }
+  #cap span.on { color: #ffd23f; }
   #fade { inset: 0; background: #000; opacity: 0; }
   /* faixas de cinema 2.39:1 */
   #lb { inset: 0; }
@@ -50,6 +54,15 @@
   #endcard .bubble { font: 800 5vh Inter, sans-serif; background: #fff; color: #111; padding: 1.4vh 3vw; border-radius: 3vh; border: 0.6vh solid #111; }
   #endcard .sub { font: 900 5.2vh Inter, sans-serif; background: #e62117; color: #fff; padding: 1.6vh 3.4vw; border-radius: 1.4vh; border: 0.6vh solid #111; box-shadow: 0 0.8vh 0 #111; }
   #endcard .bell { display: inline-block; margin-left: 1vw; }
+  /* formato vertical (Shorts) */
+  @media (max-aspect-ratio: 1/1) {
+    #stamp { font-size: 12vw; -webkit-text-stroke: 1.1vw #111; text-shadow: 0 1vw 0 #111; }
+    #endcard { bottom: 12vh; }
+    #endcard .logo { font-size: 9.5vw; -webkit-text-stroke: 1.2vw #111; }
+    #endcard .bubble { font-size: 6.4vw; padding: 1.2vh 5vw; }
+    #endcard .sub { font-size: 7vw; }
+    #hud .val { font-size: 5vw; } #hud .day { font-size: 2.6vw; } #hud svg { width: 6vw; height: 6vw; }
+  }
 </style>
 <script type="importmap">{ "imports": { "three": "/node_modules/three/build/three.module.js" } }</script>
 </head>
@@ -65,6 +78,7 @@
     <div><div class="day">DIA 0</div><div class="val">AZAR x1</div></div>
   </div>
   <div id="calc" class="ov"></div>
+  <div id="cap" class="ov" style="display:none"></div>
   <div id="stamp" class="ov" style="display:none"></div>
   <div id="endcard" class="ov" style="display:none"></div>
 </div>

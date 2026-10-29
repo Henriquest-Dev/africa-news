@@ -29,6 +29,7 @@ OPENROUTER_VOICES = {
     'MAE':   ('coral',   'Mãe brasileira carinhosa mas brava, tom de bronca.'),
     'JUCA':  ('onyx',    'Senhor idoso brasileiro rabugento, fala devagar.'),
     'PROF':  ('sage',    'Professora animada e um pouco irônica.'),
+    'UGO':   ('onyx',    'Homem das cavernas, voz grave e rouca, fala curta e engraçada.'),
 }
 EDGE_VOICES = {  # voz, velocidade, tom
     'NAR':   ('pt-BR-AntonioNeural', '+12%', '-4Hz'),
@@ -38,6 +39,7 @@ EDGE_VOICES = {  # voz, velocidade, tom
     'LIA':   ('pt-BR-ThalitaMultilingualNeural', '+12%', '+4Hz'),
     'MAE':   ('pt-BR-FranciscaNeural', '+12%', '-6Hz'),
     'PROF':  ('pt-BR-FranciscaNeural', '+14%', '+10Hz'),
+    'UGO':   ('pt-BR-AntonioNeural', '-6%', '-42Hz'),
 }
 
 

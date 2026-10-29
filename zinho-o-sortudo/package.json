@@ -1,0 +1,17 @@
+{
+  "name": "zinho-o-sortudo",
+  "version": "1.0.0",
+  "description": "Pipeline de vídeo animado 3D: Zinho, o Sortudo",
+  "scripts": {
+    "story": "node tools/export-story.mjs",
+    "tts": "python3 tools/tts.py",
+    "audio": "python3 tools/build_audio.py",
+    "render": "node tools/render.mjs",
+    "all": "npm run story && npm run tts && npm run audio && npm run render"
+  },
+  "dependencies": {
+    "three": "^0.170.0"
+  },
+  "type": "module",
+  "private": true
+}

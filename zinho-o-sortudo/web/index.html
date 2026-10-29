@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Zinho, o Sortudo — render</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #000; overflow: hidden; }
+  #stage { position: relative; width: 100vw; height: 100vh; overflow: hidden; font-family: Inter, 'DejaVu Sans', sans-serif; }
+  #stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .ov { position: absolute; pointer-events: none; }
+
+  /* contador do canto */
+  #hud { left: 2.2vw; top: 3vh; display: flex; align-items: center; gap: 0.9vw; padding: 1vh 1.3vw 1vh 1vw;
+    background: rgba(18, 18, 24, 0.82); border: 0.25vh solid rgba(255,255,255,0.12); border-radius: 1.2vh; transform-origin: left top; }
+  #hud svg { width: 5vh; height: 5vh; }
+  #hud .day { font: 700 2vh 'JetBrains Mono', monospace; color: #b9b9c6; letter-spacing: .15em; }
+  #hud .val { font: 800 4.2vh 'JetBrains Mono', monospace; letter-spacing: .04em; }
+  #hud.azar .val { color: #ff4d4d; text-shadow: 0 0 1.2vh rgba(255, 60, 60, .55); }
+  #hud.sorte .val { color: #5dff8a; text-shadow: 0 0 1.2vh rgba(60, 255, 120, .55); }
+
+  /* carimbo "DIA 3" */
+  #stamp { left: 50%; top: 44%; font: 900 15vh Inter, sans-serif; color: #ffd23f; letter-spacing: -0.02em; white-space: nowrap;
+    -webkit-text-stroke: 1.3vh #111; paint-order: stroke fill; text-shadow: 0 1.2vh 0 #111; transform-origin: center; }
+  #stamp.red { color: #ff4040; }
+
+  /* balão das contas da Lia */
+  #calc { left: 50%; top: 9vh; transform: translateX(-50%); display: flex; gap: 1.4vw; font: 900 6.2vh Inter, sans-serif;
+    color: #fff; -webkit-text-stroke: 0.7vh #111; paint-order: stroke fill; }
+  #calc span { display: inline-block; }
+
+  #flash { inset: 0; background: #fff; opacity: 0; }
+  #vignette { inset: 0; background: radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(0,0,0,.35) 100%); }
+
+  /* final */
+  #endcard { left: 0; right: 0; bottom: 7vh; display: flex; flex-direction: column; align-items: center; gap: 2vh; }
+  #endcard .logo { font: 900 8vh Inter, sans-serif; color: #fff; -webkit-text-stroke: 1vh #111; paint-order: stroke fill; letter-spacing: -0.01em; }
+  #endcard .logo b { color: #5dff8a; }
+  #endcard .bubble { font: 800 5vh Inter, sans-serif; background: #fff; color: #111; padding: 1.4vh 3vw; border-radius: 3vh; border: 0.6vh solid #111; }
+  #endcard .sub { font: 900 5.2vh Inter, sans-serif; background: #e62117; color: #fff; padding: 1.6vh 3.4vw; border-radius: 1.4vh; border: 0.6vh solid #111; box-shadow: 0 0.8vh 0 #111; }
+  #endcard .bell { display: inline-block; margin-left: 1vw; }
+</style>
+<script type="importmap">{ "imports": { "three": "/node_modules/three/build/three.module.js" } }</script>
+</head>
+<body>
+<div id="stage">
+  <div id="vignette" class="ov"></div>
+  <div id="flash" class="ov"></div>
+  <div id="hud" class="ov azar" style="display:none">
+    <span class="icon"></span>
+    <div><div class="day">DIA 0</div><div class="val">AZAR x1</div></div>
+  </div>
+  <div id="calc" class="ov"></div>
+  <div id="stamp" class="ov" style="display:none"></div>
+  <div id="endcard" class="ov" style="display:none"></div>
+</div>
+<script type="module" src="./scene.js"></script>
+</body>
+</html>

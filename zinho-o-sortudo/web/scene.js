@@ -1136,6 +1136,7 @@ function meteorPos(p) {
 // ───────────────────────── overlays HTML ─────────────────────────
 const $ = (id) => document.getElementById(id);
 const ICON = {
+  fome: '<svg viewBox="0 0 24 24"><path fill="#ff9a3c" d="M15.5 2a6.5 6.5 0 0 0-6.2 8.5L3.6 16.2a2.2 2.2 0 1 0 1.9 3.8 2.2 2.2 0 1 0 3.8 1.9l5.7-5.7A6.5 6.5 0 1 0 15.5 2z"/><circle cx="15.5" cy="8.5" r="2" fill="#ffd2a6"/></svg>',
   pessoas: '<svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="4" fill="#e8e8f0"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8z" fill="#e8e8f0"/></svg>',
   ouro: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#ffd23f" stroke="#a87400" stroke-width="2"/><text x="12" y="16.5" text-anchor="middle" font-size="12" font-weight="900" fill="#a87400" font-family="Inter">$</text></svg>',
   azar: '<svg viewBox="0 0 24 24"><path fill="#fff" d="M3 2.5l4.5 5h9L21 2.5V13a9 9 0 0 1-18 0z"/><ellipse cx="8.7" cy="12.5" rx="1.6" ry="2" fill="#ff4d4d"/><ellipse cx="15.3" cy="12.5" rx="1.6" ry="2" fill="#ff4d4d"/><path d="M10.5 16.5h3l-1.5 1.5z" fill="#ff8a8a"/></svg>',
@@ -1607,6 +1608,13 @@ function render(T) {
     ST.car2.position.set(4.5, 0, 1.8);
     ST.car2.userData.lights.forEach((l, i) => { l.material.color.set(i % 2 ? '#c0392b' : '#fff6c8'); });
   }
+  if (fx.phoneLight !== undefined && lt >= fx.phoneLight * shot.dur) {
+    // tela do celular acesa: luz branca forte na mão do Zinho
+    const h = handOf('zinho', 1), dt = lt - fx.phoneLight * shot.dur;
+    fxLight.color.set('#e8f4ff'); fxLight.position.copy(h).add(V(0, 0.2, 0.3)); fxLight.distance = 6;
+    fxLight.intensity = (dt < 0.15 ? 40 : 14) + Math.sin(T * 30) * 2;
+    FX.sparkles.slice(0, 6).forEach((sp, i) => { sp.visible = true; const a = T * 3 + i; sp.position.copy(h).add(V(Math.cos(a) * 0.15, 0.12 + Math.sin(a * 1.5) * 0.1, 0.12)); sp.scale.setScalar(0.06 + 0.05 * Math.sin(T * 9 + i)); });
+  }
   if (fx.flashAt !== undefined) { const dt = lt - fx.flashAt * shot.dur; if (dt >= 0) flashOv = Math.max(flashOv, clamp(1 - dt / 1.2)); }
 
   // ─── câmara ───
@@ -1654,7 +1662,7 @@ function render(T) {
       hud.className = 'ov ' + mode;
       hud.querySelector('.icon').innerHTML = ICON[mode];
       hud.querySelector('.day').textContent = 'DIA ' + d;
-      hud.querySelector('.val').textContent = mode === 'pessoas' ? 'PESSOAS NO MUNDO: ' + mult : mode === 'ouro' ? 'OURO ' + mult : (mode === 'azar' ? 'AZAR x' : 'SORTE x') + fmtMult(mult);
+      hud.querySelector('.val').textContent = mode === 'fome' ? 'FOME ' + mult : mode === 'pessoas' ? 'PESSOAS NO MUNDO: ' + mult : mode === 'ouro' ? 'OURO ' + mult : (mode === 'azar' ? 'AZAR x' : 'SORTE x') + fmtMult(mult);
     }
     const changed = !prev || !prev.hud || prev.hud.join('|') !== key || shot.hudIn !== undefined;
     const t0 = shot.hudIn !== undefined ? shot.hudIn * shot.dur : 0;

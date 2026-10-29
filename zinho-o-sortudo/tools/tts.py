@@ -102,6 +102,87 @@ def tts_gemini(key, who, text, out_wav):
     raise RuntimeError(last)
 
 
+def gemini_request(key, prompt, voice):
+    """Um pedido ao Gemini TTS; devolve (amostras float32, taxa)."""
+    import io, time
+    body = json.dumps({'contents': [{'parts': [{'text': prompt}]}],
+                       'generationConfig': {'responseModalities': ['AUDIO'],
+                                            'speechConfig': {'voiceConfig': {'prebuiltVoiceConfig': {'voiceName': voice}}}}}).encode()
+    last = None
+    for model in ('gemini-2.5-flash-preview-tts', 'gemini-2.5-pro-preview-tts'):
+        for attempt in range(3):
+            req = urllib.request.Request(f'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent', data=body,
+                                         headers={'x-goog-api-key': key, 'Content-Type': 'application/json'})
+            try:
+                d = json.load(urllib.request.urlopen(req, timeout=300))
+                part = d['candidates'][0]['content']['parts'][0]['inlineData']
+                raw = base64.b64decode(part['data'])
+                if 'wav' in part['mimeType']:
+                    w = wave.open(io.BytesIO(raw)); rate = w.getframerate(); raw = w.readframes(w.getnframes())
+                else:
+                    rate = int(part['mimeType'].split('rate=')[1].split(';')[0]) if 'rate=' in part['mimeType'] else 24000
+                return np.frombuffer(raw, dtype=np.int16).astype(np.float32) / 32768, rate
+            except urllib.error.HTTPError as e:
+                msg = e.read().decode('utf-8', 'ignore')
+                last = f'{model}: HTTP {e.code} {msg[:160]}'
+                if e.code == 429 and 'PerDay' in msg:
+                    break  # quota diária deste modelo esgotada: tenta o próximo
+                if e.code == 429:
+                    time.sleep(25 * (attempt + 1)); continue
+                break
+            except (KeyError, IndexError) as e:
+                last = f'{model}: resposta sem áudio ({e})'; time.sleep(3)
+    raise RuntimeError(last)
+
+
+def split_on_silence(x, rate, n):
+    """Corta um áudio com n frases nas n-1 pausas mais longas."""
+    hop = int(rate * 0.02)
+    rms = np.array([np.sqrt(np.mean(x[i:i + hop] ** 2) + 1e-12) for i in range(0, len(x) - hop, hop)])
+    quiet = rms < max(0.01, np.percentile(rms, 30) * 0.6)
+    gaps, i = [], 0
+    while i < len(quiet):
+        if quiet[i]:
+            j = i
+            while j < len(quiet) and quiet[j]:
+                j += 1
+            if j - i >= 12 and i > 0 and j < len(quiet):  # pausas de pelo menos 0,24 s, sem contar as pontas
+                gaps.append((j - i, (i + j) // 2))
+            i = j
+        else:
+            i += 1
+    if len(gaps) < n - 1:
+        return None
+    cuts = sorted(c for _, c in sorted(gaps, reverse=True)[:n - 1])
+    bounds = [0] + [c * hop for c in cuts] + [len(x)]
+    return [x[bounds[k]:bounds[k + 1]] for k in range(n)]
+
+
+def gemini_batch(key, items):
+    """Gera todas as falas de um personagem num só pedido (poupa a quota diária) e corta nas pausas."""
+    who = items[0][1]
+    voice, style = GEMINI_VOICES[who]
+    texts = [t for _, _, t, _ in items]
+    prompt = (f'Fale em português do Brasil. Personagem: {style}. Leia as {len(texts)} falas abaixo, na ordem, com emoção, '
+              'fazendo uma pausa longa de dois segundos entre uma fala e outra. Não leia nada além das falas.\n\n' + '\n\n'.join(texts))
+    x, rate = gemini_request(key, prompt, voice)
+    parts = split_on_silence(x, rate, len(texts))
+    if parts is None:
+        raise RuntimeError(f'não consegui separar as {len(texts)} falas de {who}')
+    # confere se cada pedaço tem duração plausível para o número de palavras
+    for (_, _, t, _), seg in zip(items, parts):
+        sec, words = len(seg) / rate, len(t.split())
+        if not (0.12 * words < sec < 1.2 * words + 1.5):
+            raise RuntimeError(f'separação suspeita em {who}: {sec:.1f}s para {words} palavras')
+    for (_, _, _, out), seg in zip(items, parts):
+        tmp = out + '.src.wav'
+        with wave.open(tmp, 'wb') as w:
+            w.setnchannels(1); w.setsampwidth(2); w.setframerate(rate)
+            w.writeframes((np.clip(seg, -1, 1) * 32767).astype(np.int16).tobytes())
+        subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', tmp, '-ac', '1', '-ar', str(SR), out], check=True)
+        os.remove(tmp)
+
+
 def openrouter_key():
     key = os.environ.get('OPENROUTER_API_KEY', '').strip()
     if not key and os.path.exists(os.path.join(ROOT, '.env')):
@@ -191,6 +272,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--provider', default='auto', choices=['auto', 'gemini', 'openrouter', 'edge'])
     ap.add_argument('--force', action='store_true')
+    ap.add_argument('--per-line', action='store_true', help='Gemini: um pedido por fala (gasta mais quota)')
     args = ap.parse_args()
 
     story = json.load(open(os.path.join(BUILD, 'story.json')))
@@ -202,6 +284,23 @@ def main():
     if provider == 'auto':
         provider = 'gemini' if gkey else 'openrouter' if key and openrouter_has_credit(key) else 'edge'
     print('provedor de voz:', provider)
+
+    # Gemini: um pedido por personagem com todas as falas que faltam (a quota grátis é de 10 pedidos/dia)
+    if provider == 'gemini' and not args.per_line:
+        todo = {}
+        for i, shot in enumerate(story):
+            who, text = shot['who'], shot['text']
+            tag = hashlib.sha1(f'{provider}|{who}|{text}|{EDGE_VOICES[who]}|{OPENROUTER_VOICES[who]}|{GEMINI_VOICES[who]}'.encode()).hexdigest()[:10]
+            out = os.path.join(VOICES_DIR, f'{i:03d}_{who}_{tag}.wav')
+            if args.force or not os.path.exists(out):
+                todo.setdefault(who, []).append((i, who, text, out))
+        for who, items in todo.items():
+            try:
+                gemini_batch(gkey, items)
+                print(f'  {who}: {len(items)} falas num só pedido')
+            except Exception as e:
+                print(f'  {who}: lote falhou ({e}); vai fala a fala')
+        sys.stdout.flush()
 
     lines = []
     for i, shot in enumerate(story):

@@ -27,10 +27,10 @@ export default [
   // ── DIA 2 ──
   S({ who: 'NAR', text: 'Dia dois. Primeira lição: fogo não vem de isqueiro.', set: 'cave', tod: 'cave', hud: F(2, '45%'), stamp: 'DIA 2',
     cam: { at: 'zinho', d: 2.4, yaw: 20, h: 0.4, push: 0.2, fov: 52 },
-    actors: { zinho: { p: [0, 0.4], r: 0, a: 'sitfloor', e: 'angry', prop: 'spear' } }, sfx: [['stamp', 0.02], ['snap', 0.6], ['snap', 0.8]] }),
+    actors: { zinho: { p: [0, 0.4], r: 0, a: 'sitfloor', e: 'angry', prop: 'spear' } }, fx: { smokeHands: true }, sfx: [['stamp', 0.02], ['snap', 0.6], ['snap', 0.8]] }),
   S({ who: 'NAR', text: 'Duas horas esfregando graveto. E quem acendeu... foi a Kika. Em dez segundos.', set: 'cave', tod: 'cave', hud: F(2, '45%'),
     cam: { pos: [2.2, 1.4, 3.2], look: [0, 0.8, 0], pos2: [1.8, 1.3, 2.6], look2: [0, 0.8, 0], fov: 55 },
-    actors: { zinho: { p: [-0.9, 0.7], r: 60, a: 'sitfloor', e: 'flat' }, kika: { p: [1.0, -0.4], look: 'zinho', a: 'cheer', e: 'smug' } }, fx: { fire: [0, 0] }, sfx: [['fire', 0.3, 0.5], ['ding', 0.6, 0.5]] }),
+    actors: { zinho: { p: [-0.9, 0.7], r: 60, a: 'sitfloor', e: 'flat' }, kika: { p: [1.0, -0.4], look: 'zinho', a: 'cheer', e: 'smug' } }, fx: { fire: [0, 0], fireIn: 0.62 }, sfx: [['fire', 0.62, 0.5], ['sparkle', 0.62, 0.6], ['ding', 0.66, 0.5]] }),
 
   // ── DIA 3 ──
   S({ who: 'NAR', text: 'Dia três. A fome bateu forte.', set: 'cave', tod: 'cave', hud: F(3, '70%'), stamp: 'DIA 3',
@@ -79,7 +79,7 @@ export default [
     actors: { zinho: { p: [-11.2, -14.6], r: 40, a: 'hold', e: 'smug', prop: 'phone' } }, fx: { phoneLight: 0.55 }, sfx: [['ding', 0.55]] }),
   S({ who: 'NAR', text: 'Ele colocou o alarme no volume máximo.', set: 'wild', tod: 'preDusk', hud: F(7, '99%'), min: 3, shake: 0.05,
     cam: { pos: [-1.6, 2.6, -5.4], look: [-7.8, 2.4, -11.6], pos2: [-2.4, 2.4, -6.4], look2: [-8.4, 2.4, -12.2], fov: 56 },
-    actors: { zinho: { p: [-11.2, -14.6], r: 40, a: 'hold', e: 'angry', prop: 'phone' } }, fx: { phoneLight: 0, mammoth: { p: [-6.8, -10.8], to: [6, -2], a: 'charge', t0: 0.35, t1: 1 } },
+    actors: { zinho: { p: [-11.2, -14.6], r: 40, a: 'hold', e: 'angry', prop: 'phone' } }, fx: { phoneLight: 0, wave: 0.15, mammoth: { p: [-6.8, -10.8], to: [6, -2], a: 'charge', t0: 0.35, t1: 1 } },
     sfx: [['alarm', 0.15, 1.2], ['boom', 0.35], ['rumble', 0.35, 0.8]] }),
   S({ who: 'NAR', text: 'Seis toneladas. Fugindo de um despertador.', set: 'wild', tod: 'preDusk', hud: F(7, '99%'), music: 'tribal',
     cam: { pos: [0, 2.0, 8], look: [3, 2.4, -2], pos2: [0, 2.4, 9.5], look2: [8, 2.6, -1], fov: 55 },

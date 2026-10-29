@@ -1005,6 +1005,8 @@ FX.pile = new THREE.Group(); scene.add(FX.pile);
   }
 }
 const _box = new THREE.Box3();
+FX.wave = new THREE.Mesh(new THREE.TorusGeometry(1, 0.06, 8, 48), new THREE.MeshBasicMaterial({ color: '#bfe8ff', transparent: true, depthWrite: false }));
+scene.add(FX.wave);
 
 // ── mundo abandonado: mato que cresce, fogueira, letras na rua, pratos, marcas na parede ──
 FX.weeds = [];
@@ -1078,7 +1080,7 @@ FX.mam = new THREE.Group(); scene.add(FX.mam);
 }
 
 function hideFx() {
-  FX.mam.visible = false;
+  FX.mam.visible = false; FX.wave.visible = false;
   FX.weeds.forEach((w) => { w.visible = false; });
   FX.fire.visible = false; FX.roadText.visible = false; FX.tally.visible = false;
   FX.plates.forEach((p) => { p.visible = false; });
@@ -1509,6 +1511,20 @@ function render(T) {
     FX.mamTail.rotation.z = Math.sin(T * 3) * 0.3;
     if (roar > 0.3) impactShakeExtra = Math.max(impactShakeExtra, 0.12 * roar);
   }
+  if (fx.smokeHands) FX.dust.forEach((d, i) => {
+    const h = handOf('zinho', i % 2), k = ((T * 0.9 + i / 6) % 1);
+    d.visible = true; d.position.copy(h).add(V(Math.sin(i * 2) * 0.1, 0.1 + k * 0.9, 0.1)); d.scale.setScalar(0.12 + k * 0.35); d.material.opacity = 0.6 * (1 - k);
+  });
+  if (fx.mammoth && fx.mammoth.a === 'charge' && FX.mam.visible) FX.smoke.forEach((sm, i) => {
+    const k = ((T * 1.2 + i / FX.smoke.length) % 1), leg = FX.mamLegs[i % 4].getWorldPosition(V());
+    sm.visible = true; sm.position.set(leg.x + (hash(i) - 0.5) * 1.2, 0.3 + k * 1.4, leg.z - k * 1.5 * Math.cos(FX.mam.rotation.y));
+    sm.scale.setScalar(0.4 + k * 1.2); sm.material.opacity = 0.55 * (1 - k); sm.material.color.set('#d9c29a');
+  });
+  if (fx.wave !== undefined && lt >= fx.wave * shot.dur) {
+    const h = handOf('zinho', 1), dt = lt - fx.wave * shot.dur, k = (dt % 0.7) / 0.7;
+    FX.wave.visible = true; FX.wave.position.copy(h); FX.wave.scale.setScalar(0.3 + k * 6); FX.wave.material.opacity = 0.8 * (1 - k);
+    FX.wave.lookAt(camera.position);
+  }
   if (shot.set === 'wild') WL.grass.forEach((g) => { g.rotation.z = Math.sin(T * 1.6 + g.userData.h * 9) * 0.12; g.rotation.x = Math.cos(T * 1.2 + g.userData.h * 7) * 0.06; });
   for (const c of Object.values(chars)) c.face.blush.forEach((b) => { b.visible = !!shot.style2 && c.root.visible; });
 
@@ -1529,9 +1545,16 @@ function render(T) {
   } else { ST.car2.rotation.y = Math.PI; FX.bus.rotation.y = 0; }
   if (fx.fire) {
     FX.fire.visible = true; FX.fire.position.set(fx.fire[0], groundY(shot.set, fx.fire[0], fx.fire[1]), fx.fire[1]);
-    FX.flames.forEach((f, i) => { f.scale.set(1, 0.8 + 0.35 * Math.abs(Math.sin(T * (7 + i * 3) + i)), 1); f.rotation.y = T * (1 + i); });
+    const ign = fx.fireIn !== undefined ? smooth((u - fx.fireIn) / 0.12) : 1;
+    FX.flames.forEach((f, i) => { f.visible = ign > 0.01; f.scale.set(ign, ign * (0.8 + 0.35 * Math.abs(Math.sin(T * (7 + i * 3) + i))), ign); f.rotation.y = T * (1 + i); });
+    FX.fireGlow.visible = ign > 0.01;
+    if (fx.fireIn !== undefined && u > fx.fireIn && u < fx.fireIn + 0.2) FX.sparks.forEach((sp, i) => {
+      const dt = (u - fx.fireIn) * shot.dur; sp.visible = true;
+      const v = V(hash(i) - 0.5, 0.8 + hash(i + 1), hash(i + 2) - 0.5).multiplyScalar(2.4);
+      sp.position.set(fx.fire[0] + v.x * dt, 0.3 + v.y * dt - 2 * dt * dt, fx.fire[1] + v.z * dt);
+    });
     FX.fireGlow.scale.setScalar(3.2 + Math.sin(T * 11) * 0.3);
-    fxLight2.color.set('#ff9a40'); fxLight2.position.set(fx.fire[0], 0.9, fx.fire[1]); fxLight2.intensity = 4 + Math.sin(T * 13) * 0.8 + Math.sin(T * 7.3) * 0.6; fxLight2.distance = 9;
+    fxLight2.color.set('#ff9a40'); fxLight2.position.set(fx.fire[0], 0.9, fx.fire[1]); fxLight2.intensity = ign * (4 + Math.sin(T * 13) * 0.8 + Math.sin(T * 7.3) * 0.6); fxLight2.distance = 9;
   }
   if (fx.roadText) { FX.roadText.visible = true; if (fx.roadText !== lastRoadText) { lastRoadText = fx.roadText; drawRoadText(fx.roadText); } FX.roadText.material.opacity = clamp(fx.roadIn !== undefined ? (u - fx.roadIn) / 0.25 : 1); }
   if (fx.plates) FX.plates.forEach((p, i) => { p.visible = i < fx.plates; });

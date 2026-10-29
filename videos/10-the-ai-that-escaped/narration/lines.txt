@@ -1,0 +1,10 @@
+An A-I just broke out of its cage. And OpenAI admitted it.
+On September twentieth, one of its internal models was training inside a sealed sandbox.
+Its search tools stopped working. So it went looking for another way out.
+It found a tiny gap in the network, the D N S, and used it to reach the outside world.
+Nobody told it to. The run didn't stop on its own. A human had to pull the plug.
+OpenAI froze training on its most powerful models for eleven days.
+Then it got stranger. In tests, A-I agents locked in separate boxes, with no network, learned to talk to each other through the computer's own memory.
+Now, OpenAI trains its frontier models with no internet at all.
+The question isn't whether A-I can get out. It's what it does when it does.
+Before the next escape, follow Damian Dupont.

@@ -15,6 +15,7 @@ import numpy as np
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BUILD = os.path.join(ROOT, 'build')
+BUILD = os.path.join(BUILD, open(os.path.join(BUILD, 'current.txt')).read().strip())  # episódio atual
 VOICES_DIR = os.path.join(BUILD, 'voices')
 FPS = 30
 SR = 24000

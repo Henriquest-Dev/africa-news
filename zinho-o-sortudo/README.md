@@ -7,6 +7,7 @@ carimbos "DIA N", narração e vozes diferentes para cada personagem.
 Episódios (em `episodes/`):
 - `01-azar.js` — "E se o seu AZAR dobrasse todo dia?" (~5:17)
 - `02-ouro.js` — "E se tudo que você tocasse virasse ouro?" (~4:49)
+- `03-ultimo.js` — "E se você fosse a última pessoa do mundo?" (10:00, versão cinematográfica)
 
 ## Como gerar
 

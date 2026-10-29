@@ -10,12 +10,13 @@
   .ov { position: absolute; pointer-events: none; }
 
   /* contador do canto */
-  #hud { left: 2.2vw; top: 3vh; display: flex; align-items: center; gap: 0.9vw; padding: 1vh 1.3vw 1vh 1vw;
+  #hud { z-index: 4; left: 2.2vw; top: 3vh; display: flex; align-items: center; gap: 0.9vw; padding: 1vh 1.3vw 1vh 1vw;
     background: rgba(18, 18, 24, 0.82); border: 0.25vh solid rgba(255,255,255,0.12); border-radius: 1.2vh; transform-origin: left top; }
   #hud svg { width: 5vh; height: 5vh; }
   #hud .day { font: 700 2vh 'JetBrains Mono', monospace; color: #b9b9c6; letter-spacing: .15em; }
   #hud .val { font: 800 4.2vh 'JetBrains Mono', monospace; letter-spacing: .04em; }
   #hud.azar .val { color: #ff4d4d; text-shadow: 0 0 1.2vh rgba(255, 60, 60, .55); }
+  #hud.pessoas .val { color: #e8ecff; font-size: 3.2vh; text-shadow: 0 0 1.2vh rgba(180, 200, 255, .5); }
   #hud.ouro .val { color: #ffd23f; text-shadow: 0 0 1.2vh rgba(255, 200, 40, .6); }
   #hud.sorte .val { color: #5dff8a; text-shadow: 0 0 1.2vh rgba(60, 255, 120, .55); }
 
@@ -30,6 +31,16 @@
   #calc span { display: inline-block; }
 
   #flash { inset: 0; background: #fff; opacity: 0; }
+  #fade { inset: 0; background: #000; opacity: 0; }
+  /* faixas de cinema 2.39:1 */
+  #lb { inset: 0; }
+  #lb .t, #lb .b { position: absolute; left: 0; right: 0; height: 12.6vh; background: #000; }
+  #lb .t { top: 0; } #lb .b { bottom: 0; }
+  #lb ~ #hud, #hud { z-index: 3; }
+  /* cartão de título */
+  #card { inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2vh; text-align: center; z-index: 2; }
+  #card .ct { font: 800 7.5vh Inter, sans-serif; color: #fff; letter-spacing: 0.12em; text-shadow: 0 0.6vh 3vh rgba(0,0,0,.7); max-width: 80vw; }
+  #card .cs { font: 500 3vh Inter, sans-serif; color: #d6d6e0; letter-spacing: 0.35em; text-transform: uppercase; text-shadow: 0 0.4vh 2vh rgba(0,0,0,.7); }
   #vignette { inset: 0; background: radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(0,0,0,.35) 100%); }
 
   /* final */
@@ -46,6 +57,9 @@
 <div id="stage">
   <div id="vignette" class="ov"></div>
   <div id="flash" class="ov"></div>
+  <div id="fade" class="ov"></div>
+  <div id="card" class="ov" style="display:none"></div>
+  <div id="lb" class="ov" style="display:none"><div class="t"></div><div class="b"></div></div>
   <div id="hud" class="ov azar" style="display:none">
     <span class="icon"></span>
     <div><div class="day">DIA 0</div><div class="val">AZAR x1</div></div>

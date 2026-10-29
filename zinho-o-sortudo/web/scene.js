@@ -101,6 +101,16 @@ const sky = new THREE.Mesh(new THREE.SphereGeometry(400, 32, 16), new THREE.Shad
 sky.renderOrder = -10;
 scene.add(sky);
 
+const stars = (() => {
+  const n = 900, pos = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    const th = hash(i) * Math.PI * 2, ph = Math.acos(hash(i + 0.37) * 0.95);
+    pos.set([Math.sin(ph) * Math.cos(th) * 380, Math.cos(ph) * 380, Math.sin(ph) * Math.sin(th) * 380], i * 3);
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const p = new THREE.Points(g, new THREE.PointsMaterial({ color: '#ffffff', size: 3.2, sizeAttenuation: false, fog: false, transparent: true, opacity: 0.9 }));
+  p.renderOrder = -9; scene.add(p); return p;
+})();
 const hemi = new THREE.HemisphereLight(0xffffff, 0x888888, 1);
 const sun = new THREE.DirectionalLight(0xffffff, 2);
 sun.castShadow = true;
@@ -121,6 +131,8 @@ const TOD = {
   night: { top: '#081236', bot: '#26386a', hs: '#6074b8', hg: '#22222e', hi: 0.85, sc: '#a2b7ff', si: 0.9, dir: [10, 25, 10], fog: '#1c2749', fogN: 25, fogF: 120, lamps: 1, win: 1 , fill: 0.7 },
   storm: { top: '#242a36', bot: '#5a616f', hs: '#9da6b8', hg: '#393940', hi: 1.0, sc: '#c9d3ea', si: 0.85, dir: [-8, 25, 12], fog: '#4b515d', fogN: 20, fogF: 110, lamps: 1, win: 0.8 , fill: 0.6 },
   indoor: { top: '#8fd0f7', bot: '#fbeacb', hs: '#fff4e2', hg: '#9c8466', hi: 1.45, sc: '#fff0d6', si: 1.7, dir: [-6, 9, 7], fog: null, lamps: 0, win: 0 , fill: 0.3 },
+  fog:   { top: '#8d969f', bot: '#c9ccc8', hs: '#d6dbe0', hg: '#7d7a6e', hi: 1.25, sc: '#e6e9ee', si: 0.7, dir: [-10, 20, 12], fog: '#bfc3c2', fogN: 6, fogF: 42, lamps: 0, win: 0, fill: 0.35 },
+  dawn:  { top: '#6c7fc4', bot: '#ffc490', hs: '#ffe1c4', hg: '#7a6a62', hi: 1.15, sc: '#ffc48a', si: 2.0, dir: [30, 9, -6], fog: '#f1c6a6', fogN: 40, fogF: 170, lamps: 0, win: 0, fill: 0.35 },
   indoorNight: { top: '#0b1638', bot: '#1f2f5a', hs: '#6a7cb8', hg: '#2a2430', hi: 0.8, sc: '#8fa8ff', si: 0.8, dir: [-4, 8, 6], fog: null, lamps: 1, win: 1 , fill: 0.75 },
 };
 
@@ -417,8 +429,12 @@ function drawBoard(text) {
   g.fillStyle = '#2f5d46'; g.fillRect(0, 0, c.width, c.height);
   g.fillStyle = 'rgba(255,255,255,0.08)'; for (let i = 0; i < 30; i++) g.fillRect(hash(i) * 1000, hash(i + 9) * 330, 120, 4);
   g.fillStyle = '#f6f6ee'; g.font = '800 78px Inter'; g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.fillText(text || '2 + 2 = 4', c.width / 2, c.height / 2 - 20);
-  g.font = '600 40px Inter'; g.fillText(text ? '(boa sorte)' : 'x² + y² = r²', c.width / 2, c.height / 2 + 80);
+  const txt = text || '2 + 2 = 4';
+  let fs = 78; g.font = `800 ${fs}px Inter`;
+  while (g.measureText(txt).width > c.width * 0.9 && fs > 30) { fs -= 4; g.font = `800 ${fs}px Inter`; }
+  g.fillText(txt, c.width / 2, c.height / 2 - 20);
+  g.font = '600 40px Inter'; const sub = !text ? 'x² + y² = r²' : text === 'PROVA SURPRESA' ? '(boa sorte)' : '';
+  if (sub) g.fillText(sub, c.width / 2, c.height / 2 + 80);
   CL.board.needsUpdate = true;
 }
 
@@ -580,11 +596,21 @@ function makeChar(name, cfg, seed) {
   mk(G.cyl(0.07, 0.055, 0.18, 12), new THREE.MeshToonMaterial({ color: '#bfe6f7', gradientMap: gradMap, transparent: true, opacity: 0.75 }), { p: [0, 0.1, 0.08], parent: props.cup, ol: 0.008 });
   props.goldbar = new THREE.Group(); arms[1].hand.add(props.goldbar);
   mk(G.box(0.3, 0.1, 0.14), GOLD, { p: [-0.12, 0.08, 0.1], parent: props.goldbar, ol: 0.01 });
+  props.radio = new THREE.Group(); arms[1].hand.add(props.radio);
+  mk(G.box(0.26, 0.16, 0.1), M('#3d4a5c'), { p: [0, 0.08, 0.1], parent: props.radio, ol: 0.01 });
+  mk(G.cyl(0.04, 0.04, 0.02, 12), M('#c0c6cc'), { p: [0.06, 0.08, 0.16], r: [Math.PI / 2, 0, 0], parent: props.radio, ol: 0 });
+  mk(G.cyl(0.008, 0.008, 0.3, 4), M('#222'), { p: [-0.08, 0.3, 0.1], parent: props.radio, ol: 0 });
+  props.icecream = new THREE.Group(); arms[1].hand.add(props.icecream);
+  mk(new THREE.ConeGeometry(0.07, 0.2, 10), M('#d9a066'), { p: [0, 0.06, 0.08], r: [Math.PI, 0, 0], parent: props.icecream, ol: 0.008 });
+  mk(G.sph(0.08, 12, 10), M('#ff9ad5'), { p: [0, 0.2, 0.08], parent: props.icecream, ol: 0.008 });
+  mk(G.sph(0.07, 12, 10), M('#8fd3ff'), { p: [0, 0.31, 0.08], parent: props.icecream, ol: 0.008 });
+  props.torch = new THREE.Group(); arms[1].hand.add(props.torch);
+  mk(G.cyl(0.035, 0.03, 0.22, 10), M('#f1c40f'), { p: [0, 0.04, 0.1], r: [Math.PI / 2, 0, 0], parent: props.torch, ol: 0.008 });
   props.cake = new THREE.Group(); arms[1].hand.add(props.cake);
-  mk(G.cyl(0.24, 0.24, 0.18, 18), M('#fbe3ec'), { p: [-0.18, 0.12, 0.16], parent: props.cake, ol: 0.012 });
-  mk(G.cyl(0.25, 0.25, 0.05, 18), M('#e84a5f'), { p: [-0.18, 0.2, 0.16], parent: props.cake, ol: 0 });
-  mk(G.cyl(0.015, 0.015, 0.12, 6), M('#5dade2'), { p: [-0.18, 0.3, 0.16], parent: props.cake, ol: 0 });
-  mk(G.sph(0.03, 8, 6), new THREE.MeshBasicMaterial({ color: '#ffcc33' }), { p: [-0.18, 0.38, 0.16], parent: props.cake, ol: 0 });
+  mk(G.cyl(0.24, 0.24, 0.18, 18), M('#fbe3ec'), { p: [-0.18, -0.1, 0.22], parent: props.cake, ol: 0.012 });
+  mk(G.cyl(0.25, 0.25, 0.05, 18), M('#e84a5f'), { p: [-0.18, -0.02, 0.22], parent: props.cake, ol: 0 });
+  mk(G.cyl(0.015, 0.015, 0.12, 6), M('#5dade2'), { p: [-0.18, 0.08, 0.22], parent: props.cake, ol: 0 });
+  mk(G.sph(0.03, 8, 6), new THREE.MeshBasicMaterial({ color: '#ffcc33' }), { p: [-0.18, 0.16, 0.22], parent: props.cake, ol: 0 });
   for (const k of Object.keys(props)) props[k].visible = k === 'cane';
   // sem receber sombra: rostos limpos, sem manchas de shadow-map
   root.traverse((o) => { if (o.isMesh) { o.castShadow = o.material !== OUTLINE; o.receiveShadow = false; } });
@@ -893,7 +919,49 @@ FX.pile = new THREE.Group(); scene.add(FX.pile);
 }
 const _box = new THREE.Box3();
 
+// ── mundo abandonado: mato que cresce, fogueira, letras na rua, pratos, marcas na parede ──
+FX.weeds = [];
+for (let i = 0; i < 160; i++) {
+  const x = (hash(i * 3.1) - 0.5) * 70, z = (hash(i * 7.7) - 0.5) * 11;
+  const big = hash(i + 0.5) > 0.7;
+  const w = mk(big ? G.ico(0.5, 0) : new THREE.ConeGeometry(0.16, 0.7, 5), M(['#4f8f3a', '#5ea544', '#3f7a32'][i % 3], { flatShading: true }), { p: [x, 0, z], ol: big ? 0.015 : 0.01, cast: false });
+  w.userData.base = [x, z, big ? 0.35 : 0.3, hash(i + 9)];
+  street.add(w); FX.weeds.push(w);
+}
+FX.fire = new THREE.Group(); scene.add(FX.fire);
+for (let i = 0; i < 6; i++) mk(G.cyl(0.05, 0.05, 0.7, 6), M('#6d4c41'), { p: [0, 0.08, 0], r: [Math.PI / 2, i * 0.52, 0], parent: FX.fire, ol: 0.01 });
+FX.flames = [0, 1, 2].map((i) => mk(new THREE.ConeGeometry(0.22 - i * 0.05, 0.7 - i * 0.12, 7), new THREE.MeshBasicMaterial({ color: ['#ff7a1a', '#ffb31a', '#fff3a0'][i] }), { p: [0, 0.35, 0], parent: FX.fire, ol: 0 }));
+FX.fireGlow = sprite(glowTex('rgba(255,140,40,1)'), 3.5); FX.fireGlow.position.y = 0.5; FX.fire.add(FX.fireGlow);
+FX.roadText = new THREE.Mesh(new THREE.PlaneGeometry(12, 3.1), new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false }));
+FX.roadText.rotation.x = -Math.PI / 2; FX.roadText.position.set(-1.3, 0.07, 0); street.add(FX.roadText);
+let lastRoadText = null;
+function drawRoadText(t) {
+  const tex = canvasTex(1400, 360, (g, W, H) => { g.clearRect(0, 0, W, H); g.fillStyle = 'rgba(255,255,255,0.92)'; g.font = '900 250px Inter'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(t, W / 2, H / 2 + 10); });
+  FX.roadText.material.map?.dispose(); FX.roadText.material.map = tex; FX.roadText.material.needsUpdate = true;
+}
+FX.plates = [];
+for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; FX.plates.push(mk(G.cyl(0.17, 0.14, 0.03, 16), M('#ffffff'), { p: [-2.9 + Math.cos(a) * 0.6, 0.86, 1.8 + Math.sin(a) * 0.6], parent: kitchen, ol: 0.008 })); }
+FX.tally = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 1.0), new THREE.MeshBasicMaterial({ transparent: true }));
+FX.tally.position.set(-3.78, 1.9, -1.6); FX.tally.rotation.y = Math.PI / 2; bedroom.add(FX.tally);
+let lastTally = -1;
+function drawTally(n) {
+  const tex = canvasTex(480, 300, (g) => {
+    g.clearRect(0, 0, 480, 300); g.strokeStyle = 'rgba(30,30,40,0.85)'; g.lineWidth = 6; g.lineCap = 'round';
+    for (let i = 0; i < n; i++) {
+      const grp = Math.floor(i / 5), k = i % 5, gx = 20 + (grp % 8) * 56, gy = 20 + Math.floor(grp / 8) * 70;
+      g.beginPath();
+      if (k < 4) { g.moveTo(gx + k * 10, gy); g.lineTo(gx + k * 10 + 2, gy + 50); } else { g.moveTo(gx - 6, gy + 40); g.lineTo(gx + 40, gy + 8); }
+      g.stroke();
+    }
+  });
+  FX.tally.material.map?.dispose(); FX.tally.material.map = tex; FX.tally.material.needsUpdate = true;
+}
+
 function hideFx() {
+  FX.weeds.forEach((w) => { w.visible = false; });
+  FX.fire.visible = false; FX.roadText.visible = false; FX.tally.visible = false;
+  FX.plates.forEach((p) => { p.visible = false; });
+  ST.car1.position.set(-28, 0, -1.8); ST.car1.rotation.set(0, 0, 0);
   FX.pile.visible = false;
   ST.car2.position.set(-38, 0, 1.8);
   FX.ball.visible = FX.card.visible = FX.cloud.visible = FX.bolt.visible = FX.bus.visible = FX.cat.visible = false;
@@ -947,6 +1015,7 @@ function meteorPos(p) {
 // ───────────────────────── overlays HTML ─────────────────────────
 const $ = (id) => document.getElementById(id);
 const ICON = {
+  pessoas: '<svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="4" fill="#e8e8f0"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8z" fill="#e8e8f0"/></svg>',
   ouro: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#ffd23f" stroke="#a87400" stroke-width="2"/><text x="12" y="16.5" text-anchor="middle" font-size="12" font-weight="900" fill="#a87400" font-family="Inter">$</text></svg>',
   azar: '<svg viewBox="0 0 24 24"><path fill="#fff" d="M3 2.5l4.5 5h9L21 2.5V13a9 9 0 0 1-18 0z"/><ellipse cx="8.7" cy="12.5" rx="1.6" ry="2" fill="#ff4d4d"/><ellipse cx="15.3" cy="12.5" rx="1.6" ry="2" fill="#ff4d4d"/><path d="M10.5 16.5h3l-1.5 1.5z" fill="#ff8a8a"/></svg>',
   sorte: '<svg viewBox="0 0 24 24"><path fill="#5dff8a" d="M12 1.8l3.1 6.6 7.1.8-5.3 4.9 1.5 7.1L12 17.6l-6.4 3.6 1.5-7.1L1.8 9.2l7.1-.8z"/></svg>',
@@ -1199,7 +1268,8 @@ function render(T) {
   if (fx.alarm !== undefined && lt > fx.alarm * shot.dur) {
     const on = Math.floor(T * 4) % 2 === 0;
     ST.car2.userData.lights.forEach((l, i) => { l.material.color.set(on ? (i % 2 ? '#ff3b3b' : '#ffd36b') : '#555'); });
-    fxLight2.position.set(-3, 3.2, -5.6); // alarme da casa vizinha fxLight2.intensity = on ? 30 : 0;
+    fxLight2.position.set(-3, 3.2, -5.6); // alarme da casa vizinha
+    fxLight2.intensity = on ? 30 : 0;
   } else ST.car2.userData.lights.forEach((l, i) => { l.material.color.set(i % 2 ? '#c0392b' : '#ffe9a8'); });
   if (fx.meteor) {
     const p = lerp(fx.meteor[0], fx.meteor[1], u);
@@ -1301,6 +1371,57 @@ function render(T) {
   }
   if (shot.set === 'classroom' && shot.board !== lastBoard) { lastBoard = shot.board; drawBoard(shot.board); }
 
+  // ─── mundo vazio ───
+  stars.visible = shot.set === 'street' && (shot.tod === 'night');
+  if (fx.overgrow) FX.weeds.forEach((w) => {
+    const [x, z, s0, h] = w.userData.base;
+    const lv = clamp(fx.overgrow * 1.3 - h * 0.3);
+    if (lv <= 0.02) return;
+    if (Math.abs(x + 1.7) < 2.2 && z < -4.2) return;
+    w.visible = true; w.scale.setScalar(s0 + lv * (0.45 + 0.55 * h)); w.position.set(x, groundY('street', x, z) + 0.15 * lv, z);
+    w.rotation.z = Math.sin(T * 1.3 + h * 10) * 0.05;
+  });
+  if (fx.abandoned) {
+    ST.car1.position.set(6.5, 0, 0.9); ST.car1.rotation.y = 0.35;
+    ST.car2.position.set(-9, 0, -0.8); ST.car2.rotation.y = Math.PI - 0.5;
+    FX.bus.visible = true; FX.bus.position.set(-22, 0, -1.4); FX.bus.rotation.y = 0.12;
+  } else { ST.car2.rotation.y = Math.PI; FX.bus.rotation.y = 0; }
+  if (fx.fire) {
+    FX.fire.visible = true; FX.fire.position.set(fx.fire[0], groundY(shot.set, fx.fire[0], fx.fire[1]), fx.fire[1]);
+    FX.flames.forEach((f, i) => { f.scale.set(1, 0.8 + 0.35 * Math.abs(Math.sin(T * (7 + i * 3) + i)), 1); f.rotation.y = T * (1 + i); });
+    FX.fireGlow.scale.setScalar(3.2 + Math.sin(T * 11) * 0.3);
+    fxLight2.color.set('#ff9a40'); fxLight2.position.set(fx.fire[0], 0.9, fx.fire[1]); fxLight2.intensity = 4 + Math.sin(T * 13) * 0.8 + Math.sin(T * 7.3) * 0.6; fxLight2.distance = 9;
+  }
+  if (fx.roadText) { FX.roadText.visible = true; if (fx.roadText !== lastRoadText) { lastRoadText = fx.roadText; drawRoadText(fx.roadText); } FX.roadText.material.opacity = clamp(fx.roadIn !== undefined ? (u - fx.roadIn) / 0.25 : 1); }
+  if (fx.plates) FX.plates.forEach((p, i) => { p.visible = i < fx.plates; });
+  if (fx.tally !== undefined) { FX.tally.visible = true; const n = Array.isArray(fx.tally) ? Math.round(lerp(fx.tally[0], fx.tally[1], smooth(u / 0.8))) : fx.tally; if (n !== lastTally) { lastTally = n; drawTally(n); } }
+  if (fx.catAt || fx.catFollow) {
+    FX.cat.visible = true;
+    const zr = chars.zinho.root;
+    let px, pz, ry, moving = false;
+    if (fx.catAt) { [px, pz] = fx.catAt; ry = (fx.catAt[2] ?? 0) * D2R; }
+    else {
+      const a = zr.rotation.y, sp = actors.zinho || {};
+      px = zr.position.x + Math.sin(a + 1.9) * 0.75; pz = zr.position.z + Math.cos(a + 1.9) * 0.75; ry = a;
+      moving = !!sp.to && u > 0 && u < 1;
+    }
+    FX.cat.position.set(px, groundY(shot.set, px, pz), pz); FX.cat.rotation.y = ry;
+    FX.catLegs.forEach((l, i) => { l.rotation.x = moving ? Math.sin(T * 12 + (i % 2 ? Math.PI : 0) + (i > 1 ? Math.PI / 2 : 0)) * 0.5 : 0; });
+    FX.catTail.rotation.z = Math.sin(T * 2.5) * 0.45;
+  }
+  if (fx.dogsFollow) {
+    const zr = chars.zinho.root, sp = actors.zinho || {}, moving = !!sp.to && u > 0 && u < 1;
+    FX.dogs.forEach((d, i) => {
+      d.g.visible = true;
+      const a = zr.rotation.y + Math.PI + (i - 1) * 0.6, r = 1.6 + i * 0.35;
+      d.g.position.set(zr.position.x + Math.sin(a) * r, moving ? Math.abs(Math.sin(T * 10 + i)) * 0.06 : 0, zr.position.z + Math.cos(a) * r);
+      d.g.rotation.y = zr.rotation.y + (moving ? 0 : (i - 1) * 0.5);
+      d.legs.forEach((l, j) => { l.rotation.x = moving ? Math.sin(T * 10 + (j % 2) * Math.PI + (j > 1 ? 1.2 : 0)) * 0.6 : 0; });
+      d.tail.rotation.z = Math.sin(T * 9 + i) * 0.5;
+      d.head.position.y = 0.72;
+    });
+  }
+
   // ─── ouro ───
   for (const k of Object.keys(goldables)) setGold(k, false);
   if (fx.gold) {
@@ -1368,6 +1489,8 @@ function render(T) {
   camera.position.copy(cp); camera.lookAt(look);
   camera.fov = c.fov || 42; camera.updateProjectionMatrix();
   sky.position.copy(camera.position);
+  stars.position.copy(camera.position);
+  for (const w of FX.weeds) if (w.visible && w.position.distanceTo(camera.position) < 1.8) w.visible = false;
   fill.position.copy(camera.position);
   // sombra segue o foco
   const dir = V(...tod.dir).normalize();
@@ -1385,7 +1508,7 @@ function render(T) {
       hud.className = 'ov ' + mode;
       hud.querySelector('.icon').innerHTML = ICON[mode];
       hud.querySelector('.day').textContent = 'DIA ' + d;
-      hud.querySelector('.val').textContent = mode === 'ouro' ? 'OURO ' + mult : (mode === 'azar' ? 'AZAR x' : 'SORTE x') + fmtMult(mult);
+      hud.querySelector('.val').textContent = mode === 'pessoas' ? 'PESSOAS NO MUNDO: ' + mult : mode === 'ouro' ? 'OURO ' + mult : (mode === 'azar' ? 'AZAR x' : 'SORTE x') + fmtMult(mult);
     }
     const changed = !prev || !prev.hud || prev.hud.join('|') !== key || shot.hudIn !== undefined;
     const t0 = shot.hudIn !== undefined ? shot.hudIn * shot.dur : 0;
@@ -1394,6 +1517,19 @@ function render(T) {
     hud.style.transform = `scale(${sc})`;
     hud.style.filter = changed && k < 0.5 && Math.floor(T * 30) % 2 ? 'hue-rotate(90deg) brightness(1.6)' : 'none';
   }
+  $('lb').style.display = shot.letterbox ? 'block' : 'none';
+  let fade = 0;
+  if (shot.fadeIn) fade = Math.max(fade, 1 - clamp(lt / shot.fadeIn));
+  if (shot.fadeOut) fade = Math.max(fade, clamp((lt - (shot.dur - shot.fadeOut)) / shot.fadeOut));
+  if (shot.black) fade = 1;
+  $('fade').style.opacity = fade;
+  const card = $('card');
+  if (shot.card) {
+    card.style.display = 'flex';
+    if (card.dataset.k !== shot.card.t) { card.innerHTML = `<div class="ct">${shot.card.t}</div>${shot.card.s ? `<div class="cs">${shot.card.s}</div>` : ''}`; card.dataset.k = shot.card.t; }
+    const a0 = shot.card.at ?? 0.08, k = clamp((u - a0) / 0.15) * (1 - clamp((u - 0.88) / 0.1));
+    card.style.opacity = k; card.style.transform = `translateY(${(1 - k) * 2}vh) scale(${1 + 0.04 * u})`;
+  } else card.style.display = 'none';
   const st = $('stamp');
   if (shot.stamp && lt < 1.8) {
     st.style.display = 'block'; st.textContent = shot.stamp;

@@ -10,6 +10,7 @@ from scipy.signal import butter, sosfilt, resample_poly
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BUILD = os.path.join(ROOT, 'build')
+BUILD = os.path.join(BUILD, open(os.path.join(BUILD, 'current.txt')).read().strip())  # episódio atual
 SR = 48000
 LEAD, TAIL, STAMP_LEAD = 0.1, 0.25, 0.3
 
@@ -218,12 +219,19 @@ def sfx(name, dur_left, seed):
         for k, n in enumerate([84, 88, 91, 96, 100]):
             add(y, bell(midi(n), 0.9), k * 0.07, 0.35)
         return y
-    if name in ('rain', 'rumble', 'alarm'):
+    if name in ('rain', 'rumble', 'alarm', 'static', 'fire'):
         d = max(0.5, dur_left)
         t = np.arange(int(d * SR)) / SR
         fade = np.minimum(1, t / 0.3) * np.minimum(1, (d - t) / 0.3)
         if name == 'rain':
             return filt(noise(d, seed), 'bandpass', [900, 7000]) * fade * 0.35
+        if name == 'static':
+            n = filt(noise(d, seed), 'bandpass', [800, 6000])
+            return n * fade * (0.5 + 0.5 * (rng(seed).random(len(t)) > 0.97)) * 0.35
+        if name == 'fire':
+            base = filt(noise(d, seed), 'lowpass', 500) * 0.6
+            crack = filt(noise(d, seed + 1), 'highpass', 2000) * (rng(seed + 2).random(len(t)) > 0.9985) * 6
+            return (base + filt(crack, 'lowpass', 6000)) * fade * 0.35
         if name == 'rumble':
             return filt(noise(d, seed), 'lowpass', 140) * fade * (0.4 + 0.6 * t / d) * 2.2
         sq = np.sign(np.sin(2 * np.pi * np.where((t * 4) % 1 < 0.5, 900, 1250) * t))
@@ -332,7 +340,7 @@ def main():
     shots = []
     for s, l in zip(story, lines):
         lead = STAMP_LEAD if s.get('stamp') else LEAD
-        dur = max(s.get('min', 0), lead + l['dur'] + TAIL)
+        dur = max(s.get('min', 0), lead + l['dur'] + TAIL + s.get('pad', 0))
         shots.append({**s, 'start': round(t, 3), 'dur': round(dur, 3), 'vstart': round(t + lead, 3), 'vdur': l['dur'], 'env': l['env']})
         t += dur
     total = t + 0.5
@@ -343,7 +351,11 @@ def main():
     voice = np.zeros(n); music = np.zeros(n); fx = np.zeros(n)
 
     for s, l in zip(shots, lines):
-        add(voice, read_wav(os.path.join(BUILD, l['file'])), s['vstart'])
+        v = read_wav(os.path.join(BUILD, l['file']))
+        if s.get('radio'):  # voz saindo de um rádio
+            v = filt(v, 'bandpass', [350, 3200]) * 1.6 + 0.02 * filt(noise(len(v) / SR, 7), 'highpass', 2000)
+            v = np.tanh(v * 1.5) / 1.5
+        add(voice, v, s['vstart'])
 
     # ── música por seções (com crossfade) ──
     sections, cur = [], None

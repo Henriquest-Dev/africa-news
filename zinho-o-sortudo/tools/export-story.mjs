@@ -6,8 +6,10 @@ import { pathToFileURL } from 'node:url';
 
 const file = process.argv[2] || 'episodes/01-azar.js';
 const { default: story } = await import(pathToFileURL(path.resolve(file)).href);
-mkdirSync(new URL('../build/', import.meta.url), { recursive: true });
-writeFileSync(new URL('../build/story.json', import.meta.url), JSON.stringify(story, null, 1));
-writeFileSync(new URL('../build/episode.txt', import.meta.url), path.basename(file, '.js'));
+// cada episódio tem a sua pasta de trabalho: build/<episódio>/
+const ep = path.basename(file, '.js');
+mkdirSync(new URL(`../build/${ep}/`, import.meta.url), { recursive: true });
+writeFileSync(new URL(`../build/${ep}/story.json`, import.meta.url), JSON.stringify(story, null, 1));
+writeFileSync(new URL('../build/current.txt', import.meta.url), ep);
 const words = story.reduce((n, s) => n + s.text.split(/\s+/).length, 0);
 console.log(`${path.basename(file)}: ${story.length} planos, ${words} palavras`);

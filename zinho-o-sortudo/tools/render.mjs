@@ -50,7 +50,9 @@ function ffmpeg(args) {
 }
 
 async function main() {
-  const tl = JSON.parse(await readFile(path.join(ROOT, 'build/timeline.json'), 'utf8'));
+  const ep = (await readFile(path.join(ROOT, 'build/current.txt'), 'utf8')).trim();
+  const BUILD = path.join(ROOT, 'build', ep);
+  const tl = JSON.parse(await readFile(path.join(BUILD, 'timeline.json'), 'utf8'));
   await mkdir(OUT, { recursive: true });
   const srv = await serve();
   const port = srv.address().port;
@@ -72,7 +74,6 @@ async function main() {
   const f0 = Math.round(from * FPS), f1 = Math.round(to * FPS);
   // Cada quadro vai para out/frames/NNNNN.jpg; os que já existem são saltados,
   // por isso um render interrompido retoma de onde parou.
-  const ep = existsSync(path.join(ROOT, 'build/episode.txt')) ? (await readFile(path.join(ROOT, 'build/episode.txt'), 'utf8')).trim() : 'episodio';
   const frameDir = path.join(OUT, 'frames-' + ep); await mkdir(frameDir, { recursive: true });
   const framePath = (f) => path.join(frameDir, String(f).padStart(5, '0') + '.jpg');
   const todo = [];
@@ -105,7 +106,7 @@ async function main() {
   const name = arg('out', from === 0 && to === tl.total ? `zinho-${ep}.mp4` : `trecho_${from}-${to}.mp4`);
   const out = path.join(OUT, name);
   const ff = ffmpeg(['-framerate', String(FPS), '-start_number', String(f0), '-i', path.join(frameDir, '%05d.jpg'),
-    '-ss', String(from), '-t', String(to - from), '-i', path.join(ROOT, 'build/mix.wav'),
+    '-ss', String(from), '-t', String(to - from), '-i', path.join(BUILD, 'mix.wav'),
     '-map', '0:v', '-map', '1:a', '-frames:v', String(f1 - f0), '-c:v', 'libx264', '-preset', 'medium', '-crf', '18', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '192k', '-af', 'loudnorm=I=-14:TP=-1.5:LRA=11', '-ar', '48000', '-movflags', '+faststart', '-shortest', out]);
   ff.stdin.end(); await ff.done;
   console.log(`pronto: ${out}  (${((Date.now() - t0) / 60000).toFixed(1)} min)`);

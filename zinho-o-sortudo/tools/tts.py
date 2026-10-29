@@ -189,7 +189,7 @@ def trim_and_envelope(path):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--provider', default='auto', choices=['auto', 'openrouter', 'edge'])
+    ap.add_argument('--provider', default='auto', choices=['auto', 'gemini', 'openrouter', 'edge'])
     ap.add_argument('--force', action='store_true')
     args = ap.parse_args()
 

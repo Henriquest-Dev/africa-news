@@ -382,7 +382,10 @@ def main():
 
     # ducking da música sob a voz
     win = int(0.25 * SR)
-    venv = np.convolve(np.abs(voice), np.ones(win) / win, mode='same')
+    # média móvel por soma acumulada (O(n)); a convolução direta era lentíssima em vídeos longos
+    cs = np.concatenate([[0.0], np.cumsum(np.abs(voice))])
+    lo = np.clip(np.arange(len(voice)) - win // 2, 0, len(voice)); hi = np.clip(lo + win, 0, len(voice))
+    venv = (cs[hi] - cs[lo]) / win
     venv = np.clip(venv / (np.percentile(venv[venv > 1e-4], 80) + 1e-6), 0, 1)
     music *= 0.32 * (1 - 0.55 * venv)
 

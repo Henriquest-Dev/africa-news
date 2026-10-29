@@ -1678,14 +1678,20 @@ function render(T) {
   } else card.style.display = 'none';
   const st = $('stamp');
   if (shot.stamp && lt < 1.8) {
-    st.style.display = 'block'; st.textContent = shot.stamp;
+    st.style.display = 'block';
+    if (st.textContent !== shot.stamp) {
+      // ajusta o tamanho para caber sempre na largura do ecrã (formato vertical incluído)
+      st.textContent = shot.stamp; st.style.fontSize = ''; st.style.transform = 'none';
+      const max = innerWidth * 0.9; let fs = parseFloat(getComputedStyle(st).fontSize);
+      while (st.scrollWidth > max && fs > 12) { fs *= 0.92; st.style.fontSize = fs + 'px'; }
+    }
     st.className = 'ov' + (/13|10/.test(shot.stamp) ? ' red' : '');
     const sc = lt < 0.18 ? lerp(2.6, 1, easeOut(lt / 0.18)) : 1 + 0.015 * Math.sin(lt * 8);
     st.style.opacity = lt > 1.45 ? 1 - (lt - 1.45) / 0.35 : 1;
     st.style.transform = `translate(-50%, -50%) scale(${sc}) rotate(-4deg)`;
   } else st.style.display = 'none';
   const cap = $('cap');
-  if (shot.cap) {
+  if (shot.cap && !shot.endcard) {
     const words = shot.text.replace(/\.\.\./g, '…').split(/\s+/).filter(Boolean);
     const k = clamp((T - shot.vstart) / Math.max(0.3, shot.vdur));
     const cur = Math.min(words.length - 1, Math.floor(k * words.length));

@@ -107,6 +107,38 @@ def add(buf, x, at, gain=1.0):
     buf[i:i + len(x)] += gain * x
 
 
+def tom(f0=90, dur=0.5, seed=3):
+    # tambor de pele: tom com queda de afinação + pele (ruído)
+    t = np.arange(int(dur * SR)) / SR
+    f = f0 * (1 + 0.6 * np.exp(-t * 30))
+    y = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t * 7)
+    return y + 0.25 * filt(noise(dur, seed), 'bandpass', [150, 1200]) * np.exp(-t * 25)
+
+
+def shaker(dur=0.09, seed=4):
+    return filt(noise(dur, seed), 'bandpass', [4000, 11000]) * np.sin(np.pi * np.arange(int(dur * SR)) / (dur * SR)) ** 2
+
+
+def flute(f, dur=0.8, seed=5):
+    # flauta de osso: seno com vibrato e sopro
+    t = np.arange(int(dur * SR)) / SR
+    vib = 1 + 0.006 * np.sin(2 * np.pi * 5.5 * t) * np.minimum(1, t / 0.25)
+    ph = 2 * np.pi * np.cumsum(f * vib) / SR
+    y = np.sin(ph) + 0.18 * np.sin(2 * ph) + 0.06 * np.sin(3 * ph)
+    breath = filt(noise(dur, seed), 'bandpass', [f * 0.8, f * 3]) * 0.12
+    env = np.minimum(1, t / 0.06) * np.minimum(1, (dur - t) / 0.18)
+    return (y + breath) * env
+
+
+def drone(f, dur):
+    # zumbido grave tipo didgeridoo: dente de serra filtrado com formante a oscilar
+    t = np.arange(int(dur * SR)) / SR
+    saw = sum(np.sin(2 * np.pi * f * k * t) / k for k in range(1, 14))
+    wob = 0.5 + 0.5 * np.sin(2 * np.pi * 0.35 * t)
+    lo = filt(saw, 'lowpass', 300); mid = filt(saw, 'bandpass', [500, 900])
+    return (lo * 0.7 + mid * (0.15 + 0.35 * wob)) * np.minimum(1, t / 1.0) * np.minimum(1, (dur - t) / 1.0) * 0.35
+
+
 def midi(n):
     return 440 * 2 ** ((n - 69) / 12)
 
@@ -122,6 +154,8 @@ MUSIC = {
     'climax':  (126, [(57, 'm'), (53, 'M'), (55, 'M'), (52, 'M')], 'climax'),
     'wonder':  (70,  [(60, 'M'), (64, 'm'), (65, 'M'), (67, 'M')], 'wonder'),
     'sad':     (64,  [(57, 'm'), (53, 'M'), (60, 'M'), (55, 'M')], 'wonder'),
+    'tribal':      (92,  [(57, 'm')], 'tribal'),
+    'tribalChase': (138, [(57, 'm')], 'tribalchase'),
     'triumph': (116, [(60, 'M'), (65, 'M'), (67, 'M'), (60, 'M')], 'triumph'),
 }
 
@@ -135,6 +169,23 @@ def render_music(name, dur, seed):
     if name not in MUSIC:
         return out[:int(dur * SR)]
     bpm, prog, style = MUSIC[name]
+    if style in ('tribal', 'tribalchase'):
+        beat = 60 / bpm; r = rng(seed); chase = style == 'tribalchase'
+        add(out, drone(midi(33), dur + 1), 0, 0.5 if not chase else 0.35)
+        penta = [57, 60, 62, 64, 67, 69, 72]
+        mel = 3
+        for b in range(int(dur / beat) + 1):
+            t = b * beat
+            pat = [1, 0, 0.6, 0] if not chase else [1, 0.6, 0.8, 0.6]
+            for q in range(4):
+                v = pat[q]
+                if v: add(out, tom(78 if q == 0 else 112, 0.45, seed + b), t + q * beat / 4, 0.42 * v)
+            if chase or b % 2 == 0: add(out, shaker(), t + beat / 2, 0.12)
+            if not chase and b % 8 == 4: add(out, tom(150, 0.3), t + beat * 0.75, 0.25)
+            if (not chase and b % 2 == 0 and r.random() < 0.7) or (chase and r.random() < 0.5):
+                mel = int(np.clip(mel + r.integers(-2, 3), 0, len(penta) - 1))
+                add(out, flute(midi(penta[mel] + 12), beat * (1.6 if not chase else 0.8), seed + b), t, 0.16)
+        return out[:int(dur * SR)]
     beat = 60 / bpm
     r = rng(seed)
     nbeats = int(dur / beat) + 1
@@ -219,12 +270,20 @@ def sfx(name, dur_left, seed):
         for k, n in enumerate([84, 88, 91, 96, 100]):
             add(y, bell(midi(n), 0.9), k * 0.07, 0.35)
         return y
-    if name in ('rain', 'rumble', 'alarm', 'static', 'fire'):
+    if name in ('rain', 'rumble', 'alarm', 'static', 'fire', 'nature'):
         d = max(0.5, dur_left)
         t = np.arange(int(d * SR)) / SR
         fade = np.minimum(1, t / 0.3) * np.minimum(1, (d - t) / 0.3)
         if name == 'rain':
             return filt(noise(d, seed), 'bandpass', [900, 7000]) * fade * 0.35
+        if name == 'nature':  # vento + pássaros
+            y = filt(noise(d, seed), 'lowpass', 600) * (0.6 + 0.4 * np.sin(2 * np.pi * 0.15 * t)) * 0.25
+            for k in range(int(d * 1.5)):
+                t0 = rng(seed + k).uniform(0, max(0.1, d - 0.4)); f0 = rng(seed + k + 1).uniform(2500, 4500)
+                tt = np.arange(int(0.25 * SR)) / SR
+                chirp = np.sin(2 * np.pi * np.cumsum(f0 * (1 + 0.25 * np.sin(2 * np.pi * 18 * tt))) / SR) * np.sin(np.pi * tt / 0.25) ** 2
+                add(y, chirp, t0, 0.05)
+            return y * fade
         if name == 'static':
             n = filt(noise(d, seed), 'bandpass', [800, 6000])
             return n * fade * (0.5 + 0.5 * (rng(seed).random(len(t)) > 0.97)) * 0.35
@@ -387,7 +446,8 @@ def main():
     lo = np.clip(np.arange(len(voice)) - win // 2, 0, len(voice)); hi = np.clip(lo + win, 0, len(voice))
     venv = (cs[hi] - cs[lo]) / win
     venv = np.clip(venv / (np.percentile(venv[venv > 1e-4], 80) + 1e-6), 0, 1)
-    music *= 0.32 * (1 - 0.55 * venv)
+    first = shots[0]
+    music *= first.get('musicGain', 0.32) * (1 - first.get('duck', 0.55) * venv)
 
     mix = voice * 1.0 + music + fx
     mix = np.tanh(mix * 1.1) / np.tanh(1.1)

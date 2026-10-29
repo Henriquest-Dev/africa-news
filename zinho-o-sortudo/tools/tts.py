@@ -1,15 +1,16 @@
 """Gera a narração e as falas de cada personagem.
 
 Provedores:
+  gemini      vozes neurais do Google Gemini (gemini-2.5-flash-preview-tts), chave GEMINI_API_KEY
   openrouter  vozes neurais do modelo openai/gpt-audio(-mini) via OpenRouter
               (precisa de OPENROUTER_API_KEY com saldo; áudio exige >= US$0,50)
   edge        vozes neurais Microsoft (pt-BR), gratuitas — usado quando não há saldo
 
-Uso:  python3 tools/tts.py [--provider auto|openrouter|edge] [--force]
+Uso:  python3 tools/tts.py [--provider auto|gemini|openrouter|edge] [--force]
 Saída: build/voices/NNN.wav + build/lines.json (duração e envelope p/ lip-sync)
 """
 import argparse, asyncio, base64, hashlib, json, os, subprocess, sys, wave
-import urllib.request
+import urllib.error, urllib.request
 
 import numpy as np
 
@@ -31,6 +32,16 @@ OPENROUTER_VOICES = {
     'PROF':  ('sage',    'Professora animada e um pouco irônica.'),
     'UGO':   ('onyx',    'Homem das cavernas, voz grave e rouca, fala curta e engraçada.'),
 }
+GEMINI_VOICES = {  # voz pré-definida do Gemini, direção de interpretação
+    'NAR':   ('Charon',    'Narrador de vídeo animado do YouTube, voz grave e envolvente, ritmo ágil, com suspense e humor'),
+    'ZINHO': ('Puck',      'Menino brasileiro de 13 anos, animado, expressivo e engraçado'),
+    'BETO':  ('Fenrir',    'Adolescente brasileiro ansioso e medroso, fala rápido'),
+    'LIA':   ('Leda',      'Menina brasileira inteligente e decidida'),
+    'MAE':   ('Sulafat',   'Mãe brasileira carinhosa, mas brava quando precisa'),
+    'JUCA':  ('Gacrux',    'Senhor idoso brasileiro rabugento, fala devagar'),
+    'PROF':  ('Aoede',     'Professora animada e um pouco irônica'),
+    'UGO':   ('Algenib',   'Homem das cavernas, voz grave e rouca, fala curta, engraçado'),
+}
 EDGE_VOICES = {  # voz, velocidade, tom
     'NAR':   ('pt-BR-AntonioNeural', '+12%', '-4Hz'),
     'ZINHO': ('pt-BR-AntonioNeural', '+16%', '+16Hz'),
@@ -41,6 +52,54 @@ EDGE_VOICES = {  # voz, velocidade, tom
     'PROF':  ('pt-BR-FranciscaNeural', '+14%', '+10Hz'),
     'UGO':   ('pt-BR-AntonioNeural', '-6%', '-42Hz'),
 }
+
+
+def env_key(name):
+    key = os.environ.get(name, '').strip()
+    env = os.path.join(ROOT, '.env')
+    if not key and os.path.exists(env):
+        for line in open(env):
+            if line.startswith(name + '='):
+                key = line.split('=', 1)[1].strip()
+    return key
+
+
+def tts_gemini(key, who, text, out_wav):
+    import time
+    voice, style = GEMINI_VOICES[who]
+    prompt = f'Fale em português do Brasil. Personagem: {style}. Diga exatamente, com emoção, sem acrescentar nada: {text}'
+    body = json.dumps({'contents': [{'parts': [{'text': prompt}]}],
+                       'generationConfig': {'responseModalities': ['AUDIO'],
+                                            'speechConfig': {'voiceConfig': {'prebuiltVoiceConfig': {'voiceName': voice}}}}}).encode()
+    last = None
+    # o 3.8 lê a instrução de interpretação em voz alta; o 2.5 interpreta-a e só fala o texto
+    for model in ('gemini-2.5-flash-preview-tts', 'gemini-2.5-pro-preview-tts'):
+        for attempt in range(5):
+            req = urllib.request.Request(f'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent', data=body,
+                                         headers={'x-goog-api-key': key, 'Content-Type': 'application/json'})
+            try:
+                d = json.load(urllib.request.urlopen(req, timeout=180))
+                part = d['candidates'][0]['content']['parts'][0]['inlineData']
+                raw = base64.b64decode(part['data'])
+                if 'wav' in part['mimeType']:
+                    open(out_wav + '.src.wav', 'wb').write(raw)
+                    subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', out_wav + '.src.wav', '-ac', '1', '-ar', str(SR), out_wav], check=True)
+                    os.remove(out_wav + '.src.wav')
+                else:  # PCM 16 bits cru (audio/L16;rate=24000)
+                    rate = int(part['mimeType'].split('rate=')[1].split(';')[0]) if 'rate=' in part['mimeType'] else 24000
+                    with wave.open(out_wav + '.src.wav', 'wb') as w:
+                        w.setnchannels(1); w.setsampwidth(2); w.setframerate(rate); w.writeframes(raw)
+                    subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', out_wav + '.src.wav', '-ac', '1', '-ar', str(SR), out_wav], check=True)
+                    os.remove(out_wav + '.src.wav')
+                return
+            except urllib.error.HTTPError as e:
+                last = f'{model}: HTTP {e.code} {e.read()[:200]!r}'
+                if e.code == 429:  # limite do plano gratuito: espera e tenta de novo
+                    time.sleep(20 * (attempt + 1)); continue
+                break
+            except (KeyError, IndexError) as e:
+                last = f'{model}: resposta sem áudio ({e})'; time.sleep(3)
+    raise RuntimeError(last)
 
 
 def openrouter_key():
@@ -139,19 +198,22 @@ def main():
 
     provider = args.provider
     key = openrouter_key()
+    gkey = env_key('GEMINI_API_KEY')
     if provider == 'auto':
-        provider = 'openrouter' if key and openrouter_has_credit(key) else 'edge'
+        provider = 'gemini' if gkey else 'openrouter' if key and openrouter_has_credit(key) else 'edge'
     print('provedor de voz:', provider)
 
     lines = []
     for i, shot in enumerate(story):
         who, text = shot['who'], shot['text']
-        tag = hashlib.sha1(f'{provider}|{who}|{text}|{EDGE_VOICES[who]}|{OPENROUTER_VOICES[who]}'.encode()).hexdigest()[:10]
+        tag = hashlib.sha1(f'{provider}|{who}|{text}|{EDGE_VOICES[who]}|{OPENROUTER_VOICES[who]}|{GEMINI_VOICES[who]}'.encode()).hexdigest()[:10]
         out = os.path.join(VOICES_DIR, f'{i:03d}_{who}_{tag}.wav')
         if args.force or not os.path.exists(out):
             for attempt in range(4):
                 try:
-                    if provider == 'openrouter':
+                    if provider == 'gemini':
+                        tts_gemini(gkey, who, text, out)
+                    elif provider == 'openrouter':
                         tts_openrouter(key, who, text, out)
                     else:
                         tts_edge(who, text, out)

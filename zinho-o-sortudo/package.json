@@ -7,7 +7,7 @@
     "tts": "python3 tools/tts.py",
     "audio": "python3 tools/build_audio.py",
     "render": "node tools/render.mjs",
-    "all": "npm run story && npm run tts && npm run audio && npm run render"
+    "all": "npm run tts && npm run audio && npm run render"
   },
   "dependencies": {
     "three": "^0.170.0"

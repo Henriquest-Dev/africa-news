@@ -1,20 +1,22 @@
 # Zinho, o Sortudo — gerador de episódios animados
 
-Pipeline que transforma um roteiro (`story.js`) num vídeo 3D animado em 1080p, no estilo
+Pipeline que transforma um roteiro (`episodes/*.js`) num vídeo 3D animado em 1080p, no estilo
 "E se X dobrasse todo dia?": personagens low-poly com contorno preto, contador de dias no canto,
 carimbos "DIA N", narração e vozes diferentes para cada personagem.
 
-Episódio 1: **"E se o seu AZAR dobrasse todo dia?"** (~5 min 17 s, 85 planos).
+Episódios (em `episodes/`):
+- `01-azar.js` — "E se o seu AZAR dobrasse todo dia?" (~5:17)
+- `02-ouro.js` — "E se tudo que você tocasse virasse ouro?" (~4:49)
 
 ## Como gerar
 
 ```bash
 npm install                      # three.js
 pip install edge-tts numpy scipy # vozes gratuitas + mixagem
-npm run story                    # roteiro -> build/story.json
+node tools/export-story.mjs episodes/02-ouro.js  # escolhe o episódio -> build/story.json
 npm run tts                      # vozes -> build/voices/*.wav + build/lines.json
 npm run audio                    # linha do tempo + trilha + efeitos -> build/timeline.json, build/mix.wav
-npm run render                   # vídeo -> out/zinho-azar-dobra.mp4
+npm run render                   # vídeo -> out/zinho-<episódio>.mp4
 ```
 
 Pré-visualizar quadros soltos (segundos): `node tools/render.mjs --preview 10,95.5,270`
@@ -53,13 +55,13 @@ Forçar um provedor: `python3 tools/tts.py --provider openrouter --force`.
 
 ## Fazer um novo episódio
 
-Edite `story.js`: cada entrada é um plano com a fala (`who`, `text`), o cenário (`set`, `tod`),
+Crie um ficheiro em `episodes/` (copie um existente): cada entrada é um plano com a fala (`who`, `text`), o cenário (`set`, `tod`),
 o contador (`hud`), a câmera (`cam`), os atores com posição/ação/expressão (`actors`), efeitos (`fx`)
 e sons (`sfx`). A duração de cada plano ajusta-se sozinha ao tamanho da fala.
 
 Cenários: `street` (rua com padaria, campinho, terreno baldio, ponto de ônibus), `kitchen`,
 `bedroom`, `classroom`. Ações: `idle talk walk run wave cheer shock angry hold point shrug kick
-kickfall trip sit sitfloor sitbed lie headdown`. Expressões: `neutral happy smug worried angry shock
-flat closed`.
+kickfall trip sit sitfloor sitbed lie headdown hug reach`. Expressões: `neutral happy smug worried angry shock
+flat closed sad`.
 
 Música e efeitos sonoros são sintetizados em `tools/build_audio.py` (sem samples de terceiros).

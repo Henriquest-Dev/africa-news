@@ -1,6 +1,6 @@
 // Renderiza o vídeo quadro a quadro no Chromium headless e monta o MP4 com ffmpeg.
 //
-//   node tools/render.mjs                      vídeo completo -> out/zinho-azar-dobra.mp4
+//   node tools/render.mjs                      vídeo completo -> out/zinho-<episódio>.mp4
 //   node tools/render.mjs --preview 3,40.5     só PNGs desses instantes -> out/preview/
 //   node tools/render.mjs --from 60 --to 70    só um trecho
 //   opções: --w 1920 --h 1080 --fps 30 --workers 4
@@ -72,7 +72,8 @@ async function main() {
   const f0 = Math.round(from * FPS), f1 = Math.round(to * FPS);
   // Cada quadro vai para out/frames/NNNNN.jpg; os que já existem são saltados,
   // por isso um render interrompido retoma de onde parou.
-  const frameDir = path.join(OUT, 'frames'); await mkdir(frameDir, { recursive: true });
+  const ep = existsSync(path.join(ROOT, 'build/episode.txt')) ? (await readFile(path.join(ROOT, 'build/episode.txt'), 'utf8')).trim() : 'episodio';
+  const frameDir = path.join(OUT, 'frames-' + ep); await mkdir(frameDir, { recursive: true });
   const framePath = (f) => path.join(frameDir, String(f).padStart(5, '0') + '.jpg');
   const todo = [];
   for (let f = f0; f < f1; f++) if (!existsSync(framePath(f))) todo.push(f);
@@ -101,7 +102,7 @@ async function main() {
   }
   await Promise.all(jobs);
   await browser.close(); srv.close();
-  const name = arg('out', from === 0 && to === tl.total ? 'zinho-azar-dobra.mp4' : `trecho_${from}-${to}.mp4`);
+  const name = arg('out', from === 0 && to === tl.total ? `zinho-${ep}.mp4` : `trecho_${from}-${to}.mp4`);
   const out = path.join(OUT, name);
   const ff = ffmpeg(['-framerate', String(FPS), '-start_number', String(f0), '-i', path.join(frameDir, '%05d.jpg'),
     '-ss', String(from), '-t', String(to - from), '-i', path.join(ROOT, 'build/mix.wav'),

@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AI Ate Your RAM</title>
+<link rel="stylesheet" href="fonts.css">
+<style>
+  html, body { margin: 0; background: #111; overflow: hidden; }
+  #stage { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; overflow: hidden; background: #0a1a45; transform-origin: 0 0; }
+  canvas.full { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+  .L { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+  .e { position: absolute; left: 0; top: 0; white-space: nowrap; will-change: transform, opacity; }
+  .big { font-family: 'Caslon'; font-weight: 700; color: #FFF4DE; line-height: .9; text-shadow: 0 8px 36px rgba(0,0,0,.5); }
+  .gold { color: #FFC21E; } .orange { color: #F2661F; }
+  .ital { font-family: 'Instr'; font-style: italic; color: #FFF4DE; text-shadow: 0 4px 24px rgba(0,0,0,.55); }
+  .mono { font-family: 'JetBrains Mono'; font-weight: 700; letter-spacing: .06em; }
+  .cut { filter: drop-shadow(10px 14px 0 rgba(3,10,35,.42)); }
+  .paper { background: #FFF4DE; color: #13204A; border-radius: 6px; }
+  .stamp { font-family: 'Caslon'; font-weight: 700; color: #FFF4DE; background: #F2661F; padding: 6px 26px 12px; border: 7px solid #FFF4DE; }
+  .big, .ital, .mono, .stamp { z-index: 3; }
+  .pz { position: absolute; left: 0; top: 0; }
+  .pin { position: absolute; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #FFE9A0, #FFC21E 45%, #B8780A 90%); box-shadow: 0 2px 0 rgba(0,0,0,.45); }
+  svg.full { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; overflow: visible; }
+  #ui { position: fixed; left: 0; right: 0; bottom: 0; padding: 10px; background: #000c; color: #ddd; font: 13px system-ui; display: flex; gap: 10px; align-items: center; }
+  #ui input { flex: 1; } .render #ui { display: none; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="bg" class="full" width="1080" height="1920"></canvas>
+  <div id="cam" class="L"></div>
+  <canvas id="fx" class="full" width="1080" height="1920"></canvas>
+</div>
+<div id="ui"><button id="pp">▶</button><input id="scrub" type="range" min="0" max="1000" value="0"><span id="tc">0.00</span></div>
+<script src="sfx.js"></script>
+<script src="vo.js"></script>
+<script src="timing.js"></script>
+<script>
+/* BEAT SHEET — "AI ate your RAM" (SK Hynix, 28 out. 2026). Colagem de papel em meio-tom + fantoche articulado com fios.
+   0.00 S1 HOOK     fantoche segura o telemóvel; etiqueta de preço cai "$$$"; 2.06 mão robótica desce: "AND AI IS THE REASON."
+   3.60 S2 SOLD OUT fábrica; calendário 2026→2029 a virar; 8.18 carimbo SOLD OUT; "UNTIL 2029"
+  10.90 S3 HBM      rack de servidores + chip HBM; 14.5 os pentes de RAM saem do telemóvel e do portátil e voam para o servidor
+  18.24 S4 2×       barras de papel: SUPPLY vs DEMAND (2×)
+  21.00 S5 SCARCE   um último pente de RAM; 22.58 "SCARCE." ; 23.52 etiqueta e carimbo "EXPENSIVE."
+  24.70 S6 GARTNER  telemóvel +13% (26.78), portátil +17% (28.76)
+  30.10 S7 ANDROID  fantoche encolhe os ombros; o telemóvel racha; "CHEAP ANDROIDS HIT HARDEST"
+  32.30 S8 BILL     mão robótica deixa cair uma fatura enorme; carteira com traças (35.5)
+  36.80 S9 CTA      avatar, FOLLOW DAMIAN DUPONT, handle escrito; fantoche acena
+*/
+const W = 1080, H = 1920, DUR = 41.8;
+window.VIDEO = { w: W, h: H, duration: DUR };
+if (location.search.includes('render')) document.documentElement.classList.add('render');
+const C = { gold: '#FFC21E', goldD: '#E89A06', orange: '#F2661F', navy: '#13204A', cream: '#FFF4DE' };
+
+function spring(t, w = 14, z = 0.82) { if (t <= 0) return 0; if (z >= 1) return 1 - Math.exp(-w * t) * (1 + w * t); const wd = w * Math.sqrt(1 - z * z); return 1 - Math.exp(-z * w * t) * (Math.cos(wd * t) + (z * w / wd) * Math.sin(wd * t)); }
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const ease = x => (x = clamp(x), x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const expo = x => (x = clamp(x), x === 1 ? 1 : 1 - Math.pow(2, -10 * x));
+const lerp = (a, b, k) => a + (b - a) * k;
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const rng = s => () => (s = (s + 0x6D2B79F5) | 0, s = Math.imul(s ^ (s >>> 15), 1 | s), s ^= s + Math.imul(s ^ (s >>> 7), 61 | s), ((s ^ (s >>> 14)) >>> 0) / 4294967296);
+
+const cam = document.getElementById('cam'), NS = 'http://www.w3.org/2000/svg';
+function layer(z = 0) { const d = document.createElement('div'); d.className = 'L'; d.style.zIndex = z; cam.appendChild(d); return d; }
+function el(p, tag, cls = '', css = '') { const d = document.createElement(tag); d.className = cls; d.style.cssText = css; p.appendChild(d); return d; }
+function img(p, src, w, cls = 'e cut') { const i = el(p, 'img', cls, `width:${w}px`); i.src = 'assets/' + src; return i; }
+function txt(p, s, cls, size, css = '') { const d = el(p, 'div', 'e ' + cls, `font-size:${size}px;` + css); d.textContent = s; return d; }
+function put(e, x, y, s = 1, r = 0, o = 1) { e.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px) translate(-50%,-50%) scale(${s.toFixed(4)}) rotate(${r.toFixed(2)}deg)`; e.style.opacity = o; e.style.visibility = o <= .002 ? 'hidden' : 'visible'; }
+function show(e, on) { e.style.display = on ? 'block' : 'none'; }
+function svgEl(p) { const s = document.createElementNS(NS, 'svg'); s.setAttribute('class', 'full'); s.setAttribute('viewBox', `0 0 ${W} ${H}`); p.appendChild(s); return s; }
+function path(s, d, stroke, w, dash) { const p = document.createElementNS(NS, 'path'); p.setAttribute('d', d); p.setAttribute('fill', 'none'); p.setAttribute('stroke', stroke); p.setAttribute('stroke-width', w); p.setAttribute('stroke-linecap', 'round'); p.setAttribute('stroke-linejoin', 'round'); if (dash) p.setAttribute('stroke-dasharray', dash); s.appendChild(p); return p; }
+function draw(p, k) { const L = p.__L ??= p.getTotalLength(); if (!p.getAttribute('stroke-dasharray') || p.__solid) { p.__solid = true; p.setAttribute('stroke-dasharray', `${L} ${L}`); p.setAttribute('stroke-dashoffset', L * (1 - clamp(k))); } else p.style.clipPath = `inset(0 ${(1 - clamp(k)) * 100}% 0 0)`; p.style.opacity = k > 0 ? 1 : 0; }
+// recorte que cai e assenta (como papel)
+function drop(e, t, t0, t1, x, y, o = {}) {
+  if (t < t0 || t > t1 + .25) { e.style.visibility = 'hidden'; return; }
+  const k = spring(t - t0, o.w || 12, o.z || .62), out = ease(seg(t, t1, t1 + .25));
+  put(e, x + (1 - k) * (o.dx || 0) + out * (o.ox || 0), y + (1 - k) * (o.dy ?? -140) + out * (o.oy ?? 0), lerp(o.s0 ?? 1.2, 1, k) * (o.s || 1), lerp(o.r0 ?? -12, o.r || 0, k) + Math.sin(t * 1.7 + (o.ph || 0)) * (o.wob ?? 1.2), clamp((t - t0) / .08) * (1 - out));
+}
+function word(e, t, t0, t1, x, y, o = {}) {
+  if (t < t0 || t > t1 + .2) { e.style.visibility = 'hidden'; return; }
+  const k = spring(t - t0, o.w || 15, o.z || .66), out = ease(seg(t, t1, t1 + .18));
+  put(e, x + (1 - k) * (o.dx || 0), y + (1 - k) * (o.dy ?? 50) - out * 30, lerp(o.s0 ?? .75, 1, k) * (o.s || 1), o.r || 0, clamp((t - t0) / .1) * (1 - out));
+  const bl = (1 - clamp((t - t0) / .18)) * 9; e.style.filter = bl > .4 ? `blur(${bl.toFixed(1)}px)` : 'none';
+}
+{ const g = document.getElementById('bg').getContext('2d'), gr = g.createRadialGradient(540, 860, 60, 540, 900, 1300); gr.addColorStop(0, '#3D82F0'); gr.addColorStop(.5, '#1A49B5'); gr.addColorStop(1, '#06133A'); g.fillStyle = gr; g.fillRect(0, 0, W, H); }
+
+// ================= FANTOCHE ARTICULADO (mesmo motor do vídeo 06) =================
+function puppet(parent, name) {
+  const M = RIGS[name], [RW, RH] = M.size;
+  const root = el(parent, 'div', 'e cut', `width:${RW}px;height:${RH}px`);
+  const full = (p, src) => { const i = el(p, 'img', 'pz', `width:${RW}px;height:${RH}px`); i.src = `assets/${name}_${src}.png`; return i; };
+  const wrap = (p, o) => el(p, 'div', 'pz', `width:${RW}px;height:${RH}px;transform-origin:${o[0]}px ${o[1]}px`);
+  const pin = (p, o) => el(p, 'div', 'pin', `left:${o[0]}px;top:${o[1]}px`);
+  full(root, 'torso');
+  const head = wrap(root, M.neck); full(head, 'head');
+  const arm = side => { const J = M[side], up = wrap(root, J.S); full(up, 'up' + side); const fo = wrap(up, J.E); full(fo, 'fo' + side); const prop = el(fo, 'div', 'pz', `left:${J.T[0]}px;top:${J.T[1]}px`); pin(fo, J.E); pin(up, J.S); return { up, fo, prop, J }; };
+  const L = arm('L'), R = arm('R');
+  return { root, head, L, R, M, seed: 1.3 };
+}
+const rot2 = (v, a) => { const r = a * Math.PI / 180, c = Math.cos(r), s = Math.sin(r); return [v[0] * c - v[1] * s, v[0] * s + v[1] * c]; };
+const add = (a, b) => [a[0] + b[0], a[1] + b[1]], sub = (a, b) => [a[0] - b[0], a[1] - b[1]];
+function pose(P, t, p) {
+  const sway = Math.sin(t * 1.9 + P.seed) * 1.6, bob = Math.sin(t * 3.8 + P.seed) * 5;
+  const s = p.s ?? 1, r = (p.r || 0) + sway, o = p.o ?? 1;
+  put(P.root, p.x, p.y + bob, s, r, o);
+  const lagL = Math.sin(t * 3.8 + P.seed - .7) * 4, lagR = Math.sin(t * 3.8 + P.seed + 1.3) * 4;
+  const aL = (p.aL || 0) + Math.sin(t * 2.3 + P.seed) * 3, eL = (p.eL || 0) + lagL, aR = (p.aR || 0) - Math.sin(t * 2.1 + P.seed) * 3, eR = (p.eR || 0) - lagR;
+  P.L.up.style.transform = `rotate(${aL.toFixed(2)}deg)`; P.L.fo.style.transform = `rotate(${eL.toFixed(2)}deg)`;
+  P.R.up.style.transform = `rotate(${aR.toFixed(2)}deg)`; P.R.fo.style.transform = `rotate(${eR.toFixed(2)}deg)`;
+  P.L.prop.style.transform = `rotate(${(-(aL + eL + r)).toFixed(2)}deg)`; P.R.prop.style.transform = `rotate(${(-(aR + eR + r)).toFixed(2)}deg)`;
+  const hd = (p.hd || 0) + Math.sin(t * 2.6 + P.seed) * 2.5; P.head.style.transform = `rotate(${hd.toFixed(2)}deg)`;
+  const M = P.M, c = [M.size[0] / 2, M.size[1] / 2], ctr = [p.x, p.y + bob];
+  const world = q => add(ctr, rot2([(q[0] - c[0]) * s, (q[1] - c[1]) * s], r));
+  const hand = (J, a, e) => add(J.S, rot2(add(sub(J.E, J.S), rot2(sub(J.T, J.E), e)), a));
+  P.st = { o, hL: world(hand(M.L, aL, eL)), hR: world(hand(M.R, aR, eR)), head: world(add(M.neck, rot2([0, -M.neck[1] + 10], hd))) };
+}
+function strings(svg, P) {
+  if (!P.lines) { P.lines = [0, 1, 2].map(() => path(svg, 'M0 0', 'rgba(255,244,222,.75)', 2.4)); P.bar = path(svg, 'M0 0', '#C98A3A', 16); }
+  const st = P.st, bx = st.head[0], by = -40, pts = [st.hL, st.head, st.hR], anchors = [[bx - 170, by + 30], [bx, by + 10], [bx + 170, by + 30]];
+  P.lines.forEach((l, i) => { l.setAttribute('d', `M${anchors[i][0]} ${anchors[i][1]} L${pts[i][0]} ${pts[i][1]}`); l.style.opacity = st.o; });
+  P.bar.setAttribute('d', `M${bx - 200} ${by + 30} L${bx + 200} ${by + 30}`); P.bar.style.opacity = st.o;
+}
+function hideP(P) { P.root.style.visibility = 'hidden'; if (P.lines) { P.lines.forEach(l => l.style.opacity = 0); P.bar.style.opacity = 0; } }
+
+// ================= CENAS =================
+const world = layer(2), svgS = svgEl(world), PA = puppet(world, 'exec_a');
+const palmPhone = img(PA.L.prop, 'phone.png', 150, 'pz'); palmPhone.style.transform = 'translate(-50%,-96%)';
+const ov = layer(5);
+const SVG = svgEl(ov);
+// S1
+const t1a = txt(ov, 'YOUR NEXT PHONE', 'big', 112), t1b = txt(ov, 'COSTS MORE.', 'big gold', 168), t1c = txt(ov, 'and AI is the reason.', 'ital', 92);
+const tag1 = img(ov, 'tag.png', 300), tag1t = txt(ov, '$$$', 'big', 80, `color:${C.navy}`), robot1 = img(ov, 'robot.png', 620);
+// S2
+const factory = img(ov, 'factory.png', 860), t2a = txt(ov, 'SK HYNIX', 'big', 150), t2b = txt(ov, 'one of the biggest memory makers on Earth', 'ital', 50);
+const calB = el(ov, 'div', 'e cut paper', 'width:300px;height:330px;text-align:center'); calB.innerHTML = `<div style="height:56px;background:${C.orange};border-radius:6px 6px 0 0"></div><div class="mono" style="font-size:36px;margin-top:14px">SOLD OUT</div><div class="yr" style="font-family:Caslon;font-weight:700;font-size:130px;line-height:1.1">2026</div>`;
+const calY = calB.querySelector('.yr'), stamp2 = txt(ov, 'SOLD OUT', 'stamp', 130), t2c = txt(ov, 'UNTIL 2029', 'big gold', 150);
+// S3
+const server = img(ov, 'server.png', 520), hbm = img(ov, 'hbm.png', 400), hbmT = txt(ov, 'HBM', 'stamp', 90), t3a = txt(ov, 'AI DATA CENTERS NEED', 'big', 80), t3b = txt(ov, 'SPECIAL MEMORY', 'big gold', 110);
+const phone3 = img(ov, 'phone.png', 220), laptop3 = img(ov, 'laptop.png', 420), t3c = txt(ov, 'SAME FACTORIES.', 'big', 100), t3d = txt(ov, 'as your phone & laptop', 'ital', 64);
+const sticks = Array.from({ length: 6 }, () => img(ov, 'ram.png', 230));
+// S4
+const barS = el(ov, 'div', 'e cut paper', 'width:240px;height:400px;transform-origin:50% 100%'), barD = el(ov, 'div', 'e cut', `width:240px;height:800px;background:${C.gold};border-radius:6px;transform-origin:50% 100%`);
+const lS = txt(ov, 'SUPPLY', 'mono', 44, `color:${C.cream}`), lD = txt(ov, 'DEMAND', 'mono', 44, `color:${C.cream}`), t4 = txt(ov, '2×', 'big gold', 300), t4b = txt(ov, 'more than SK Hynix can make', 'ital', 60);
+const src4 = txt(ov, 'SK HYNIX Q3 CALL · OCT 28, 2026', 'mono', 26, 'color:rgba(255,244,222,.6)');
+// S5
+const ram5 = img(ov, 'ram.png', 620), tag5 = img(ov, 'tag.png', 360), tag5t = txt(ov, '$$$$', 'big', 64, `color:${C.navy}`), t5a = txt(ov, 'SCARCE.', 'big', 200), stamp5 = txt(ov, 'EXPENSIVE.', 'stamp', 130);
+// S6
+const phone6 = img(ov, 'phone.png', 300), laptop6 = img(ov, 'laptop.png', 520), tagP = img(ov, 'tag.png', 260), tagPt = txt(ov, '+13%', 'big', 62, `color:${C.navy}`), tagL = img(ov, 'tag.png', 260), tagLt = txt(ov, '+17%', 'big', 62, `color:${C.navy}`);
+const t6a = txt(ov, 'GARTNER FORECAST', 'mono', 46, `color:${C.cream}`), t6b = txt(ov, 'PHONES', 'big', 100), t6c = txt(ov, 'PCs', 'big', 100), src6 = txt(ov, 'GARTNER · 2026 FORECAST', 'mono', 26, 'color:rgba(255,244,222,.6)');
+// S7
+const t7a = txt(ov, 'CHEAP ANDROIDS', 'big', 120), t7b = txt(ov, 'HIT HARDEST.', 'big orange', 160);
+const crack = svgEl(ov), crk = path(crack, 'M0 0', C.cream, 7);
+// S8
+const robot8 = img(ov, 'robot.png', 560), receipt = img(ov, 'receipt.png', 360), wallet = img(ov, 'wallet.png', 460);
+const t8a = txt(ov, 'NOT JUST THE CLOUD.', 'big', 100), t8b = txt(ov, "IT'S IN YOUR POCKET.", 'big gold', 104), t8c = txt(ov, 'and it sends you the bill.', 'ital', 80);
+// S9
+const avRing = el(ov, 'div', 'e cut', `width:640px;height:640px;border-radius:50%;background:${C.cream}`), av = img(ov, 'avatar.png', 600, 'e');
+const e1 = txt(ov, 'WHAT TECH DOES NEXT', 'big', 84), nm = txt(ov, 'FOLLOW DAMIAN DUPONT', 'big gold', 72), hdl = txt(ov, '', 'mono', 50, `color:${C.cream}`);
+const credit = txt(ov, 'MUSIC: "TRAPPIST" BY AXTONCROLLEY (CC-BY 3.0)', 'mono', 20, 'color:rgba(255,244,222,.45)');
+const HANDLE = '@DamianDupozjcr';
+// faixa de transição dourada
+const band = layer(8), bandSvg = svgEl(band), bandPoly = document.createElementNS(NS, 'polygon'); bandPoly.setAttribute('fill', C.gold); bandSvg.appendChild(bandPoly);
+function bandPts(x0, x1, yc, hh, ph) { const top = [], bot = []; for (let i = 0; i <= 40; i++) { const x = lerp(x0, x1, i / 40), w = Math.sin(x * .006 + ph) * 70 + Math.sin(x * .013 + ph * 1.7) * 24; top.push([x, yc - hh + w]); bot.push([x, yc + hh + w * .7]); } return top.concat(bot.reverse()); }
+const WIPES = [[3.35, 3.85], [18.0, 18.5], [24.4, 24.9], [36.55, 37.05]];
+// textura
+const fx = document.getElementById('fx').getContext('2d');
+const dots = document.createElement('canvas'); dots.width = dots.height = 12; { const g = dots.getContext('2d'); g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.arc(6, 6, 1.6, 0, 7); g.fill(); }
+const dotPat = fx.createPattern(dots, 'repeat');
+const grain = [], R0 = rng(7); for (let i = 0; i < 6; i++) { const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d'), d = g.createImageData(256, 256); for (let j = 0; j < d.data.length; j += 4) { const v = R0() * 255; d.data[j] = d.data[j + 1] = d.data[j + 2] = v; d.data[j + 3] = 255; } g.putImageData(d, 0, 0); grain.push(c); }
+const vig = document.createElement('canvas'); vig.width = W; vig.height = H; { const g = vig.getContext('2d'), gr = g.createRadialGradient(540, 900, 380, 540, 960, 1300); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,10,.7)'); g.fillStyle = gr; g.fillRect(0, 0, W, H); }
+const dust = Array.from({ length: 40 }, (_, i) => { const r = rng(100 + i); return { x: r() * W, y: r() * H, v: 10 + r() * 30, a: r() * 6.28, l: 6 + r() * 20, o: .15 + r() * .3 }; });
+const bumps = [2.06, 8.18, 14.5, 19.2, 23.52, 26.78, 28.76, 30.9, 34.3, 35.5];
+function bump(t) { let s = 0; for (const b of bumps) { const d = t - b; if (d >= 0 && d < .6) s += Math.exp(-d * 7) * Math.sin(d * 18) * .014; } return s; }
+
+// ================= SEEK =================
+window.seek = function (t) {
+  t = clamp(t, 0, DUR - 1e-4);
+  [...ov.children].forEach(c => { if (c.tagName !== 'svg') c.style.visibility = 'hidden'; });
+  crk.style.opacity = 0;
+  let showA = false;
+  // S1
+  if (t < 3.8) {
+    showA = true;
+    const look = ease(seg(t, 2.0, 2.4));
+    pose(PA, t, { x: 560, y: 1380, s: .72, hd: lerp(-8, 10, look), aL: -40, eL: -70, aR: lerp(10, -60, look), eR: lerp(0, -50, look) });
+    word(t1a, t, -0.4, 3.4, 540, 300, { dy: 0 }); t1a.style.filter = 'none';
+    word(t1b, t, 1.2, 3.4, 540, 450, { s0: 1.35, dy: 0, z: .55 });
+    drop(tag1, t, .8, 3.4, 330, 980, { dy: -700, r0: -40, r: -18, s0: 1 }); drop(tag1t, t, .8, 3.4, 360, 1050, { dy: -700, r0: -40, r: -18, s0: 1 });
+    const rk = spring(t - 2.06, 9, .7); put(robot1, 840, lerp(-500, 820, rk), .62, 200 + Math.sin(t * 2) * 4, t > 2.0 ? 1 : 0);
+    word(t1c, t, 2.06, 3.4, 540, 600, { dy: 30 });
+  }
+  // S2
+  if (t >= 3.6 && t < 10.95) {
+    drop(factory, t, 3.65, 99, 540, 1330, { dy: 500, r0: 0, wob: .4 });
+    word(t2a, t, 4.24, 99, 540, 300, { s0: 1.3, dy: 0 }); word(t2b, t, 5.12, 99, 540, 410, { dy: 20 });
+    drop(calB, t, 6.6, 99, 850, 640, { r: 6, s: .85 });
+    calY.textContent = String(Math.min(2029, 2026 + Math.floor(seg(t, 8.6, 9.4) * 3.99)));
+    drop(stamp2, t, 8.18, 99, 400, 800, { s0: 2.6, r0: -25, r: -9, dy: 0, w: 20 });
+    word(t2c, t, 8.8, 99, 540, 960, { s0: 1.3, dy: 0, z: .55 });
+  }
+  // S3
+  if (t >= 10.85 && t < 18.3) {
+    drop(server, t, 10.9, 99, 760, 1000, { dy: -700, r0: 0, wob: .4 }); drop(hbm, t, 12.1, 99, 290, 880, { r0: 30, r: -6 }); drop(hbmT, t, 13.0, 99, 290, 1080, { s0: 2.2, r0: -20, r: -6, dy: 0, w: 20 });
+    word(t3a, t, 10.9, 14.0, 540, 260, { dy: -30 }); word(t3b, t, 12.14, 14.0, 540, 370, { dy: -30 });
+    drop(phone3, t, 14.6, 99, 230, 1560, { dy: 600, r: -8 }); drop(laptop3, t, 15.0, 99, 760, 1590, { dy: 600, r: 4 });
+    sticks.forEach((s, i) => { const t0 = 15.3 + i * .25, k = ease(seg(t, t0, t0 + .9)), from = i % 2 ? [760, 1560] : [230, 1520], to = [760 + (i - 2.5) * 20, 1000]; put(s, lerp(from[0], to[0], k), lerp(from[1], to[1], k) - Math.sin(k * Math.PI) * 260, lerp(.9, .5, k), k * 540, t > t0 && k < 1 ? 1 : 0); });
+    word(t3c, t, 14.88, 99, 540, 260, { dy: -30 }); word(t3d, t, 15.9, 99, 540, 370, { dy: 20 });
+  }
+  // S4
+  if (t >= 18.2 && t < 21.05) {
+    const ks = spring(t - 18.4, 10, .7), kd = spring(t - 19.1, 9, .65);
+    put(barS, 330, 1600 - 200, 1, 0, 1); barS.style.transform += ` scaleY(${ks})`; put(barD, 750, 1600 - 400, 1, 0, 1); barD.style.transform += ` scaleY(${kd})`;
+    word(lS, t, 18.4, 99, 330, 1660, { dy: 20 }); word(lD, t, 19.1, 99, 750, 1660, { dy: 20 });
+    word(t4, t, 19.14, 99, 540, 420, { s0: 1.6, dy: 0, z: .5 }); word(t4b, t, 19.6, 99, 540, 600, { dy: 20 }); word(src4, t, 18.5, 99, 540, 1860, { dy: 0, s0: 1 });
+  }
+  // S5
+  if (t >= 20.95 && t < 24.65) {
+    drop(ram5, t, 21.0, 99, 540, 1180, { r0: 40, r: -12, s0: .5 });
+    word(t5a, t, 22.58, 99, 540, 420, { s0: 1.5, dy: 0, z: .55 });
+    drop(tag5, t, 23.3, 99, 720, 980, { dy: -600, r0: -40, r: 14, s0: 1 }); drop(tag5t, t, 23.3, 99, 755, 1050, { dy: -600, r0: -40, r: 14, s0: 1 });
+    drop(stamp5, t, 23.52, 99, 540, 1650, { s0: 2.4, r0: -20, r: -6, dy: 0, w: 20 });
+  }
+  // S6
+  if (t >= 24.6 && t < 30.15) {
+    word(t6a, t, 24.72, 99, 540, 300, { dy: 20 });
+    drop(phone6, t, 25.26, 99, 290, 1100, { dy: 500, r: -6 }); word(t6b, t, 25.26, 99, 290, 1560, { dy: 30 });
+    drop(laptop6, t, 28.06, 99, 760, 1160, { dy: 500, r: 4 }); word(t6c, t, 28.06, 99, 760, 1560, { dy: 30 });
+    drop(tagP, t, 26.78, 99, 330, 750, { dy: -600, r0: -40, r: -14, s0: 1 }); drop(tagPt, t, 26.78, 99, 350, 800, { dy: -600, r0: -40, r: -14, s0: 1 });
+    drop(tagL, t, 28.76, 99, 780, 780, { dy: -600, r0: 40, r: 12, s0: 1 }); drop(tagLt, t, 28.76, 99, 790, 830, { dy: -600, r0: 40, r: 12, s0: 1 });
+    word(src6, t, 25.0, 99, 540, 1860, { dy: 0, s0: 1 });
+  }
+  // S7
+  if (t >= 30.05 && t < 32.35) {
+    showA = true; const sh = ease(seg(t, 30.3, 30.7));
+    pose(PA, t, { x: 540, y: 1380, s: .72, hd: lerp(0, 12, sh), aL: lerp(-40, 40, sh), eL: lerp(-70, -110, sh), aR: lerp(10, -40, sh), eR: lerp(0, 100, sh) });
+    word(t7a, t, 30.16, 99, 540, 300, { dy: -30 }); word(t7b, t, 30.88, 99, 540, 450, { s0: 1.4, dy: 0, z: .55 });
+    if (t > 30.9) { crk.setAttribute('d', 'M0 0'); const st = PA.st.hL, x = st[0], y = st[1] - 110; crk.setAttribute('d', `M${x - 30} ${y - 60} L${x} ${y - 10} L${x - 20} ${y + 20} L${x + 25} ${y + 70}`); draw(crk, seg(t, 30.9, 31.1)); }
+  }
+  // S8
+  if (t >= 32.25 && t < 36.85) {
+    const rk = spring(t - 32.3, 9, .7); put(robot8, 600, lerp(-500, 560, rk), .75, 180, 1);
+    const un = ease(seg(t, 33.2, 34.4)); put(receipt, 600, lerp(560, 1150, un), 1, 3, t > 33.1 ? 1 : 0); receipt.style.clipPath = `inset(0 0 ${(1 - un) * 85}% 0)`;
+    drop(wallet, t, 35.4, 99, 540, 1580, { dy: 500, r: -4 });
+    word(t8a, t, 32.3, 34.2, 540, 300, { dy: -30 }); word(t8b, t, 34.3, 99, 540, 300, { s0: 1.3, dy: 0 }); robot8.style.opacity = 1 - ease(seg(t, 34.0, 34.4)); word(t8c, t, 35.38, 99, 540, 1860, { dy: 20 });
+  }
+  // S9
+  if (t >= 36.75) {
+    showA = true;
+    const ak = spring(t - 36.85, 10, .65); put(avRing, 540, 700, ak, 0, 1); put(av, 540, 700, ak, 0, 1);
+    const wave = Math.sin((t - 37.6) * 7);
+    pose(PA, t, { x: 900, y: 1700, s: .4, hd: -6, aL: -40, eL: -70, aR: t > 37.6 ? -120 + wave * 8 : lerp(0, -120, ease(seg(t, 37.2, 37.6))), eR: t > 37.6 ? -40 + wave * 30 : -20 });
+    word(e1, t, 36.9, 99, 540, 1150, { dy: 40 }); word(nm, t, 37.38, 99, 540, 1290, { dy: 40, s0: 1.2 });
+    hdl.textContent = HANDLE.slice(0, Math.floor(lerp(0, HANDLE.length + .99, seg(t, 38.0, 38.9)))) + (Math.floor(t * 3) % 2 || t < 38.9 ? '|' : '');
+    put(hdl, 540, 1400, 1, 0, t > 37.9 ? 1 : 0); word(credit, t, 38.2, 99, 540, 1870, { dy: 0, s0: 1 });
+  }
+  if (showA) strings(svgS, PA); else hideP(PA);
+  palmPhone.style.visibility = showA && t < 36.7 ? 'inherit' : 'hidden';
+  const wp = WIPES.find(w => t >= w[0] - .05 && t < w[1]);
+  if (wp) { show(band, true); const k = seg(t, wp[0], wp[1]); const x1 = lerp(-300, 1500, ease(clamp(k * 2))), x0 = lerp(-400, 1500, ease(clamp(k * 2 - 1))); bandPoly.setAttribute('points', bandPts(x0, x1, 960, 1150, t * 2.4).map(p => p.join(',')).join(' ')); } else show(band, false);
+  const z = 1 + (t % 5) * .006 + bump(t);
+  cam.style.transform = `translate(540px,960px) scale(${z.toFixed(4)}) translate(-540px,-960px) translate(${(Math.sin(t * .4) * 6).toFixed(1)}px,0)`;
+  fx.clearRect(0, 0, W, H); fx.globalAlpha = .5; fx.fillStyle = dotPat; fx.fillRect(0, 0, W, H);
+  fx.globalAlpha = 1; fx.strokeStyle = 'rgba(255,244,222,.6)'; fx.lineCap = 'round';
+  dust.forEach(p => { const y = ((p.y - t * p.v) % H + H) % H, x = p.x + Math.sin(t * .5 + p.a) * 30; fx.globalAlpha = p.o; fx.lineWidth = 2.5; fx.beginPath(); fx.moveTo(x, y); fx.lineTo(x + Math.cos(p.a) * p.l * .3, y + Math.sin(p.a) * p.l); fx.stroke(); });
+  fx.globalAlpha = 1; fx.drawImage(vig, 0, 0);
+  fx.globalAlpha = .08; fx.globalCompositeOperation = 'overlay'; const gt = grain[Math.floor(t * 24) % 6]; for (let y = 0; y < H; y += 256) for (let x = 0; x < W; x += 256) fx.drawImage(gt, x, y);
+  fx.globalCompositeOperation = 'source-over'; fx.globalAlpha = 1;
+};
+
+// ================= ÁUDIO =================
+function b64buf(s) { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u.buffer; }
+window.buildAudio = async function (ctx) {
+  const sfx = {}; for (const k in SFX) sfx[k] = await ctx.decodeAudioData(b64buf(SFX[k]));
+  const vo = await ctx.decodeAudioData(b64buf(VO));
+  const master = ctx.createGain(); master.gain.value = .9; master.connect(ctx.destination);
+  const music = ctx.createGain(); music.connect(master);
+  const fxBus = ctx.createGain(); fxBus.gain.value = .5; fxBus.connect(master);
+  const voBus = ctx.createGain(); voBus.gain.value = 1.45; voBus.connect(master);
+  { const s = ctx.createBufferSource(); s.buffer = vo; s.connect(voBus); s.start(0); }
+  { const s = ctx.createBufferSource(); s.buffer = sfx.music; s.connect(music); s.start(0); }
+  const mg = music.gain; mg.setValueAtTime(.55, 0);
+  for (const [a, d] of LINES) { mg.setTargetAtTime(.26, a - .05, .06); mg.setTargetAtTime(.42, a + d, .25); }
+  mg.setTargetAtTime(0, 22.5, .03); mg.setTargetAtTime(.42, 24.5, .1); mg.setTargetAtTime(0, 40.6, .4);
+  const play = (n, at, g = 1, dur, rate = 1) => { const s = ctx.createBufferSource(); s.buffer = sfx[n]; s.playbackRate.value = rate; const gg = ctx.createGain(); gg.gain.value = g; s.connect(gg); gg.connect(fxBus); s.start(at, 0, dur); if (dur) { gg.gain.setValueAtTime(g, at + dur - .08); gg.gain.linearRampToValueAtTime(0, at + dur); } };
+  play('paper_flip', 0.02, .7); play('paper_flip', .8, .6); play('cash', 1.0, .5); play('whoosh', 2.0, .6); play('glitch', 2.1, .25, .25);
+  play('paper_slide', 3.35, .7); play('paper_flip', 3.65, .5); play('paper_flip', 6.6, .5); for (let k = 0; k < 4; k++) play('paper_flip', 8.6 + k * .25, .4, undefined, 1.1); play('stamp_thud', 8.18, 1);
+  play('paper_flip', 10.9, .5); play('pin_tack', 13.0, .6); play('stamp_thud', 13.05, .6); play('paper_flip', 14.6, .5); play('paper_flip', 15.0, .5);
+  for (let k = 0; k < 6; k++) play('whoosh', 15.3 + k * .25, .25, undefined, 1.2 + k * .05);
+  play('paper_slide', 18.0, .6); play('pin_tack', 18.4, .5); play('riser', 18.6, .4, .6); play('impact', 19.14, .7);
+  play('paper_flip', 21.0, .5); play('hit', 22.58, .6, 1); play('cash', 23.3, .6); play('stamp_thud', 23.52, 1);
+  play('paper_slide', 24.4, .6); play('paper_flip', 25.26, .5); play('cash', 26.78, .6); play('paper_flip', 28.06, .5); play('cash', 28.76, .6);
+  play('paper_crumple', 30.4, .4); play('glitch', 30.9, .3, .15); play('impact', 30.9, .5);
+  play('whoosh', 32.3, .6); play('paper_tear', 33.2, .7); play('paper_slide', 33.6, .5); play('boom', 34.3, .4, 1); play('paper_flip', 35.4, .5);
+  play('paper_slide', 36.55, .6); play('paper_flip', 36.9, .5); play('pin_tack', 37.38, .5); for (let k = 0; k < 15; k++) play('tick', 38.0 + k * .056, .4); play('coin', 38.95, .5);
+};
+
+let buf, ac, src, startAt = 0, offset = 0, playing = false;
+async function play() { ac ??= new AudioContext(); if (!buf) { const off = new OfflineAudioContext(2, Math.ceil(48000 * DUR), 48000); await buildAudio(off); buf = await off.startRendering(); } src = ac.createBufferSource(); src.buffer = buf; src.connect(ac.destination); src.start(0, offset % DUR); startAt = ac.currentTime; playing = true; }
+function pause() { if (!playing) return; offset += ac.currentTime - startAt; src.stop(); playing = false; }
+function now() { return playing ? (offset + ac.currentTime - startAt) % DUR : offset; }
+if (!location.search.includes('render')) {
+  const st = document.getElementById('stage'), fit = () => { const k = Math.min(innerWidth / W, (innerHeight - 50) / H); st.style.transform = `scale(${k})`; }; fit(); addEventListener('resize', fit);
+  const pp = document.getElementById('pp'), sc = document.getElementById('scrub'), tcEl = document.getElementById('tc');
+  pp.onclick = () => { playing ? pause() : play(); pp.textContent = playing ? '❚❚' : '▶'; };
+  sc.oninput = () => { const p = playing; pause(); offset = sc.value / 1000 * DUR; if (p) play(); };
+  (function loop() { const t = now(); seek(t); sc.value = t / DUR * 1000; tcEl.textContent = t.toFixed(2); requestAnimationFrame(loop); })();
+} else seek(0);
+</script>
+</body>
+</html>

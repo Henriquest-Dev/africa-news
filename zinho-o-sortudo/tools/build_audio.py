@@ -3,7 +3,7 @@
 Toda a música e efeitos são sintetizados aqui (sem samples de terceiros => sem problema de direitos).
 Saída: build/timeline.json e build/mix.wav
 """
-import json, os, wave
+import json, os, subprocess, wave
 
 import numpy as np
 from scipy.signal import butter, sosfilt, resample_poly
@@ -394,12 +394,20 @@ def main():
     story = json.load(open(os.path.join(BUILD, 'story.json')))
     lines = json.load(open(os.path.join(BUILD, 'lines.json')))['lines']
 
+    # velocidade da voz por episódio (mantém o tom): ex. voiceSpeed: 1.15 no primeiro plano
+    speed = story[0].get('voiceSpeed', 1.0)
+    if speed != 1.0:
+        for l in lines:
+            l['dur'] = l['dur'] / speed
+            n = max(1, int(round(len(l['env']) / speed)))
+            l['env'] = list(np.interp(np.linspace(0, len(l['env']) - 1, n), np.arange(len(l['env'])), l['env']))
+
     # ── linha do tempo ──
     t = 0.0
     shots = []
     for s, l in zip(story, lines):
-        lead = STAMP_LEAD if s.get('stamp') else LEAD
-        dur = max(s.get('min', 0), lead + l['dur'] + TAIL + s.get('pad', 0))
+        lead = STAMP_LEAD if s.get('stamp') else story[0].get('lead', LEAD)
+        dur = max(s.get('min', 0), lead + l['dur'] + story[0].get('tail', TAIL) + s.get('pad', 0))
         shots.append({**s, 'start': round(t, 3), 'dur': round(dur, 3), 'vstart': round(t + lead, 3), 'vdur': l['dur'], 'env': l['env']})
         t += dur
     total = t + 0.5
@@ -410,7 +418,13 @@ def main():
     voice = np.zeros(n); music = np.zeros(n); fx = np.zeros(n)
 
     for s, l in zip(shots, lines):
-        v = read_wav(os.path.join(BUILD, l['file']))
+        src = os.path.join(BUILD, l['file'])
+        if speed != 1.0:
+            fast = src[:-4] + f'.x{speed:.2f}.wav'
+            if not os.path.exists(fast):
+                subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', src, '-filter:a', f'atempo={speed}', fast], check=True)
+            src = fast
+        v = read_wav(src)
         if s.get('radio'):  # voz saindo de um rádio
             v = filt(v, 'bandpass', [350, 3200]) * 1.6 + 0.02 * filt(noise(len(v) / SR, 7), 'highpass', 2000)
             v = np.tanh(v * 1.5) / 1.5

@@ -15,10 +15,13 @@ Este ficheiro é o manual que cada sessão automática (tarefa agendada) segue. 
 | Sábado | — | ✅ |
 | Domingo | ✅ | — |
 
-A sessão de produção corre uma vez por dia e prepara **o que publica no dia seguinte**
-(upload privado com `publishAt`, ou seja, publicação agendada).
+A sessão de produção corre todos os dias às 03:23 de Maputo (01:23 UTC) e prepara **o que publica nesse mesmo dia**
+(upload privado com `publishAt`, ou seja, publicação agendada para as 15:00 UTC — Short — e 19:00 UTC — longo).
 
-## Segredos (definições do ambiente da nuvem, nunca no repositório)
+## Segredos (nunca no repositório)
+
+Na sessão principal ficam em `ytenv.sh` na pasta de rascunho (scratchpad) da sessão — basta `. <scratchpad>/ytenv.sh`.
+Em sessões novas, vêm das variáveis de ambiente da nuvem:
 
 - `GEMINI_API_KEY` — vozes Gemini (grátis: 10 pedidos/dia/modelo; o modo em lote gasta 1 pedido por personagem)
 - `YT_CLIENT_ID`, `YT_CLIENT_SECRET`, `YT_REFRESH_TOKEN` — upload para o YouTube (ver "Configuração única")
@@ -30,7 +33,7 @@ perder-se-ia): faz commit só do roteiro e termina com um relatório a dizer o q
 ## Passos de cada sessão de produção
 
 1. **Preparar o ambiente**: `cd zinho-o-sortudo && npm install && pip install edge-tts numpy scipy`.
-2. **Ver o que publica amanhã** (tabela acima, em UTC) e, para cada vídeo, escolher o primeiro tema
+2. **Ver o que publica hoje** (tabela acima, em UTC) e, para cada vídeo, escolher o primeiro tema
    `pendente` do tipo certo em `automation/topics.json`.
 3. **Escrever o roteiro** em `episodes/<AAAA-MM-DD>-<slug>.js`, copiando a estrutura de um episódio existente
    (longo: `02-ouro.js`; Short: `short-02-7dias.js`) e exportando também `meta`:

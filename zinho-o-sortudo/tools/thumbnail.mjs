@@ -1,5 +1,5 @@
 // Gera a thumbnail (1280x720 JPG) a partir de um quadro do episódio atual + título grande por cima.
-//   node tools/thumbnail.mjs --t 12.5 --lines "E SE O SEU|AZAR|DOBRASSE?" [--accent 1] [--color #ff4040] [--badge "DIA 10"]
+//   node tools/thumbnail.mjs --t 12.5 --lines "E SE O SEU|AZAR|DOBRASSE?" [--accent 1] [--color #ff4040] [--badge "DIA 10"] [--shift 22] [--zoom 1.5]
 // --accent: índice da linha em destaque (cor --color). Saída: out/thumb-<episódio>.jpg
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
@@ -22,9 +22,9 @@ const overlay = `
 <style>
  #th { position:absolute; inset:0; font-family: Inter, sans-serif; z-index: 10; }
  #th .shade { position:absolute; inset:0; background: linear-gradient(90deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,.15) 55%, rgba(0,0,0,0) 75%); }
- #th .t { position:absolute; left:40px; top:50%; transform: translateY(-50%) rotate(-3deg); max-width: 760px; }
- #th .l { font: 900 96px/0.98 Inter; color:#fff; -webkit-text-stroke: 12px #111; paint-order: stroke fill; text-shadow: 0 9px 0 #111; letter-spacing: -2px; }
- #th .l.a { font-size: 132px; color: ${color}; }
+ #th .t { position:absolute; left:36px; top:50%; transform: translateY(-50%) rotate(-3deg); max-width: 640px; }
+ #th .l { font: 900 84px/0.98 Inter; color:#fff; -webkit-text-stroke: 12px #111; paint-order: stroke fill; text-shadow: 0 9px 0 #111; letter-spacing: -2px; }
+ #th .l.a { font-size: 120px; color: ${color}; }
  #th .badge { position:absolute; right:36px; top:30px; font: 900 44px Inter; color:#111; background:#ffd23f; padding: 8px 22px; border: 6px solid #111; border-radius: 16px; transform: rotate(4deg); box-shadow: 0 6px 0 #111; }
 </style>
 <div id="th"><div class="shade"></div><div class="t">${lines.map((l, i) => `<div class="l ${i === accent ? 'a' : ''}">${l}</div>`).join('')}</div>
@@ -46,6 +46,9 @@ const srv = createServer(async (q, r) => {
     for (const id of ['cap', 'lb', 'card', 'endcard', 'stamp', 'calc', 'fade', 'hud']) document.getElementById(id).style.display = 'none';
     document.getElementById('stage').insertAdjacentHTML('beforeend', html);
   }, overlay);
+  // empurra a cena para a direita (e amplia) para o título ficar à esquerda sem tapar a cara
+  const zoom = +arg('zoom', 1.5), shift = Math.min(+arg('shift', 22), (zoom - 1) * 50);  // nunca deixa borda preta
+  await page.evaluate(([sh, z]) => { const c = document.querySelector('#stage canvas'); c.style.transformOrigin = 'center'; c.style.transform = `translateX(${sh}%) scale(${z})`; }, [shift, zoom]);
   await page.evaluate(() => document.fonts.ready);
   const out = path.join(ROOT, 'out', `thumb-${ep}.jpg`);
   await page.screenshot({ path: out, type: 'jpeg', quality: 90 });

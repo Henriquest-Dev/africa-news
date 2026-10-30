@@ -1635,7 +1635,7 @@ function render(T) {
     // tela do celular acesa: luz branca forte na mão do Zinho
     const h = handOf('zinho', 1), dt = lt - fx.phoneLight * shot.dur;
     fxLight.color.set('#e8f4ff'); fxLight.position.copy(h).add(V(0, 0.2, 0.3)); fxLight.distance = 6;
-    fxLight.intensity = (dt < 0.15 ? 40 : 14) + Math.sin(T * 30) * 2;
+    fxLight.intensity = (dt < 0.15 ? 14 : 5) + Math.sin(T * 30) * 0.8;
     FX.sparkles.slice(0, 6).forEach((sp, i) => { sp.visible = true; const a = T * 3 + i; sp.position.copy(h).add(V(Math.cos(a) * 0.15, 0.12 + Math.sin(a * 1.5) * 0.1, 0.12)); sp.scale.setScalar(0.06 + 0.05 * Math.sin(T * 9 + i)); });
   }
   if (fx.flashAt !== undefined) { const dt = lt - fx.flashAt * shot.dur; if (dt >= 0) flashOv = Math.max(flashOv, clamp(1 - dt / 1.2)); }

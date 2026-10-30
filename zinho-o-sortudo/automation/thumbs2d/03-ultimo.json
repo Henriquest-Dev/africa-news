@@ -1,8 +1,0 @@
-[
- { "label": "DIA 1", "bg": "street", "fx": [["cars", {"x": 70, "x2": 360}]],
-   "zinho": { "pose": "head", "expr": "shock", "sc": 0.98 } },
- { "label": "DIA 45", "bg": "street", "fx": [["animals", {"x": 70, "dx": 370, "front": true}]],
-   "zinho": { "pose": "cheer", "expr": "happy", "sc": 0.92, "y": -40 } },
- { "label": "DIA 112", "accent": true, "bg": "streetNight", "fx": [["fire", {"x": 340, "y": 712, "front": true}]],
-   "zinho": { "pose": "hold", "expr": "cry", "prop": "radio", "sc": 0.98, "x": -40 } }
-]

@@ -1,10 +1,10 @@
 {
-  "_nota": "Fila de temas originais do canal. A sessão automática usa o primeiro com status 'pendente' do tipo pedido e marca-o como 'feito' (com o id do vídeo). Pode acrescentar ideias à vontade. Temas com 'agendado' já têm vídeo marcado (publish_at, UTC); a sessão automática não volta a fazê-los e não publica outro vídeo no mesmo horário.",
+  "_nota": "Fila de temas originais do canal. Cada vídeo é produzido e enviado só no próprio dia da publicação, pela sessão automática. 'roteiro pronto' = já tem episódio escrito e data (publish_at, UTC): no dia, a sessão usa esse roteiro. Sem tema marcado para o dia, usa o primeiro 'pendente' do tipo certo. Depois do upload, marca 'feito' com o video_id.",
   "longos": [
     {
       "titulo": "E se você nunca mais conseguisse dormir?",
       "gancho": "contador ACORDADO em horas, alucinação do gato, caso real de Randy Gardner",
-      "status": "em produção",
+      "status": "roteiro pronto",
       "episodio": "episodes/04-sono.js",
       "publish_at": "2026-11-02T19:00:00Z"
     },
@@ -73,29 +73,28 @@
     {
       "titulo": "E se você tivesse que sobreviver 7 dias na Idade da Pedra?",
       "gancho": "já escrito em episodes/short-02-7dias.js",
-      "status": "agendado",
+      "status": "roteiro pronto",
       "episodio": "episodes/short-02-7dias.js",
-      "video_id": "iJMFFo1P6Xk",
       "publish_at": "2026-10-31T15:00:00Z"
     },
     {
       "titulo": "E se um homem das cavernas aparecesse na sua cidade?",
       "gancho": "parte 2 do Ugo: ônibus-mamute, pão, geladeira, poste",
-      "status": "em produção",
+      "status": "roteiro pronto",
       "episodio": "episodes/short-03-ugo-cidade.js",
       "publish_at": "2026-11-02T15:00:00Z"
     },
     {
       "titulo": "E se dinossauros ainda existissem?",
       "gancho": "um dinossauro no ponto de ônibus",
-      "status": "em produção",
+      "status": "roteiro pronto",
       "episodio": "episodes/short-05-dino.js",
       "publish_at": "2026-11-04T15:00:00Z"
     },
     {
       "titulo": "E se você vivesse um dia no Egito Antigo?",
       "gancho": "construir pirâmide, o Ugo como faraó",
-      "status": "em produção",
+      "status": "roteiro pronto",
       "episodio": "episodes/short-07-egito.js",
       "publish_at": "2026-11-06T15:00:00Z"
     },
@@ -107,7 +106,7 @@
     {
       "titulo": "E se a Lua sumisse?",
       "gancho": "marés, noites escuras, fatos científicos curtos",
-      "status": "em produção",
+      "status": "roteiro pronto",
       "episodio": "episodes/short-04-lua.js",
       "publish_at": "2026-11-03T15:00:00Z"
     },
@@ -119,7 +118,7 @@
     {
       "titulo": "E se o celular nunca tivesse sido inventado?",
       "gancho": "Zinho com mapa de papel e orelhão",
-      "status": "em produção",
+      "status": "roteiro pronto",
       "episodio": "episodes/short-06-sem-celular.js",
       "publish_at": "2026-11-05T15:00:00Z"
     },

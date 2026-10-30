@@ -35,8 +35,8 @@ perder-se-ia): faz commit só do roteiro e termina com um relatório a dizer o q
 1. **Preparar o ambiente**: `cd zinho-o-sortudo && npm install && pip install edge-tts numpy scipy`.
 2. **Ver o que publica hoje** (tabela acima, em UTC) e, para cada vídeo, escolher o primeiro tema
    `pendente` do tipo certo em `automation/topics.json`.
-   Se um tema em `topics.json` já tem `publish_at` para esse horário (status `agendado` ou `em produção`), esse horário
-   já está coberto: não fazer outro vídeo para ele (se estiver `em produção`, terminar esse episódio em vez de criar um novo).
+   Se um tema em `topics.json` tem `publish_at` para hoje (status `roteiro pronto`), usar esse roteiro (`episodio`) em vez
+   de escrever outro: saltar o passo 3 e seguir do passo 4. Cada vídeo só é produzido e enviado no dia em que publica.
 3. **Escrever o roteiro** em `episodes/<AAAA-MM-DD>-<slug>.js`, copiando a estrutura de um episódio existente
    (longo: `02-ouro.js`; Short: `short-02-7dias.js`) e exportando também `meta`:
    ```js

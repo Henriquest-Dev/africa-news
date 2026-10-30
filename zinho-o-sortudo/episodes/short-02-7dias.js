@@ -97,3 +97,11 @@ export default [
     actors: { zinho: { p: [0, 0], r: 0, a: 'wave', e: 'happy', prop: 'phone' }, ugo: { p: [-1.5, -0.4], r: 15, a: 'cheer', e: 'happy', prop: 'spear' }, kika: { p: [1.5, -0.3], r: -15, a: 'wave', e: 'happy' } },
     endcard: 'comment', endcardText: 'Comenta “UGO” ↓' }),
 ];
+
+export const meta = {
+  kind: 'short',
+  title: 'Sobrevivi 7 dias na Idade da Pedra 🦣 e o dia 7 quase me pegou #shorts',
+  description: 'Sete dias sem celular, sem comida e com um vizinho de 40 mil anos. No dia sete, só uma coisa me salvou… 📱\n\nVocê comeria inseto pra sobreviver? Responde aí nos comentários 👇\nQuer a parte dois? Comenta UGO!\n\n#zinhoosortudo #eseshorts #idadedapedra #shorts\n\nAnimação original feita com ajuda de IA (vozes e produção).',
+  tags: ['zinho o sortudo', 'e se', 'idade da pedra', 'sobreviver 7 dias', 'mamute', 'homem das cavernas', 'animação 3d', 'shorts', 'curiosidades'],
+  categoryId: '1',
+};

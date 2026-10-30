@@ -19,6 +19,9 @@
   #hud.pessoas .val { color: #e8ecff; font-size: 3.2vh; text-shadow: 0 0 1.2vh rgba(180, 200, 255, .5); }
   #hud.fome .val { color: #ff9a3c; text-shadow: 0 0 1.2vh rgba(255, 140, 40, .6); }
   #hud.ouro .val { color: #ffd23f; text-shadow: 0 0 1.2vh rgba(255, 200, 40, .6); }
+  #hud.sono .val { color: #b9a6ff; text-shadow: 0 0 1.2vh rgba(170, 140, 255, .6); }
+  #hud.lua .val { color: #e8ecf5; text-shadow: 0 0 1.2vh rgba(200, 210, 255, .55); }
+  #hud.caos .val { color: #ff5c8a; text-shadow: 0 0 1.2vh rgba(255, 80, 130, .6); }
   #hud.sorte .val { color: #5dff8a; text-shadow: 0 0 1.2vh rgba(60, 255, 120, .55); }
 
   /* carimbo "DIA 3" */
@@ -45,7 +48,7 @@
   /* cartão de título */
   #card { inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2vh; text-align: center; z-index: 2; }
   #card .ct { font: 800 7.5vh Inter, sans-serif; color: #fff; letter-spacing: 0.12em; text-shadow: 0 0.6vh 3vh rgba(0,0,0,.7); max-width: 80vw; }
-  #card .cs { font: 500 3vh Inter, sans-serif; color: #d6d6e0; letter-spacing: 0.35em; text-transform: uppercase; text-shadow: 0 0.4vh 2vh rgba(0,0,0,.7); }
+  #card .cs { font: 500 3vh Inter, sans-serif; color: #d6d6e0; letter-spacing: 0.35em; max-width: 88vw; text-transform: uppercase; text-shadow: 0 0.4vh 2vh rgba(0,0,0,.7); }
   #vignette { inset: 0; background: radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(0,0,0,.35) 100%); }
 
   /* final */
@@ -64,6 +67,7 @@
     #endcard .sub { font-size: 7vw; }
     #hud .val { font-size: 5vw; } #hud .day { font-size: 2.6vw; } #hud svg { width: 6vw; height: 6vw; }
   }
+  @media (max-aspect-ratio: 1/1) { #card { justify-content: flex-start; padding-top: 15vh; gap: 1.2vh; } #card .ct { font-size: 5.2vh; letter-spacing: 0.06em; max-width: 86vw; } #card .cs { font: 700 2.4vh Inter, sans-serif; letter-spacing: 0.04em; text-transform: none; color: #fff; max-width: 82vw; line-height: 1.3; } }
 </style>
 <script type="importmap">{ "imports": { "three": "/node_modules/three/build/three.module.js" } }</script>
 </head>

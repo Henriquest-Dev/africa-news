@@ -41,6 +41,7 @@ GEMINI_VOICES = {  # voz pré-definida do Gemini, direção de interpretação
     'JUCA':  ('Gacrux',    'Senhor idoso brasileiro rabugento, fala devagar'),
     'PROF':  ('Aoede',     'Professora animada e um pouco irônica'),
     'UGO':   ('Algenib',   'Homem das cavernas, voz grave e rouca, fala curta, engraçado'),
+    'NEFER': ('Iapetus',   'Trabalhador do Egito Antigo, voz calma, sábia e simpática, um pouco divertida'),
 }
 EDGE_VOICES = {  # voz, velocidade, tom
     'NAR':   ('pt-BR-AntonioNeural', '+12%', '-4Hz'),
@@ -51,6 +52,7 @@ EDGE_VOICES = {  # voz, velocidade, tom
     'MAE':   ('pt-BR-FranciscaNeural', '+12%', '-6Hz'),
     'PROF':  ('pt-BR-FranciscaNeural', '+14%', '+10Hz'),
     'UGO':   ('pt-BR-AntonioNeural', '-6%', '-42Hz'),
+    'NEFER': ('pt-BR-AntonioNeural', '-2%', '-15Hz'),
 }
 
 

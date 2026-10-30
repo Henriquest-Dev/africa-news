@@ -127,6 +127,7 @@ scene.add(fxLight, fxLight2, fill, rim, rim.target);
 scene.fog = new THREE.Fog(0xffffff, 40, 160);
 
 const TOD = {
+  desert: { top: '#4fa9f2', bot: '#fbe3b0', hs: '#fff3d8', hg: '#c9a46a', hi: 1.4, sc: '#fff0cf', si: 2.7, dir: [-14, 24, 10], fog: '#f3dcae', fogN: 60, fogF: 220, lamps: 0, win: 0, fill: 0.25 },
   day:   { top: '#56aef0', bot: '#f6e8ca', hs: '#e8f4ff', hg: '#a4976e', hi: 1.35, sc: '#fff2dc', si: 2.5, dir: [-12, 22, 14], fog: '#e8e6d8', fogN: 50, fogF: 190, lamps: 0, win: 0 , fill: 0.25 },
   dusk:  { top: '#4b4d96', bot: '#ffab76', hs: '#ffd9bb', hg: '#6a5869', hi: 1.05, sc: '#ffb070', si: 2.1, dir: [-26, 11, 9], fog: '#d6957f', fogN: 35, fogF: 150, lamps: 1, win: 0.6 , fill: 0.45 },
   night: { top: '#081236', bot: '#26386a', hs: '#6074b8', hg: '#22222e', hi: 0.85, sc: '#a2b7ff', si: 0.9, dir: [10, 25, 10], fog: '#1c2749', fogN: 25, fogF: 120, lamps: 1, win: 1 , fill: 0.7 },
@@ -342,6 +343,37 @@ const WL = {};
   mk(G.ico(7, 1), M('#7d7368', { flatShading: true }), { p: [-14, 0, -18], s: [1.4, 0.9, 1], parent: wild, ol: 0.05 });
   mk(G.sph(2.6, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), M('#1a120c'), { p: [-12.5, 0, -12.4], s: [1, 1.1, 0.4], parent: wild, ol: 0 });
 }
+const egypt = new THREE.Group(); sets.egypt = egypt; scene.add(egypt);
+const EG = {};
+{
+  mk(G.box(600, 0.1, 600), M('#e9c98a'), { p: [0, -0.05, 0], parent: egypt, ol: 0, cast: false });
+  // o Nilo atrás da câmara, com margem verde
+  mk(G.box(600, 0.06, 14), M('#3f8fd2'), { p: [0, 0.01, 30], parent: egypt, ol: 0, cast: false });
+  mk(G.box(600, 0.07, 3), M('#7fbf4a'), { p: [0, 0.02, 21.5], parent: egypt, ol: 0, cast: false });
+  // pirâmides: a grande (em obra, à frente) e duas ao fundo
+  const pyr = (x, z, r, c, top = 1) => mk(new THREE.ConeGeometry(r, r * 1.27 * top, 4, 1, false), M(c, { flatShading: true }), { p: [x, r * 1.27 * top / 2, z], r: [0, Math.PI / 4, 0], parent: egypt, ol: 0.05, cast: false });
+  pyr(-38, -70, 22, '#e2c27f'); pyr(18, -95, 26, '#d8b673');
+  // pirâmide em construção: tronco de pirâmide com degraus
+  EG.build = new THREE.Group(); EG.build.position.set(0, 0, -22); egypt.add(EG.build);
+  for (let i = 0; i < 6; i++) { const w = 22 - i * 3.2; mk(G.box(w, 1.6, w), M(i % 2 ? '#d9b878' : '#d2b06e', { flatShading: true }), { p: [0, 0.8 + i * 1.6, 0], parent: EG.build, ol: 0.03, cast: false }); }
+  // rampa de terra
+  mk(G.box(4, 0.4, 20), M('#c79a5c'), { p: [6, 4.2, -2.5], r: [-0.43, 0, 0], parent: egypt, ol: 0.03, cast: false });
+  // blocos soltos e trenó
+  EG.blocks = [];
+  for (const [x, z] of [[-4, -6], [-5.6, -7.2], [4.6, -7], [-3, -9.5], [3.2, -5.4]]) EG.blocks.push(mk(G.box(1.3, 0.9, 1.0), M('#d6b574', { flatShading: true }), { p: [x, 0.45, z], r: [0, hash(x) * 0.6, 0], parent: egypt, ol: 0.02 }));
+  EG.sled = new THREE.Group(); egypt.add(EG.sled);
+  mk(G.box(1.4, 0.15, 2.2), M('#8b5a2b'), { p: [0, 0.1, 0], parent: EG.sled, ol: 0.015 });
+  mk(G.box(1.3, 0.9, 1.0), M('#d6b574', { flatShading: true }), { p: [0, 0.65, 0], parent: EG.sled, ol: 0.02 });
+  EG.sled.position.set(1.4, 0, -3);
+  // palmeiras
+  for (const [x, z] of [[-9, 4], [-11, 9], [9, 6], [12, 12], [-16, 14], [15, 3]]) {
+    const g = new THREE.Group(); g.position.set(x, 0, z); egypt.add(g);
+    mk(G.cyl(0.18, 0.28, 4, 7), M('#8d6e4a'), { p: [0, 2, 0], r: [0, 0, 0.08], parent: g, ol: 0.02 });
+    for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2; mk(G.box(0.25, 0.06, 2.2), M('#3f9d4a'), { p: [Math.cos(a) * 0.9 + 0.15, 3.9, Math.sin(a) * 0.9], r: [0, -a, 0.45], parent: g, ol: 0.01 }); }
+  }
+  // dunas
+  for (let i = 0; i < 16; i++) mk(G.ico(5 + hash(i) * 7, 1), M('#e5c283', { flatShading: true }), { p: [(hash(i * 3.1) - 0.5) * 220, -2.5, -40 - hash(i * 7.3) * 80], s: [1.6, 0.5, 1], parent: egypt, ol: 0, cast: false });
+}
 const cave = new THREE.Group(); sets.cave = cave; scene.add(cave);
 {
   mk(G.cyl(9, 9, 0.1, 24), M('#6b5644'), { p: [0, -0.05, 0], parent: cave, ol: 0, cast: false });
@@ -514,6 +546,9 @@ const CHARS = {
   ugo:   { skin: '#b9825a', shirt: '#9a6a3a', tunic: '#9a6a3a', pants: '#b9825a', shoes: '#6d4c41', hair: 'cave', hairColor: '#3b2414', beard: '#3b2414', unibrow: true, scale: 1.08 },
   kika:  { skin: '#c68e62', shirt: '#b5793f', tunic: '#b5793f', pants: '#c68e62', shoes: '#6d4c41', hair: 'cavebun', hairColor: '#4a2c1a', scale: 0.98 },
   neo:   { skin: '#a8714c', shirt: '#7f5a36', tunic: '#7f5a36', pants: '#a8714c', shoes: '#5d4037', hair: 'cave', hairColor: '#24160d', beard: '#24160d', unibrow: true, scale: 0.94 },
+  // Egito Antigo (Short do Egito)
+  nefer: { skin: '#8d5a3c', shirt: '#f4efe2', tunic: '#f4efe2', pants: '#8d5a3c', shoes: '#c49a6c', hair: 'short', hairColor: '#141414', linen: true, scale: 1.0 },
+  kha:   { skin: '#7a4a30', shirt: '#f4efe2', tunic: '#f4efe2', pants: '#7a4a30', shoes: '#f4c430', hair: 'nemes', hairColor: '#2a5db0', linen: true, scale: 1.05 },
 };
 const HEAD_R = 0.46;
 function onHead(head, obj, dir, r = HEAD_R) {
@@ -547,7 +582,7 @@ function makeChar(name, cfg, seed) {
   if (cfg.dress) mk(G.cyl(0.27, 0.42, 0.5, 16), M(cfg.dress), { p: [0, 0.02, 0], parent: torso, ol: 0.025 });
   if (cfg.tunic) {
     // túnica de pele com manchas
-    const fur = canvasTex(256, 256, (g) => { g.fillStyle = cfg.tunic; g.fillRect(0, 0, 256, 256); g.fillStyle = 'rgba(60,35,15,0.55)'; for (let i = 0; i < 26; i++) { g.beginPath(); g.ellipse(hash(i + seed) * 256, hash(i * 3 + seed) * 256, 10 + hash(i) * 10, 7 + hash(i + 2) * 6, hash(i) * 3, 0, 7); g.fill(); } });
+    const fur = canvasTex(256, 256, (g) => { g.fillStyle = cfg.tunic; g.fillRect(0, 0, 256, 256); g.fillStyle = 'rgba(60,35,15,0.55)'; if (cfg.linen) { g.fillStyle = '#d9c9a0'; g.fillRect(0, 196, 256, 22); return; } for (let i = 0; i < 26; i++) { g.beginPath(); g.ellipse(hash(i + seed) * 256, hash(i * 3 + seed) * 256, 10 + hash(i) * 10, 7 + hash(i + 2) * 6, hash(i) * 3, 0, 7); g.fill(); } });
     const fm = new THREE.MeshToonMaterial({ map: fur, gradientMap: gradMap });
     mk(G.cyl(0.29, 0.36, 0.5, 9), fm, { p: [0, 0.12, 0], parent: torso, ol: 0.022 });
     mk(G.box(0.12, 0.62, 0.08), fm, { p: [0.12, 0.5, 0.22], r: [0, 0, -0.6], parent: torso, ol: 0.012 });
@@ -635,6 +670,14 @@ function makeChar(name, cfg, seed) {
       for (let i = 0; i < 6; i++) mk(G.ico(0.13, 0), hm, { p: [Math.sin(i * 1.1) * 0.36, 0.38 + hash(i) * 0.1, Math.cos(i * 1.1) * 0.25 - 0.12], parent: head, ol: 0.01 });
       if (cfg.hair === 'cavebun') mk(G.ico(0.2, 1), hm, { p: [0, 0.52, -0.25], parent: head, ol: 0.015 });
       break;
+    case 'nemes': {
+      const nm = M('#2a5db0'), gd = M('#f4c430');
+      mk(capGeo(HEAD_R * 1.08, 1.4), nm, { r: [-0.25, 0, 0], parent: head, ol: 0.022 });
+      for (const sd of [-1, 1]) mk(G.box(0.3, 0.75, 0.12), nm, { p: [sd * 0.46, -0.32, 0.05], r: [0, 0, sd * 0.12], parent: head, ol: 0.015 });
+      for (let i = 0; i < 4; i++) mk(new THREE.TorusGeometry(HEAD_R * 1.07, 0.022, 4, 28, Math.PI), gd, { p: [0, 0.05 + i * 0.1, -0.03], r: [-0.3, 0, 0], parent: head, ol: 0 });
+      mk(G.cyl(0.05, 0.07, 0.22, 6), gd, { p: [0, 0.38, 0.4], r: [0.3, 0, 0], parent: head, ol: 0.01 });
+      break;
+    }
     case 'afro':
       mk(G.ico(HEAD_R * 1.12, 1), hm, { p: [0, 0.2, -0.08], s: [1, 0.85, 1], parent: head, ol: 0.02 });
       break;
@@ -706,6 +749,7 @@ const EXPR = {
   shock:   { eye: 1.35, lid: 1, brow: [0.15, -0.15], by: 0.07, mouth: 'O', ms: 1, sweat: 1 },
   flat:    { eye: 1, lid: 0.48, brow: [0, 0], by: -0.03, mouth: 'line', ms: 1 },
   closed:  { eye: 1, lid: 0.1, brow: [0.05, -0.05], by: -0.01, mouth: 'line', ms: 0.8 },
+  tired:   { eye: 0.9, lid: 0.32, brow: [0.3, -0.3], by: -0.04, mouth: 'line', ms: 0.9 },
   sad:     { eye: 1, lid: 0.75, brow: [0.45, -0.45], by: 0.0, mouth: 'frown', ms: 0.85, tear: 1 },
 };
 function setFace(c, eName, amp, t, wink) {
@@ -1079,7 +1123,66 @@ FX.mam = new THREE.Group(); scene.add(FX.mam);
   mk(G.cyl(0.06, 0.1, 0.8, 6), dark, { p: [0, -0.4, 0], parent: FX.mamTail, ol: 0.01 });
 }
 
+// tiranossauro (desenho original, low-poly)
+FX.dino = new THREE.Group(); scene.add(FX.dino);
+{
+  const sk = M('#4f9a52', { flatShading: true }), belly = M('#c9d98a', { flatShading: true }), dk = M('#3b7a3f', { flatShading: true });
+  const body = G.ico(1.3, 1); body.scale(0.95, 1, 1.5); mk(body, sk, { p: [0, 2.9, 0], r: [-0.25, 0, 0], parent: FX.dino, ol: 0.05 });
+  const bl = G.ico(1.0, 1); bl.scale(0.8, 0.9, 1.2); mk(bl, belly, { p: [0, 2.6, 0.45], r: [-0.25, 0, 0], parent: FX.dino, ol: 0 });
+  FX.dinoNeck = new THREE.Group(); FX.dinoNeck.position.set(0, 3.7, 1.4); FX.dino.add(FX.dinoNeck);
+  mk(G.cyl(0.55, 0.7, 1.0, 8), sk, { p: [0, 0.3, 0.2], r: [0.6, 0, 0], parent: FX.dinoNeck, ol: 0.03 });
+  FX.dinoHead = new THREE.Group(); FX.dinoHead.position.set(0, 0.9, 0.6); FX.dinoNeck.add(FX.dinoHead);
+  const hd = G.box(1.1, 0.75, 1.7); mk(hd, sk, { p: [0, 0.1, 0.55], parent: FX.dinoHead, ol: 0.035 });
+  FX.dinoJaw = new THREE.Group(); FX.dinoJaw.position.set(0, -0.25, -0.1); FX.dinoHead.add(FX.dinoJaw);
+  mk(G.box(0.95, 0.3, 1.55), belly, { p: [0, -0.12, 0.7], parent: FX.dinoJaw, ol: 0.03 });
+  for (let i = 0; i < 6; i++) for (const sd of [-1, 1]) {
+    mk(new THREE.ConeGeometry(0.06, 0.18, 4), M('#fffbe8'), { p: [sd * 0.45, -0.32, 0.25 + i * 0.25], r: [Math.PI, 0, 0], parent: FX.dinoHead, ol: 0 });
+  }
+  for (const sd of [-1, 1]) {
+    mk(G.sph(0.12, 10, 8), M('#fff6c8'), { p: [sd * 0.5, 0.32, 0.45], parent: FX.dinoHead, ol: 0.01 });
+    mk(G.sph(0.07, 8, 6), new THREE.MeshBasicMaterial({ color: '#111' }), { p: [sd * 0.58, 0.33, 0.48], parent: FX.dinoHead, ol: 0 });
+    mk(G.box(0.25, 0.08, 0.3), dk, { p: [sd * 0.45, 0.5, 0.4], r: [0, 0, sd * 0.3], parent: FX.dinoHead, ol: 0.01 });
+    // bracinhos
+    mk(G.cyl(0.09, 0.07, 0.6, 6), sk, { p: [sd * 0.55, 2.9, 1.5], r: [1.1, 0, 0], parent: FX.dino, ol: 0.015 });
+  }
+  FX.dinoLegs = [];
+  for (const sd of [-1, 1]) {
+    const p = new THREE.Group(); p.position.set(sd * 0.75, 2.6, -0.2); FX.dino.add(p);
+    const th = G.ico(0.6, 1); th.scale(0.8, 1.3, 1.1); mk(th, sk, { p: [0, -0.3, 0], parent: p, ol: 0.03 });
+    mk(G.cyl(0.25, 0.2, 1.6, 7), sk, { p: [0, -1.5, -0.2], r: [-0.15, 0, 0], parent: p, ol: 0.025 });
+    mk(G.box(0.5, 0.2, 0.8), dk, { p: [0, -2.48, 0.15], parent: p, ol: 0.015 });
+    FX.dinoLegs.push(p);
+  }
+  FX.dinoTail = [];
+  let par = FX.dino, tz = -1.6;
+  for (let i = 0; i < 5; i++) {
+    const seg = new THREE.Group(); seg.position.set(0, i === 0 ? 3.0 : 0, i === 0 ? tz : -0.75); par.add(seg);
+    mk(G.cyl(0.55 - i * 0.1, 0.45 - i * 0.1, 0.8, 7), sk, { p: [0, 0, -0.35], r: [Math.PI / 2 + 0.12, 0, 0], parent: seg, ol: 0.02 });
+    FX.dinoTail.push(seg); par = seg;
+  }
+}
+// a Lua (some no Short "E se a Lua sumisse?")
+FX.moon = new THREE.Group(); scene.add(FX.moon);
+{
+  const mm = new THREE.MeshBasicMaterial({ color: '#f1f3fa', fog: false, transparent: true });
+  FX.moonMat = mm;
+  mk(G.sph(1, 24, 16), mm, { parent: FX.moon, ol: 0, cast: false });
+  for (const [x, y, r] of [[-0.3, 0.3, 0.22], [0.35, -0.2, 0.28], [0.1, 0.45, 0.12], [-0.25, -0.4, 0.15]]) {
+    const c = new THREE.Mesh(G.sph(r, 12, 8), new THREE.MeshBasicMaterial({ color: '#c3c8d6', fog: false, transparent: true })); c.position.set(x, y, 0.92); c.scale.z = 0.2; FX.moon.add(c);
+  }
+  const glow = new THREE.Mesh(G.sph(1.6, 20, 12), new THREE.MeshBasicMaterial({ color: '#b8c6ff', fog: false, transparent: true, opacity: 0.15, depthWrite: false })); FX.moon.add(glow);
+}
+// orelhão (telefone público brasileiro)
+FX.ore = new THREE.Group(); scene.add(FX.ore);
+{
+  mk(G.cyl(0.07, 0.07, 2.3, 8), M('#5b6470'), { p: [0, 1.15, -0.35], parent: FX.ore, ol: 0.015 });
+  const hood = new THREE.SphereGeometry(0.75, 20, 14, 0, Math.PI * 2, 0, Math.PI * 0.62); hood.scale(1, 1.15, 1);
+  mk(hood, M('#f39c12', { side: THREE.DoubleSide }), { p: [0, 1.65, 0], r: [-0.25, 0, 0], parent: FX.ore, ol: 0.03 });
+  mk(G.box(0.38, 0.55, 0.2), M('#2d6ff0'), { p: [0, 1.5, -0.2], parent: FX.ore, ol: 0.015 });
+  mk(G.box(0.08, 0.32, 0.1), M('#222'), { p: [0.12, 1.55, -0.05], parent: FX.ore, ol: 0 });
+}
 function hideFx() {
+  FX.dino.visible = false; FX.moon.visible = false; FX.ore.visible = false;
   FX.mam.visible = false; FX.wave.visible = false;
   FX.weeds.forEach((w) => { w.visible = false; });
   FX.fire.visible = false; FX.roadText.visible = false; FX.tally.visible = false;
@@ -1138,6 +1241,9 @@ function meteorPos(p) {
 // ───────────────────────── overlays HTML ─────────────────────────
 const $ = (id) => document.getElementById(id);
 const ICON = {
+  sono: '<svg viewBox="0 0 24 24"><path fill="#b9a6ff" d="M14.5 2.5A9.5 9.5 0 1 0 21.5 17 7.6 7.6 0 0 1 14.5 2.5z"/><text x="17" y="9" font-size="7" font-weight="900" fill="#fff">z</text></svg>',
+  lua: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#e8ecf5"/><circle cx="9" cy="9" r="2" fill="#b9c0cf"/><circle cx="15" cy="14" r="2.6" fill="#b9c0cf"/></svg>',
+  caos: '<svg viewBox="0 0 24 24"><path fill="#ff5c8a" d="M13 1 4 14h7l-2 9 11-14h-7z"/></svg>',
   fome: '<svg viewBox="0 0 24 24"><path fill="#ff9a3c" d="M15.5 2a6.5 6.5 0 0 0-6.2 8.5L3.6 16.2a2.2 2.2 0 1 0 1.9 3.8 2.2 2.2 0 1 0 3.8 1.9l5.7-5.7A6.5 6.5 0 1 0 15.5 2z"/><circle cx="15.5" cy="8.5" r="2" fill="#ffd2a6"/></svg>',
   pessoas: '<svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="4" fill="#e8e8f0"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8z" fill="#e8e8f0"/></svg>',
   ouro: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#ffd23f" stroke="#a87400" stroke-width="2"/><text x="12" y="16.5" text-anchor="middle" font-size="12" font-weight="900" fill="#a87400" font-family="Inter">$</text></svg>',
@@ -1218,6 +1324,7 @@ function render(T) {
     const moving = !!s.to && k > 0 && k < 1;
     if (s.r !== undefined) ry = s.r * D2R;
     else if (s.look && pos[s.look]) ry = Math.atan2(pos[s.look][0] - x, pos[s.look][1] - z);
+    else if (Array.isArray(s.look)) ry = Math.atan2(s.look[0] - x, s.look[1] - z);
     else if (s.to) ry = Math.atan2(s.to[0] - s.p[0], s.to[1] - s.p[1]);
     let y = groundY(shot.set, x, z);
     if (s.a === 'lie') { y = 0.9; z += 0.6; }
@@ -1497,6 +1604,28 @@ function render(T) {
   if (shot.set === 'classroom' && shot.board !== lastBoard) { lastBoard = shot.board; drawBoard(shot.board); }
 
   // ─── Short: mamute, capim, estilo ───
+  if (fx.dino) {
+    const m = fx.dino, k = m.to ? smooth((u - (m.t0 ?? 0)) / ((m.t1 ?? 1) - (m.t0 ?? 0))) : 0;
+    const x = m.to ? lerp(m.p[0], m.to[0], k) : m.p[0], z = m.to ? lerp(m.p[1], m.to[1], k) : m.p[1];
+    FX.dino.visible = true; FX.dino.position.set(x, 0, z); FX.dino.scale.setScalar(m.s ?? 1);
+    FX.dino.rotation.y = (m.r ?? (m.to ? Math.atan2(m.to[0] - m.p[0], m.to[1] - m.p[1]) / D2R : 0)) * D2R;
+    const moving = m.to && k > 0 && k < 1, sp = m.a === 'run' ? 10 : 4.5;
+    FX.dinoLegs.forEach((l, i) => { l.rotation.x = moving ? Math.sin(T * sp + i * Math.PI) * (m.a === 'run' ? 0.7 : 0.35) : 0; });
+    FX.dino.position.y = moving ? Math.abs(Math.sin(T * sp)) * (m.a === 'run' ? 0.3 : 0.1) : 0;
+    const roar = m.a === 'roar' ? pulse(u, m.ru ?? 0.2, (m.ru ?? 0.2) + 0.6) : 0;
+    FX.dinoNeck.rotation.x = -0.3 * roar + Math.sin(T * 1.5) * 0.05;
+    FX.dinoJaw.rotation.x = 0.7 * roar + (m.a === 'chew' ? Math.abs(Math.sin(T * 6)) * 0.3 : 0.05);
+    FX.dinoTail.forEach((sg, i) => { sg.rotation.y = Math.sin(T * 2 - i * 0.6) * 0.12; sg.rotation.x = 0.06; });
+    if (roar > 0.3) impactShakeExtra = Math.max(impactShakeExtra, 0.1 * roar);
+  }
+  if (fx.moon) {
+    // fx.moon = { at: [x, y, z] relativo à câmara (direção no céu), r: raio, gone: fração do plano em que some }
+    const m = fx.moon, g = m.gone !== undefined ? clamp((u - m.gone) / 0.12) : 0;
+    FX.moon.visible = g < 1; FX.moon.position.copy(camera.position).add(V(...m.at)); FX.moon.scale.setScalar((m.r ?? 6) * (1 - 0.3 * g));
+    FX.moon.lookAt(camera.position);
+    FX.moon.traverse((o) => { if (o.material) o.material.opacity = (o === FX.moon.children[FX.moon.children.length - 1] ? 0.15 : 1) * (1 - g); });
+  }
+  if (fx.orelhao) { FX.ore.visible = true; FX.ore.position.set(fx.orelhao[0], groundY(shot.set, fx.orelhao[0], fx.orelhao[1]), fx.orelhao[1]); FX.ore.rotation.y = (fx.orelhao[2] ?? 0) * D2R; }
   if (fx.mammoth) {
     const m = fx.mammoth, k = m.to ? smooth((u - (m.t0 ?? 0)) / ((m.t1 ?? 1) - (m.t0 ?? 0))) : 0;
     const x = m.to ? lerp(m.p[0], m.to[0], k) : m.p[0], z = m.to ? lerp(m.p[1], m.to[1], k) : m.p[1];
@@ -1529,7 +1658,7 @@ function render(T) {
   for (const c of Object.values(chars)) c.face.blush.forEach((b) => { b.visible = !!shot.style2 && c.root.visible; });
 
   // ─── mundo vazio ───
-  stars.visible = shot.set === 'street' && (shot.tod === 'night');
+  stars.visible = (shot.set === 'street' || shot.set === 'egypt' || shot.set === 'wild') && (shot.tod === 'night');
   if (fx.overgrow) FX.weeds.forEach((w) => {
     const [x, z, s0, h] = w.userData.base;
     const lv = clamp(fx.overgrow * 1.3 - h * 0.3);
@@ -1683,9 +1812,9 @@ function render(T) {
     if (key !== lastHudKey) {
       lastHudKey = key;
       hud.className = 'ov ' + mode;
-      hud.querySelector('.icon').innerHTML = ICON[mode];
+      hud.querySelector('.icon').innerHTML = ICON[mode] || ICON.sorte;
       hud.querySelector('.day').textContent = 'DIA ' + d;
-      hud.querySelector('.val').textContent = mode === 'fome' ? 'FOME ' + mult : mode === 'pessoas' ? 'PESSOAS NO MUNDO: ' + mult : mode === 'ouro' ? 'OURO ' + mult : (mode === 'azar' ? 'AZAR x' : 'SORTE x') + fmtMult(mult);
+      hud.querySelector('.val').textContent = shot.hud[3] !== undefined ? shot.hud[3] + ' ' + mult : mode === 'fome' ? 'FOME ' + mult : mode === 'pessoas' ? 'PESSOAS NO MUNDO: ' + mult : mode === 'ouro' ? 'OURO ' + mult : (mode === 'azar' ? 'AZAR x' : 'SORTE x') + fmtMult(mult);
     }
     const changed = !prev || !prev.hud || prev.hud.join('|') !== key || shot.hudIn !== undefined;
     const t0 = shot.hudIn !== undefined ? shot.hudIn * shot.dur : 0;
@@ -1703,7 +1832,7 @@ function render(T) {
   const card = $('card');
   if (shot.card) {
     card.style.display = 'flex';
-    if (card.dataset.k !== shot.card.t) { card.innerHTML = `<div class="ct">${shot.card.t}</div>${shot.card.s ? `<div class="cs">${shot.card.s}</div>` : ''}`; card.dataset.k = shot.card.t; }
+    const ck = shot.card.t + '|' + (shot.card.s || ''); if (card.dataset.k !== ck) { card.innerHTML = `<div class="ct">${shot.card.t}</div>${shot.card.s ? `<div class="cs">${shot.card.s}</div>` : ''}`; card.dataset.k = ck; }
     const a0 = shot.card.at ?? 0.08, k = clamp((u - a0) / 0.15) * (1 - clamp((u - 0.88) / 0.1));
     card.style.opacity = k; card.style.transform = `translateY(${(1 - k) * 2}vh) scale(${1 + 0.04 * u})`;
   } else card.style.display = 'none';

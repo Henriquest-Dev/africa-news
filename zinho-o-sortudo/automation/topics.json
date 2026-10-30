@@ -1,31 +1,152 @@
 {
-  "_nota": "Fila de temas originais do canal. A sessão automática usa o primeiro com status 'pendente' do tipo pedido e marca-o como 'feito' (com o id do vídeo). Pode acrescentar ideias à vontade.",
+  "_nota": "Fila de temas originais do canal. A sessão automática usa o primeiro com status 'pendente' do tipo pedido e marca-o como 'feito' (com o id do vídeo). Pode acrescentar ideias à vontade. Temas com 'agendado' já têm vídeo marcado (publish_at, UTC); a sessão automática não volta a fazê-los e não publica outro vídeo no mesmo horário.",
   "longos": [
-    { "titulo": "E se a sua altura dobrasse todo dia?", "gancho": "contador ALTURA, dias 1 a 10, Zinho maior que os prédios", "status": "pendente" },
-    { "titulo": "E se você pudesse ler mentes por 7 dias?", "gancho": "balões de pensamento dos vizinhos, segredo da Lia no dia 7", "status": "pendente" },
-    { "titulo": "E se o dinheiro caísse do céu todo dia?", "gancho": "contador DINHEIRO, inflação no bairro, pão a mil reais", "status": "pendente" },
-    { "titulo": "E se você encolhesse um centímetro por dia?", "gancho": "contador ALTURA a descer, o gato Sombra vira gigante", "status": "pendente" },
-    { "titulo": "E se os animais começassem a falar?", "gancho": "os cachorros e a Sombra contam o que pensam do Zinho", "status": "pendente" },
-    { "titulo": "E se você ganhasse um superpoder novo por dia?", "gancho": "cada dia um poder; no dia 7, o pior poder possível", "status": "pendente" },
-    { "titulo": "E se a gravidade sumisse por um dia inteiro?", "gancho": "bairro flutuando, ônibus no céu, relógio de contagem", "status": "pendente" },
-    { "titulo": "E se você ficasse invisível por uma semana?", "gancho": "contador VISIBILIDADE, ninguém percebe o Zinho, final emocional", "status": "pendente" },
-    { "titulo": "E se a escola durasse vinte e quatro horas?", "gancho": "professora sem dormir, prova surpresa às 3 da manhã", "status": "pendente" },
-    { "titulo": "E se o tempo parasse todo dia às três da tarde?", "gancho": "uma hora congelada por dia; o que o Zinho faz com ela", "status": "pendente" },
-    { "titulo": "E se você virasse prefeito do bairro?", "gancho": "leis absurdas do Zinho, oposição do Seu Juca", "status": "pendente" },
-    { "titulo": "E se você acordasse cem anos no futuro?", "gancho": "bairro do futuro, a Lia idosa, contador ANO 2126", "status": "pendente" }
+    {
+      "titulo": "E se você nunca mais conseguisse dormir?",
+      "gancho": "contador ACORDADO em horas, alucinação do gato, caso real de Randy Gardner",
+      "status": "em produção",
+      "episodio": "episodes/04-sono.js",
+      "publish_at": "2026-11-02T19:00:00Z"
+    },
+    {
+      "titulo": "E se a sua altura dobrasse todo dia?",
+      "gancho": "contador ALTURA, dias 1 a 10, Zinho maior que os prédios",
+      "status": "pendente"
+    },
+    {
+      "titulo": "E se você pudesse ler mentes por 7 dias?",
+      "gancho": "balões de pensamento dos vizinhos, segredo da Lia no dia 7",
+      "status": "pendente"
+    },
+    {
+      "titulo": "E se o dinheiro caísse do céu todo dia?",
+      "gancho": "contador DINHEIRO, inflação no bairro, pão a mil reais",
+      "status": "pendente"
+    },
+    {
+      "titulo": "E se você encolhesse um centímetro por dia?",
+      "gancho": "contador ALTURA a descer, o gato Sombra vira gigante",
+      "status": "pendente"
+    },
+    {
+      "titulo": "E se os animais começassem a falar?",
+      "gancho": "os cachorros e a Sombra contam o que pensam do Zinho",
+      "status": "pendente"
+    },
+    {
+      "titulo": "E se você ganhasse um superpoder novo por dia?",
+      "gancho": "cada dia um poder; no dia 7, o pior poder possível",
+      "status": "pendente"
+    },
+    {
+      "titulo": "E se a gravidade sumisse por um dia inteiro?",
+      "gancho": "bairro flutuando, ônibus no céu, relógio de contagem",
+      "status": "pendente"
+    },
+    {
+      "titulo": "E se você ficasse invisível por uma semana?",
+      "gancho": "contador VISIBILIDADE, ninguém percebe o Zinho, final emocional",
+      "status": "pendente"
+    },
+    {
+      "titulo": "E se a escola durasse vinte e quatro horas?",
+      "gancho": "professora sem dormir, prova surpresa às 3 da manhã",
+      "status": "pendente"
+    },
+    {
+      "titulo": "E se o tempo parasse todo dia às três da tarde?",
+      "gancho": "uma hora congelada por dia; o que o Zinho faz com ela",
+      "status": "pendente"
+    },
+    {
+      "titulo": "E se você virasse prefeito do bairro?",
+      "gancho": "leis absurdas do Zinho, oposição do Seu Juca",
+      "status": "pendente"
+    },
+    {
+      "titulo": "E se você acordasse cem anos no futuro?",
+      "gancho": "bairro do futuro, a Lia idosa, contador ANO 2126",
+      "status": "pendente"
+    }
   ],
   "shorts": [
-    { "titulo": "E se você tivesse que sobreviver 7 dias na Idade da Pedra?", "gancho": "já escrito em episodes/short-02-7dias.js", "status": "pendente" },
-    { "titulo": "E se dinossauros ainda existissem?", "gancho": "um dinossauro no ponto de ônibus", "status": "pendente" },
-    { "titulo": "E se você vivesse um dia no Egito Antigo?", "gancho": "construir pirâmide, o Ugo como faraó", "status": "pendente" },
-    { "titulo": "E se você fosse pirata por um dia?", "gancho": "navio, mapa do tesouro, enjoo no mar", "status": "pendente" },
-    { "titulo": "E se a Lua sumisse?", "gancho": "marés, noites escuras, fatos científicos curtos", "status": "pendente" },
-    { "titulo": "E se você comesse só pão por 30 dias?", "gancho": "contador PÃO, a padaria vira casa", "status": "pendente" },
-    { "titulo": "E se o celular nunca tivesse sido inventado?", "gancho": "Zinho com mapa de papel e orelhão", "status": "pendente" },
-    { "titulo": "E se todo mundo falasse a mesma língua?", "gancho": "o Ugo fala português perfeito", "status": "pendente" },
-    { "titulo": "E se você encontrasse o seu eu do passado?", "gancho": "Zinho de 5 anos dá conselhos", "status": "pendente" },
-    { "titulo": "E se chovesse chocolate?", "gancho": "contador CHOCOLATE, dor de barriga no fim", "status": "pendente" },
-    { "titulo": "E se os gatos mandassem no mundo?", "gancho": "a Sombra como presidente", "status": "pendente" },
-    { "titulo": "E se você caísse dentro de um videogame?", "gancho": "vidas no canto da tela, pulo duplo", "status": "pendente" }
+    {
+      "titulo": "E se você tivesse que sobreviver 7 dias na Idade da Pedra?",
+      "gancho": "já escrito em episodes/short-02-7dias.js",
+      "status": "agendado",
+      "episodio": "episodes/short-02-7dias.js",
+      "video_id": "iJMFFo1P6Xk",
+      "publish_at": "2026-10-31T15:00:00Z"
+    },
+    {
+      "titulo": "E se um homem das cavernas aparecesse na sua cidade?",
+      "gancho": "parte 2 do Ugo: ônibus-mamute, pão, geladeira, poste",
+      "status": "em produção",
+      "episodio": "episodes/short-03-ugo-cidade.js",
+      "publish_at": "2026-11-02T15:00:00Z"
+    },
+    {
+      "titulo": "E se dinossauros ainda existissem?",
+      "gancho": "um dinossauro no ponto de ônibus",
+      "status": "em produção",
+      "episodio": "episodes/short-05-dino.js",
+      "publish_at": "2026-11-04T15:00:00Z"
+    },
+    {
+      "titulo": "E se você vivesse um dia no Egito Antigo?",
+      "gancho": "construir pirâmide, o Ugo como faraó",
+      "status": "em produção",
+      "episodio": "episodes/short-07-egito.js",
+      "publish_at": "2026-11-06T15:00:00Z"
+    },
+    {
+      "titulo": "E se você fosse pirata por um dia?",
+      "gancho": "navio, mapa do tesouro, enjoo no mar",
+      "status": "pendente"
+    },
+    {
+      "titulo": "E se a Lua sumisse?",
+      "gancho": "marés, noites escuras, fatos científicos curtos",
+      "status": "em produção",
+      "episodio": "episodes/short-04-lua.js",
+      "publish_at": "2026-11-03T15:00:00Z"
+    },
+    {
+      "titulo": "E se você comesse só pão por 30 dias?",
+      "gancho": "contador PÃO, a padaria vira casa",
+      "status": "pendente"
+    },
+    {
+      "titulo": "E se o celular nunca tivesse sido inventado?",
+      "gancho": "Zinho com mapa de papel e orelhão",
+      "status": "em produção",
+      "episodio": "episodes/short-06-sem-celular.js",
+      "publish_at": "2026-11-05T15:00:00Z"
+    },
+    {
+      "titulo": "E se todo mundo falasse a mesma língua?",
+      "gancho": "o Ugo fala português perfeito",
+      "status": "pendente"
+    },
+    {
+      "titulo": "E se você encontrasse o seu eu do passado?",
+      "gancho": "Zinho de 5 anos dá conselhos",
+      "status": "pendente"
+    },
+    {
+      "titulo": "E se chovesse chocolate?",
+      "gancho": "contador CHOCOLATE, dor de barriga no fim",
+      "status": "pendente"
+    },
+    {
+      "titulo": "E se os gatos mandassem no mundo?",
+      "gancho": "a Sombra como presidente",
+      "status": "pendente"
+    },
+    {
+      "titulo": "E se você caísse dentro de um videogame?",
+      "gancho": "vidas no canto da tela, pulo duplo",
+      "status": "pendente"
+    }
   ]
 }

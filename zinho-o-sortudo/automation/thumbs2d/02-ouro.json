@@ -1,0 +1,8 @@
+[
+ { "label": "0,5 KG", "bg": "room", "fx": [["rays", {"y": 300, "op": 0.25}], ["sparkles", {"x": 210, "y": 520, "n": 6}]],
+   "zinho": { "pose": "hold", "expr": "shock", "prop": "goldbar", "gold": true, "sc": 1.05 } },
+ { "label": "60 KG", "bg": "street", "fx": [["rays", {"y": 320, "color": "#fff6a8", "op": 0.35}], ["goldpile", {"x": 211, "y": 712, "rows": 3, "front": true}]],
+   "zinho": { "pose": "cheer", "expr": "happy", "gold": true, "sc": 0.95, "y": -60 } },
+ { "label": "1000 KG", "accent": true, "bg": "streetDusk", "fx": [["goldtree", {"x": 330, "y": 640}], ["goldpile", {"x": 120, "y": 712, "rows": 2, "front": true}]],
+   "zinho": { "pose": "idle", "expr": "cry", "gold": true, "sc": 0.95, "x": -40 } }
+]

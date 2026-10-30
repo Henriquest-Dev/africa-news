@@ -1,0 +1,8 @@
+[
+ { "label": "0 H", "bg": "roomNight", "fx": [["rays", {"y": 330, "op": 0.18}]],
+   "zinho": { "pose": "hold", "expr": "happy", "prop": "phone", "sc": 1.0 } },
+ { "label": "72 H", "bg": "classroom", "fx": [],
+   "zinho": { "pose": "idle", "expr": "tired", "sc": 1.0 } },
+ { "label": "240 H", "accent": true, "bg": "kitchen", "fx": [["rays", {"y": 330, "color": "#b9a6ff", "op": 0.3}], ["animals", {"x": 300, "dx": 2000, "front": true}]],
+   "zinho": { "pose": "head", "expr": "shock", "sc": 0.98, "x": -40 } }
+]

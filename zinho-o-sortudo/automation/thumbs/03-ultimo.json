@@ -1,0 +1,126 @@
+[
+ {
+  "label": "DIA 1",
+  "shot": {
+   "set": "street",
+   "tod": "day",
+   "style2": true,
+   "cam": {
+    "pos": [
+     4.2,
+     1.3,
+     -0.4
+    ],
+    "look": [
+     -10,
+     1.8,
+     -0.9
+    ],
+    "fov": 60
+   },
+   "actors": {
+    "zinho": {
+     "p": [
+      1.4,
+      -0.7
+     ],
+     "r": 100,
+     "a": "shock",
+     "e": "shock"
+    }
+   },
+   "fx": {
+    "abandoned": true
+   }
+  }
+ },
+ {
+  "label": "DIA 45",
+  "shot": {
+   "set": "street",
+   "tod": "day",
+   "style2": true,
+   "cam": {
+    "pos": [
+     2.4,
+     1.5,
+     0.4
+    ],
+    "look": [
+     0,
+     0.8,
+     -3.9
+    ],
+    "fov": 58
+   },
+   "actors": {
+    "zinho": {
+     "p": [
+      0,
+      -4.2
+     ],
+     "r": 20,
+     "a": "idle",
+     "e": "happy"
+    }
+   },
+   "fx": {
+    "abandoned": true,
+    "overgrow": 0.85,
+    "dogsFollow": true,
+    "catAt": [
+     -0.9,
+     -3.6,
+     0
+    ]
+   }
+  }
+ },
+ {
+  "label": "DIA 112",
+  "shot": {
+   "set": "street",
+   "tod": "night",
+   "style2": true,
+   "cam": {
+    "pos": [
+     1.6,
+     1.3,
+     2.6
+    ],
+    "look": [
+     0,
+     0.9,
+     0
+    ],
+    "fov": 56
+   },
+   "actors": {
+    "zinho": {
+     "p": [
+      0,
+      -0.4
+     ],
+     "r": 20,
+     "a": "hold",
+     "e": "shock",
+     "prop": "radio"
+    }
+   },
+   "fx": {
+    "abandoned": true,
+    "overgrow": 0.9,
+    "blackout": 0,
+    "fire": [
+     1.0,
+     0.6
+    ],
+    "catAt": [
+     -0.8,
+     0.2,
+     40
+    ]
+   }
+  }
+ }
+]

@@ -1,0 +1,98 @@
+[
+ {
+  "label": "0 H",
+  "shot": {
+   "set": "bedroom",
+   "tod": "indoorNight",
+   "style2": true,
+   "cam": {
+    "at": "zinho",
+    "d": 2.4,
+    "yaw": 20,
+    "h": 0.25,
+    "fov": 50
+   },
+   "actors": {
+    "zinho": {
+     "p": [
+      -0.5,
+      0
+     ],
+     "r": 10,
+     "a": "hold",
+     "e": "happy",
+     "prop": "phone"
+    }
+   },
+   "fx": {
+    "phoneLight": 0
+   }
+  }
+ },
+ {
+  "label": "72 H",
+  "shot": {
+   "set": "classroom",
+   "tod": "indoor",
+   "style2": true,
+   "cam": {
+    "at": "zinho",
+    "d": 2.2,
+    "yaw": 0,
+    "h": 0.4,
+    "fov": 52
+   },
+   "actors": {
+    "zinho": {
+     "p": [
+      0,
+      1.5
+     ],
+     "r": 180,
+     "a": "sit",
+     "e": "tired"
+    }
+   },
+   "board": "O SONO"
+  }
+ },
+ {
+  "label": "240 H",
+  "shot": {
+   "set": "kitchen",
+   "tod": "indoorNight",
+   "style2": true,
+   "cam": {
+    "pos": [
+     -0.1,
+     1.3,
+     3.0
+    ],
+    "look": [
+     -0.6,
+     0.9,
+     0.4
+    ],
+    "fov": 56
+   },
+   "actors": {
+    "zinho": {
+     "p": [
+      -0.6,
+      0.4
+     ],
+     "r": 25,
+     "a": "shock",
+     "e": "shock"
+    }
+   },
+   "fx": {
+    "catAt": [
+     0.7,
+     -0.4,
+     -30
+    ]
+   }
+  }
+ }
+]

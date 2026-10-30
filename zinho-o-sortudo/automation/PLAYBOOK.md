@@ -59,7 +59,11 @@ perder-se-ia): faz commit só do roteiro e termina com um relatório a dizer o q
    cabeças a tapar caras, textos fora do ecrã.
 6. **Renderizar**: longo `node tools/render.mjs --workers 4`; Short `node tools/render.mjs --w 1080 --h 1920 --workers 4`.
    O render é retomável: se a tarefa em segundo plano parar (limite de 2 h), voltar a lançar o mesmo comando.
-7. **Thumbnail**: `node tools/thumbnail.mjs --t <s> --lines "<l1>|<l2>|<l3>" --accent 1 --badge "<texto>"` (só longos).
+7. **Thumbnail** (só longos), no estilo do nicho: 2–3 painéis lado a lado, cada um com um número/rótulo ENORME no
+   topo a mostrar a escalada (ex.: `0,5 KG | 60 KG | 1000 KG`, `DIA 1 | DIA 45 | DIA 112`), o Zinho bem visível e
+   centrado em cada painel, cores vivas, sem título por cima. Escrever `automation/thumbs/<ep>.json` (um plano montado
+   por painel: cenário, câmara, atores, efeitos) e gerar com
+   `node tools/thumb-panels.mjs --scene automation/thumbs/<ep>.json` → `out/thumb-<ep>.jpg`. Ver o resultado e corrigir.
 8. **Upload agendado**: `python3 tools/youtube_upload.py out/zinho-<ep>.mp4 build/<ep>/meta.json --thumb out/thumb-<ep>.jpg --publish-at <ISO UTC>`.
 9. **Registar**: marcar o tema como `feito` em `topics.json` com `video_id`, fazer commit do episódio e do
    `topics.json` e push no ramo indicado pela sessão.

@@ -1,0 +1,5 @@
+body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: #f6f7fb; color: #1d1d24; line-height: 1.6; }
+main { max-width: 760px; margin: 0 auto; padding: 32px 18px 64px; }
+h1 { font-size: 1.9rem; margin: 0 0 4px; } h2 { font-size: 1.2rem; margin-top: 28px; }
+.sub { color: #666; margin: 0 0 24px; } a { color: #2d6ff0; }
+nav { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }

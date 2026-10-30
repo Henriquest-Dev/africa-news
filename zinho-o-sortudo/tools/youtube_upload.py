@@ -8,13 +8,24 @@ sintético (IA). Nota: enquanto o projeto da API não passar na auditoria do You
 os uploads ficam bloqueados em privado e é preciso publicá-los à mão no YouTube Studio.
 Custo de quota: ~1650 unidades por vídeo (a quota grátis é 10 000 por dia).
 """
-import argparse, json, os, sys, urllib.parse, urllib.request
+import argparse, json, os, subprocess, sys, time, urllib.parse, urllib.request
 
 
 def access_token():
     data = urllib.parse.urlencode({'client_id': os.environ['YT_CLIENT_ID'], 'client_secret': os.environ['YT_CLIENT_SECRET'],
                                    'refresh_token': os.environ['YT_REFRESH_TOKEN'], 'grant_type': 'refresh_token'}).encode()
     return json.load(urllib.request.urlopen('https://oauth2.googleapis.com/token', data=data, timeout=30))['access_token']
+
+
+def check_video(path):
+    """Recusa ficheiros incompletos (ex.: render/ffmpeg ainda a escrever): o tamanho tem de estar estável e o MP4 legível."""
+    size = os.path.getsize(path); time.sleep(5)
+    if os.path.getsize(path) != size:
+        sys.exit(f'{path} ainda está a ser escrito; espera o render terminar')
+    r = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', path], capture_output=True, text=True)
+    if r.returncode or not r.stdout.strip():
+        sys.exit(f'{path} está incompleto ou corrompido: {r.stderr.strip()[:200]}')
+    return float(r.stdout)
 
 
 def upload(path, meta, token, publish_at):
@@ -62,6 +73,7 @@ def main():
     ap.add_argument('--thumb'); ap.add_argument('--publish-at')
     a = ap.parse_args()
     meta = json.load(open(a.meta))
+    print(f'vídeo ok: {check_video(a.video):.1f} s')
     token = access_token()
     v = upload(a.video, meta, token, a.publish_at)
     print(f"enviado: https://youtu.be/{v['id']}  (estado: {v['status']['privacyStatus']}, publishAt: {v['status'].get('publishAt')})")

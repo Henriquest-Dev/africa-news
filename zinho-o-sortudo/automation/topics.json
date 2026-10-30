@@ -73,9 +73,10 @@
     {
       "titulo": "E se você tivesse que sobreviver 7 dias na Idade da Pedra?",
       "gancho": "já escrito em episodes/short-02-7dias.js",
-      "status": "roteiro pronto",
+      "status": "feito",
       "episodio": "episodes/short-02-7dias.js",
-      "publish_at": "2026-10-31T15:00:00Z"
+      "publish_at": "2026-10-31T15:00:00Z",
+      "video_id": "AN0cm83MOMw"
     },
     {
       "titulo": "E se um homem das cavernas aparecesse na sua cidade?",

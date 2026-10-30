@@ -61,8 +61,10 @@ perder-se-ia): faz commit só do roteiro e termina com um relatório a dizer o q
 6. **Renderizar**: longo `node tools/render.mjs --workers 4`; Short `node tools/render.mjs --w 1080 --h 1920 --workers 4`.
    O render é retomável: se a tarefa em segundo plano parar (limite de 2 h), voltar a lançar o mesmo comando.
 7. **Thumbnail** (só longos), no estilo do canal de referência: 3 painéis lado a lado, cada um com um número/rótulo
-   ENORME no topo a mostrar a escalada (ex.: `0,5 KG | 60 KG | 1000 KG`, `DIA 1 | DIA 45 | DIA 112`).
-   Cada painel é uma imagem gerada pelo modelo GRÁTIS da Pollinations (a descrição fixa do Zinho e do estilo já
+   ENORME no topo: sempre o DIA (ex.: `DIA 1 | DIA 5 | DIA 10`), e cada painel mostra EXATAMENTE o acontecimento
+   desse dia no roteiro (ler os carimbos `DIA N` do episódio e escolher 3 momentos visuais: começo, meio e clímax).
+   Cada painel é uma imagem gerada pelo modelo GRÁTIS da Pollinations, com o render do Zinho dos vídeos como
+   referência (assets/zinho-referencia.jpg), para o personagem 2D sair fiel (a descrição fixa do Zinho e do estilo já
    vai em todos os pedidos; o objeto/situação tem de ficar colado ao Zinho para não se perder no corte):
    `python3 tools/pollinations_image.py "<cena do painel>" --out out/thumbai/<ep>-a.jpg --seed <n>` (×3), depois
    `node tools/thumb-compose.mjs --panels "out/thumbai/<ep>-a.jpg:<rótulo>|…" --accent 2 --out out/thumb-<ep>.jpg`.

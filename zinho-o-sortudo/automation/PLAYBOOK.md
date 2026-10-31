@@ -70,6 +70,14 @@ perder-se-ia): faz commit só do roteiro e termina com um relatório a dizer o q
    `node tools/thumb-compose.mjs --panels "out/thumbai/<ep>-a.jpg:<rótulo>|…" --accent 2 --out out/thumb-<ep>.jpg`.
    Ver o resultado; se um painel não mostrar a situação, gerar de novo com outro seed. Precisa de IMG_API_KEY (ytenv.sh).
 8. **Upload agendado**: `python3 tools/youtube_upload.py out/zinho-<ep>.mp4 build/<ep>/meta.json --thumb out/thumb-<ep>.jpg --publish-at <ISO UTC>`.
+8b. **Post da comunidade** (todos os vídeos novos, longos e Shorts; nunca para os já publicados). A API do YouTube
+   NÃO permite publicar posts na aba Comunidade, por isso o post é escrito aqui e entregue ao dono do canal no
+   relatório, pronto a copiar, para ele publicar quando o vídeo estrear. Guardar em `out/post-<ep>.txt` com:
+   - 1.ª linha: título chamativo, curto, com 1–2 emojis (ex.: "🦖 Um T. rex no ponto de ônibus?!");
+   - 2–3 linhas de descrição chamativa, com curiosidade/pergunta que puxe comentário (sem spoiler do final);
+   - linha de hashtags, TODAS em minúsculas e sem acentos/espaços (ex.: `#zinhoosortudo #ese #dinossauros #shorts`);
+   - última linha: "▶️ Assiste aqui: https://youtu.be/<video_id>".
+   Português do Brasil, original, nunca copiar textos de outros canais.
 9. **Registar**: marcar o tema como `feito` em `topics.json` com `video_id`, fazer commit do episódio e do
    `topics.json` e push no ramo indicado pela sessão.
 10. **Relatório final**: título, link, hora agendada e qualquer problema (quota, upload privado, etc.).

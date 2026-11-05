@@ -3,20 +3,13 @@
 Este ficheiro é o manual que cada sessão automática (tarefa agendada) segue. Meta semanal:
 **4 vídeos longos (~5 min) + 6 Shorts (30–60 s)**, sem custos: só o Claude Code e a API do YouTube.
 
-## Calendário de publicação (hora de Brasília; Maputo = +5 h)
+## Calendário de publicação (ritmo atual, para poupar créditos)
 
-| Dia | Longo (16h BRT = 19:00 UTC) | Short (12h BRT = 15:00 UTC) |
-|---|---|---|
-| Segunda | ✅ | ✅ |
-| Terça | — | ✅ |
-| Quarta | ✅ | ✅ |
-| Quinta | — | ✅ |
-| Sexta | ✅ | ✅ |
-| Sábado | — | ✅ |
-| Domingo | ✅ | — |
+**Só 2 Shorts por semana: segunda e quinta, às 12h de Brasília (15:00 UTC).** Vídeos longos em pausa até o dono do
+canal pedir para voltar. Cada Short: viral, vertical, **no máximo 60 s** (alvo 45–58 s), gancho no 1.º segundo.
 
-A sessão de produção corre todos os dias às 03:23 de Maputo (01:23 UTC) e prepara **o que publica nesse mesmo dia**
-(upload privado com `publishAt`, ou seja, publicação agendada para as 15:00 UTC — Short — e 19:00 UTC — longo).
+A sessão de produção corre só segunda e quinta às 03:23 de Maputo (01:23 UTC) e prepara o Short desse dia
+(upload privado com `publishAt` às 15:00 UTC).
 
 ## Segredos (nunca no repositório)
 

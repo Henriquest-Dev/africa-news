@@ -1,12 +1,11 @@
 {
-  "_nota": "Fila de temas originais do canal. Cada vídeo é produzido e enviado só no próprio dia da publicação, pela sessão automática. 'roteiro pronto' = já tem episódio escrito e data (publish_at, UTC): no dia, a sessão usa esse roteiro. Sem tema marcado para o dia, usa o primeiro 'pendente' do tipo certo. Depois do upload, marca 'feito' com o video_id.",
+  "_nota": "Fila de temas originais. Ritmo atual: só 2 Shorts por semana (segunda e quinta, 15:00 UTC), virais, até 60 s; longos em pausa. 'roteiro pronto' com publish_at = já escrito para essa data. Sem tema marcado para o dia, usa o primeiro Short 'pendente'. Depois do upload, marca 'feito' com o video_id.",
   "longos": [
     {
       "titulo": "E se você nunca mais conseguisse dormir?",
       "gancho": "contador ACORDADO em horas, alucinação do gato, caso real de Randy Gardner",
-      "status": "roteiro pronto",
-      "episodio": "episodes/04-sono.js",
-      "publish_at": "2026-11-06T19:00:00Z"
+      "status": "pausado",
+      "episodio": "episodes/04-sono.js"
     },
     {
       "titulo": "E se a sua altura dobrasse todo dia?",
@@ -83,21 +82,21 @@
       "gancho": "parte 2 do Ugo: ônibus-mamute, pão, geladeira, poste",
       "status": "roteiro pronto",
       "episodio": "episodes/short-03-ugo-cidade.js",
-      "publish_at": "2026-11-06T15:00:00Z"
+      "publish_at": "2026-11-09T15:00:00Z"
     },
     {
       "titulo": "E se dinossauros ainda existissem?",
       "gancho": "um dinossauro no ponto de ônibus",
       "status": "roteiro pronto",
       "episodio": "episodes/short-05-dino.js",
-      "publish_at": "2026-11-09T15:00:00Z"
+      "publish_at": "2026-11-16T15:00:00Z"
     },
     {
       "titulo": "E se você vivesse um dia no Egito Antigo?",
       "gancho": "construir pirâmide, o Ugo como faraó",
       "status": "roteiro pronto",
       "episodio": "episodes/short-07-egito.js",
-      "publish_at": "2026-11-10T15:00:00Z"
+      "publish_at": "2026-11-19T15:00:00Z"
     },
     {
       "titulo": "E se você fosse pirata por um dia?",
@@ -109,7 +108,7 @@
       "gancho": "marés, noites escuras, fatos científicos curtos",
       "status": "roteiro pronto",
       "episodio": "episodes/short-04-lua.js",
-      "publish_at": "2026-11-07T15:00:00Z"
+      "publish_at": "2026-11-12T15:00:00Z"
     },
     {
       "titulo": "E se você comesse só pão por 30 dias?",

@@ -30,8 +30,8 @@ export default [
     cam: { pos: [6.0, 1.7, -2.0], look: [3.2, 1.4, -4.7], pos2: [5.4, 1.6, -2.4], look2: [3.2, 1.4, -4.7], fov: 55 },
     actors: { zinho: { p: [3.2, -4.2], r: 180, a: 'hold', e: 'neutral', prop: 'phone' } }, fx: { orelhao: ORE }, card: { t: 'FATO REAL', s: 'Orelhão: Chu Ming Silveira, anos 1970', at: 0.35 } }),
   S({ who: 'ZINHO', text: 'Alô, Beto? Beto?! Acabou a ficha!', set: 'street', tod: 'day', hud: B(1, '70%'), min: 1.6,
-    cam: { pos: [1.4, 1.6, -2.6], look: [3.2, 1.5, -4.6], pos2: [1.7, 1.6, -2.9], look2: [3.2, 1.5, -4.6], fov: 52 },
-    actors: { zinho: { p: [3.2, -4.2], r: 180, a: 'angry', e: 'angry', prop: 'phone' } }, fx: { orelhao: ORE }, sfx: [['bonk', 0.8]] }),
+    cam: { pos: [5.4, 1.55, -3.2], look: [3.1, 1.45, -4.3], pos2: [5.2, 1.5, -3.4], look2: [3.1, 1.45, -4.3], fov: 52 },
+    actors: { zinho: { p: [3.2, -4.2], r: 115, a: 'angry', e: 'angry', prop: 'phone' } }, fx: { orelhao: ORE }, sfx: [['bonk', 0.8]] }),
 
   // ── PERGUNTA ──
   S({ who: 'NAR', text: 'E você? Aguentaria um dia inteiro sem celular? Responde sim ou não.', set: 'street', tod: 'day', hud: B(1, '70%'),
@@ -46,7 +46,7 @@ export default [
     cam: { at: 'beto', d: 2.3, yaw: -30, h: 0.1, push: 0.12, fov: 52 },
     actors: { zinho: { p: [9.4, 5.4], look: 'beto', a: 'idle', e: 'flat' }, beto: { p: [10.6, 6.2], look: 'zinho', a: 'shock', e: 'happy' } } }),
   S({ who: 'NAR', text: 'Eles ficaram três horas jogando bola. Ninguém olhou pra tela. Porque não tinha tela.', set: 'street', tod: 'dusk', hud: B(1, '0%'), hudIn: 0.4, music: 'happy',
-    cam: { pos: [20.5, 2.2, 17.5], look: [26, 1, 12], pos2: [21.5, 2, 17], look2: [28, 1, 12], fov: 55 },
+    cam: { pos: [18.0, 2.0, 19.5], look: [25, 1, 12.5], pos2: [18.6, 1.9, 19.0], look2: [25.5, 1, 12.5], fov: 55 },
     actors: { zinho: { p: [23, 12], r: 90, a: 'kick', e: 'happy' }, beto: { p: [27, 13], r: -90, a: 'cheer', e: 'happy' } }, sfx: [['kick', 0.3], ['cheer', 0.6, 0.5]] }),
 
   // ── FATO + FINAL ──

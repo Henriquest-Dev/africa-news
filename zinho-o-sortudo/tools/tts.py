@@ -161,7 +161,19 @@ def split_on_silence(x, rate, n):
 
 
 def gemini_batch(key, items):
-    """Gera todas as falas de um personagem num só pedido (poupa a quota diária) e corta nas pausas."""
+    """Gera as falas de um personagem num só pedido (poupa a quota diária) e corta nas pausas.
+    Se o corte sair suspeito, refaz em duas metades (lotes menores cortam com mais segurança)."""
+    try:
+        return _gemini_batch(key, items)
+    except RuntimeError as e:
+        if len(items) < 3 or 'separ' not in str(e):
+            raise
+        print(f'  {items[0][1]}: {e}; a refazer em duas metades', flush=True)
+        half = len(items) // 2
+        gemini_batch(key, items[:half]); gemini_batch(key, items[half:])
+
+
+def _gemini_batch(key, items):
     who = items[0][1]
     voice, style = GEMINI_VOICES[who]
     texts = [t for _, _, t, _ in items]
@@ -174,7 +186,7 @@ def gemini_batch(key, items):
     # confere se cada pedaço tem duração plausível para o número de palavras
     for (_, _, t, _), seg in zip(items, parts):
         sec, words = len(seg) / rate, len(t.split())
-        if not (0.12 * words < sec < 1.2 * words + 1.5):
+        if not (0.2 * words < sec < 0.75 * words + 1.2):  # fala normal: ~0,3–0,5 s por palavra
             raise RuntimeError(f'separação suspeita em {who}: {sec:.1f}s para {words} palavras')
     for (_, _, _, out), seg in zip(items, parts):
         tmp = out + '.src.wav'

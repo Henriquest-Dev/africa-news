@@ -119,9 +119,10 @@
     {
       "titulo": "E se o celular nunca tivesse sido inventado?",
       "gancho": "Zinho com mapa de papel e orelhão",
-      "status": "roteiro pronto",
+      "status": "feito",
       "episodio": "episodes/short-06-sem-celular.js",
-      "publish_at": "2026-11-05T15:00:00Z"
+      "publish_at": "2026-11-05T15:00:00Z",
+      "video_id": "cvcBGoc-InU"
     },
     {
       "titulo": "E se todo mundo falasse a mesma língua?",

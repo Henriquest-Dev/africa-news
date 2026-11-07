@@ -38,6 +38,10 @@ perder-se-ia): faz commit só do roteiro e termina com um relatório a dizer o q
                          thumb: { t: 12.5, lines: 'E SE A SUA|ALTURA|DOBRASSE?', accent: 1, badge: 'DIA 10' } };
    ```
    Regras do roteiro:
+   - **Gancho de duplo sentido** (pedido do dono do canal, é o que mais viraliza): 1.ª frase com uma palavra de duplo
+     sentido do português do Brasil que depois se revela inocente (ex.: "o faraó me mostrou a cobra dele" → a cobra da
+     coroa), e 2–3 piadas leves de duplo sentido ao longo do vídeo. Sem palavrão nem nada explícito. Palavra-chave
+     de comentário ligada ao gancho. Renderizar com `hq: true` no 1.º plano (gráficos melhores).
    - **Original**: personagens do canal (Zinho, Dona Neide, Beto, Lia, Seu Juca, professora, Ugo, Kika, a gata Sombra),
      nunca personagens, músicas, letras ou textos de terceiros.
    - **Longo (~5 min, 55–70 planos)**: gancho nos primeiros 5 s, contador no canto (HUD) que escala, carimbos "DIA N",

@@ -94,9 +94,10 @@
     {
       "titulo": "E se você vivesse um dia no Egito Antigo?",
       "gancho": "construir pirâmide, o Ugo como faraó",
-      "status": "roteiro pronto",
+      "status": "feito",
       "episodio": "episodes/short-07-egito.js",
-      "publish_at": "2026-11-19T15:00:00Z"
+      "publish_at": "2026-11-07T18:00:00Z",
+      "video_id": "UIR3u0rGPM8"
     },
     {
       "titulo": "E se você fosse pirata por um dia?",

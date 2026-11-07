@@ -31,6 +31,8 @@ OPENROUTER_VOICES = {
     'JUCA':  ('onyx',    'Senhor idoso brasileiro rabugento, fala devagar.'),
     'PROF':  ('sage',    'Professora animada e um pouco irônica.'),
     'UGO':   ('onyx',    'Homem das cavernas, voz grave e rouca, fala curta e engraçada.'),
+    'NEFER': ('sage',    'Trabalhador do Egito Antigo, calmo e simpático.'),
+    'KHA':   ('onyx',    'Faraó vaidoso, voz grave e cheia de si.'),
 }
 GEMINI_VOICES = {  # voz pré-definida do Gemini, direção de interpretação
     'NAR':   ('Charon',    'Narrador de vídeo animado do YouTube, voz grave e envolvente, ritmo ágil, com suspense e humor'),
@@ -41,6 +43,7 @@ GEMINI_VOICES = {  # voz pré-definida do Gemini, direção de interpretação
     'JUCA':  ('Gacrux',    'Senhor idoso brasileiro rabugento, fala devagar'),
     'PROF':  ('Aoede',     'Professora animada e um pouco irônica'),
     'UGO':   ('Algenib',   'Homem das cavernas, voz grave e rouca, fala curta, engraçado'),
+    'KHA':   ('Alnilam',   'Faraó do Egito Antigo, voz grave, vaidosa e cheia de si, engraçado'),
     'NEFER': ('Iapetus',   'Trabalhador do Egito Antigo, voz calma, sábia e simpática, um pouco divertida'),
 }
 EDGE_VOICES = {  # voz, velocidade, tom
@@ -53,6 +56,7 @@ EDGE_VOICES = {  # voz, velocidade, tom
     'PROF':  ('pt-BR-FranciscaNeural', '+14%', '+10Hz'),
     'UGO':   ('pt-BR-AntonioNeural', '-6%', '-42Hz'),
     'NEFER': ('pt-BR-AntonioNeural', '-2%', '-15Hz'),
+    'KHA':   ('pt-BR-AntonioNeural', '-8%', '-30Hz'),
 }
 
 

@@ -1,6 +1,14 @@
 // Motor de animação de "Zinho, o Sortudo" — Three.js, renderizado quadro a quadro pelo tools/render.mjs.
 // Tudo é determinístico: __render(t) desenha exatamente o instante t (s) da linha do tempo.
 import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+// modo de alta qualidade (?hq=1): mesmo low poly, mas com materiais PBR, luz ambiente, AO, bloom e sombras mais finas
+const HQ = new URLSearchParams(location.search).get('hq') === '1';
 
 const qs = new URLSearchParams(location.search);
 const RW = +(qs.get('w') || 1280), RH = +(qs.get('h') || 720);
@@ -22,6 +30,7 @@ renderer.setSize(RW, RH, false);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
+if (HQ) { renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.7; }
 document.getElementById('stage').prepend(renderer.domElement);
 
 const scene = new THREE.Scene();
@@ -35,7 +44,9 @@ const gradMap = (() => {
 const matCache = new Map();
 function M(color, o = {}) {
   const key = color + JSON.stringify(o);
-  if (!matCache.has(key)) matCache.set(key, new THREE.MeshToonMaterial({ color, gradientMap: gradMap, ...o }));
+  if (!matCache.has(key)) matCache.set(key, HQ
+    ? new THREE.MeshStandardMaterial({ color, roughness: 0.62, metalness: 0.0, envMapIntensity: 0.3, ...o })
+    : new THREE.MeshToonMaterial({ color, gradientMap: gradMap, ...o }));
   return matCache.get(key);
 }
 const OUTLINE = new THREE.MeshBasicMaterial({ color: 0x16161c, side: THREE.BackSide });
@@ -114,7 +125,8 @@ const stars = (() => {
 const hemi = new THREE.HemisphereLight(0xffffff, 0x888888, 1);
 const sun = new THREE.DirectionalLight(0xffffff, 2);
 sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.mapSize.set(HQ ? 4096 : 2048, HQ ? 4096 : 2048);
+if (HQ) sun.shadow.radius = 3;
 Object.assign(sun.shadow.camera, { left: -14, right: 14, top: 14, bottom: -14, near: 1, far: 90 });
 sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.03;
 scene.add(hemi, sun, sun.target);
@@ -125,6 +137,21 @@ const fill = new THREE.PointLight(0xffffff, 0.4, 0, 0);
 const rim = new THREE.DirectionalLight(0xfff1d6, 0);
 scene.add(fxLight, fxLight2, fill, rim, rim.target);
 scene.fog = new THREE.Fog(0xffffff, 40, 160);
+// alta qualidade: reflexos suaves de um ambiente neutro + composição com oclusão ambiente e brilho
+let composer = null, gtao = null;
+if (HQ) {
+  const pm = new THREE.PMREMGenerator(renderer);
+  scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+  composer = new EffectComposer(renderer);
+  composer.setSize(RW, RH);
+  composer.addPass(new RenderPass(scene, camera));
+  gtao = new GTAOPass(scene, camera, RW, RH);
+  gtao.updateGtaoMaterial({ radius: 0.6, distanceExponent: 1.6, thickness: 1.5, scale: 1.1, samples: 12 });
+  gtao.blendIntensity = 0.85;
+  composer.addPass(gtao);
+  composer.addPass(new UnrealBloomPass(new THREE.Vector2(RW, RH), 0.14, 0.4, 0.97));
+  composer.addPass(new OutputPass());
+}
 
 const TOD = {
   desert: { top: '#4fa9f2', bot: '#fbe3b0', hs: '#fff3d8', hg: '#c9a46a', hi: 1.4, sc: '#fff0cf', si: 2.7, dir: [-14, 24, 10], fog: '#f3dcae', fogN: 60, fogF: 220, lamps: 0, win: 0, fill: 0.25 },
@@ -674,8 +701,15 @@ function makeChar(name, cfg, seed) {
       const nm = M('#2a5db0'), gd = M('#f4c430');
       mk(capGeo(HEAD_R * 1.08, 1.4), nm, { r: [-0.25, 0, 0], parent: head, ol: 0.022 });
       for (const sd of [-1, 1]) mk(G.box(0.3, 0.75, 0.12), nm, { p: [sd * 0.46, -0.32, 0.05], r: [0, 0, sd * 0.12], parent: head, ol: 0.015 });
-      for (let i = 0; i < 4; i++) mk(new THREE.TorusGeometry(HEAD_R * 1.07, 0.022, 4, 28, Math.PI), gd, { p: [0, 0.05 + i * 0.1, -0.03], r: [-0.3, 0, 0], parent: head, ol: 0 });
-      mk(G.cyl(0.05, 0.07, 0.22, 6), gd, { p: [0, 0.38, 0.4], r: [0.3, 0, 0], parent: head, ol: 0.01 });
+      // listras douradas nas abas laterais
+      for (const sd of [-1, 1]) for (let i = 0; i < 3; i++) mk(G.box(0.31, 0.05, 0.13), gd, { p: [sd * 0.46, -0.1 - i * 0.2, 0.05], r: [0, 0, sd * 0.12], parent: head, ol: 0 });
+      // faixa dourada na testa + uraeus (a cobra erguida da coroa)
+      mk(new THREE.TorusGeometry(HEAD_R * 1.06, 0.035, 6, 32, Math.PI), gd, { p: [0, 0.12, 0.0], r: [-0.25, 0, 0], parent: head, ol: 0 });
+      const ur = new THREE.Group(); ur.position.set(0, 0.36, 0.43); ur.rotation.x = 0.25; head.add(ur);
+      mk(G.cyl(0.035, 0.05, 0.2, 8), gd, { p: [0, 0.02, 0], parent: ur, ol: 0.01 });
+      const hood = G.sph(0.085, 12, 8); hood.scale(1, 1.2, 0.35); mk(hood, gd, { p: [0, 0.16, 0], parent: ur, ol: 0.012 });
+      mk(G.sph(0.04, 10, 8), gd, { p: [0, 0.27, 0.03], parent: ur, ol: 0.01 });
+      for (const sd of [-1, 1]) mk(G.sph(0.012, 6, 4), new THREE.MeshBasicMaterial({ color: '#c0392b' }), { p: [sd * 0.018, 0.28, 0.065], parent: ur, ol: 0 });
       break;
     }
     case 'afro':
@@ -738,7 +772,7 @@ function makeChar(name, cfg, seed) {
 }
 const chars = {};
 Object.entries(CHARS).forEach(([n, cfg], i) => { chars[n] = makeChar(n, cfg, i * 1.37 + 0.4); scene.add(chars[n].root); });
-const WHO = { ZINHO: 'zinho', MAE: 'mae', BETO: 'beto', LIA: 'lia', JUCA: 'juca', PROF: 'prof', UGO: 'ugo' };
+const WHO = { ZINHO: 'zinho', MAE: 'mae', BETO: 'beto', LIA: 'lia', JUCA: 'juca', PROF: 'prof', UGO: 'ugo', NEFER: 'nefer', KHA: 'kha' };
 
 const EXPR = {
   neutral: { eye: 1, lid: 1, brow: [0, 0], by: 0, mouth: 'smile', ms: 0.55 },
@@ -1879,7 +1913,7 @@ function render(T) {
     ec.style.transform = `translateY(${(1 - k) * 30}vh) scale(${1 + 0.03 * Math.sin(T * 4)})`;
   } else ec.style.display = 'none';
 
-  renderer.render(scene, camera);
+  if (composer) composer.render(); else renderer.render(scene, camera);
 }
 
 window.__setup = (tl) => { TL = tl; drawBoard(null); window.__ready = true; return TL.shots.length; };

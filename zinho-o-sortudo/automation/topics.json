@@ -80,9 +80,10 @@
     {
       "titulo": "E se um homem das cavernas aparecesse na sua cidade?",
       "gancho": "parte 2 do Ugo: ônibus-mamute, pão, geladeira, poste",
-      "status": "roteiro pronto",
+      "status": "feito",
       "episodio": "episodes/short-03-ugo-cidade.js",
-      "publish_at": "2026-11-09T15:00:00Z"
+      "publish_at": "2026-11-09T15:00:00Z",
+      "video_id": "z-VbaQiS6go"
     },
     {
       "titulo": "E se dinossauros ainda existissem?",

@@ -1302,6 +1302,8 @@ function applyTod(name, flash = 0) {
   hemi.color.set(d.hs); hemi.groundColor.set(d.hg); hemi.intensity = d.hi + flash * 2.5;
   sun.color.set(d.sc); sun.intensity = d.si + flash * 2;
   fill.intensity = d.fill;
+  // alta qualidade: a luz do ambiente acompanha a hora do dia (à noite quase some)
+  if (HQ) scene.environmentIntensity = Math.min(1, d.hi / 1.4) ** 3;
   if (d.fog) { scene.fog.color.set(d.fog); scene.fog.near = d.fogN; scene.fog.far = d.fogF; } else { scene.fog.near = 1000; scene.fog.far = 2000; }
   return d;
 }

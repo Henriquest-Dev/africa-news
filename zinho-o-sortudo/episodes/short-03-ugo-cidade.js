@@ -6,7 +6,7 @@ const C = (d, v) => ['caos', d, v, 'CAOS'];
 
 export default [
   // ── GANCHO ──
-  S({ who: 'ZINHO', text: 'Vocês pediram, e o Ugo veio. Pra minha rua. Em uma hora, ele quase acabou com o bairro.', set: 'street', tod: 'day',
+  S({ who: 'ZINHO', text: 'O Ugo entrou na padaria e pediu pra apertar a rosca da padeira.', set: 'street', tod: 'day', hq: true,
     music: 'tribal', musicGain: 0.12, duck: 0.72, voiceSpeed: 1.25, lead: 0.03, tail: 0.08,
     cam: { at: 'zinho', d: 2.6, yaw: 12, h: 0.15, push: 0.3, fov: 52 },
     actors: { zinho: { p: [0, -4], r: 0, a: 'talk', e: 'worried' }, ugo: { p: [1.6, -4.6], r: -20, a: 'idle', e: 'neutral', prop: 'spear' } }, sfx: [['whoosh', 0.02, 0.6]] }),
@@ -23,13 +23,13 @@ export default [
     actors: { zinho: { p: [-4.2, 4.6], look: 'ugo', a: 'angry', e: 'shock' }, ugo: { p: [-5.8, 4.5], look: 'zinho', a: 'idle', e: 'angry', prop: 'spear' } } }),
 
   // ── A PADARIA ──
-  S({ who: 'NAR', text: 'Segunda parada: a padaria. O Ugo nunca tinha visto pão.', set: 'street', tod: 'day', hud: C(1, '40%'), stamp: '9:20',
+  S({ who: 'NAR', text: 'Calma. Rosca é pão doce. E o Ugo nunca tinha visto pão na vida.', set: 'street', tod: 'day', hud: C(1, '40%'), stamp: '9:20',
     cam: { at: 'ugo', d: 2.6, yaw: 20, h: 0.1, push: 0.2, fov: 52 },
     actors: { ugo: { p: [-17.4, -5.6], r: 10, a: 'hold', e: 'shock', prop: 'bread' }, zinho: { p: [-19, -5.2], look: 'ugo', a: 'idle', e: 'happy' } }, sfx: [['stamp', 0.02], ['sparkle', 0.5]] }),
-  S({ who: 'UGO', text: 'Pedra... macia?', set: 'street', tod: 'day', hud: C(1, '40%'), min: 1.3,
+  S({ who: 'UGO', text: 'Rosca... macia! Ugo quer mais rosca!', set: 'street', tod: 'day', hud: C(1, '40%'), min: 1.3,
     cam: { at: 'ugo', d: 2.4, yaw: -10, h: 0.05, push: 0.15, fov: 50 },
     actors: { ugo: { p: [-17.4, -5.6], r: 10, a: 'hold', e: 'shock', prop: 'bread' } } }),
-  S({ who: 'NAR', text: 'Ele comeu doze. E pagou com uma pedra.', set: 'street', tod: 'day', hud: C(1, '55%'), min: 1.8,
+  S({ who: 'NAR', text: 'Ele comeu doze roscas. E pagou com uma pedra.', set: 'street', tod: 'day', hud: C(1, '55%'), min: 1.8,
     cam: { at: 'ugo', d: 2.5, yaw: 35, h: 0.15, push: 0.1, fov: 52 },
     actors: { ugo: { p: [-17.4, -5.6], r: 10, a: 'cheer', e: 'happy', prop: 'bread' }, zinho: { p: [-19, -5.2], look: 'ugo', a: 'idle', e: 'flat' } }, sfx: [['ding', 0.55]] }),
 
@@ -43,8 +43,8 @@ export default [
     cam: { pos: [-0.5, 1.9, 2.2], look: [2.4, 1.1, -2.6], pos2: [0, 1.8, 1.6], look2: [2.8, 1.1, -2.6], fov: 58 },
     actors: { ugo: { p: [1.4, -1.4], to: [2.0, -1.8], a: 'walk', e: 'neutral' } }, fx: { fridgeOpen: true }, sfx: [['stamp', 0.02]] }),
   S({ who: 'UGO', text: 'Caverna fria! Ugo mora aqui agora.', set: 'kitchen', tod: 'indoor', hud: C(1, '70%'), min: 1.6,
-    cam: { at: 'ugo', d: 2.6, yaw: 25, h: 0.1, push: 0.15, fov: 52 },
-    actors: { ugo: { p: [2.0, -1.8], r: 150, a: 'cheer', e: 'happy' } }, fx: { fridgeOpen: true } }),
+    cam: { pos: [0.2, 1.6, 0.9], look: [2.0, 1.2, -1.8], pos2: [0.4, 1.55, 0.6], look2: [2.0, 1.25, -1.8], fov: 52 },
+    actors: { ugo: { p: [2.0, -1.8], r: -34, a: 'cheer', e: 'happy' } }, fx: { fridgeOpen: true } }),
 
   // ── CURIOSIDADE REAL ──
   S({ who: 'NAR', text: 'Curiosidade real: os neandertais usavam fogo, faziam ferramentas e cuidavam dos feridos. Burro, o Ugo não era.', set: 'kitchen', tod: 'indoor', hud: C(1, '70%'),
@@ -66,16 +66,16 @@ export default [
     actors: { zinho: { p: [0.4, -4.2], look: 'ugo', a: 'idle', e: 'flat' }, ugo: { p: [2, -4.6], look: 'zinho', a: 'cheer', e: 'happy', prop: 'spear' } }, fx: { blackout: 0 } }),
 
   // ── PEDIDO DE COMENTÁRIO ──
-  S({ who: 'NAR', text: 'Parte três? Comenta FOGO, que o Ugo volta.', set: 'street', tod: 'night', hud: C(1, '100%'), min: 2.6,
+  S({ who: 'NAR', text: 'Comenta ROSCA se você também pensou besteira no começo.', set: 'street', tod: 'night', hud: C(1, '100%'), min: 2.6,
     cam: { pos: [1.2, 1.6, 0.8], look: [1.2, 1.3, -4.4], fov: 56 },
     actors: { zinho: { p: [0.4, -4.2], r: 0, a: 'wave', e: 'happy' }, ugo: { p: [2, -4.6], r: -15, a: 'wave', e: 'happy', prop: 'spear' } }, fx: { blackout: 0 },
-    endcard: 'comment', endcardText: 'Comenta “FOGO” ↓' }),
+    endcard: 'comment', endcardText: 'Comenta “ROSCA” ↓' }),
 ];
 
 export const meta = {
   kind: 'short',
-  title: 'Trouxe um homem das cavernas pra cidade 🦴 e ele apagou o bairro #shorts',
-  description: 'O Ugo saiu da Idade da Pedra e veio parar na rua do Zinho. Ônibus, pão, geladeira… e um poste. 😅\n\nO que você mostraria primeiro pra um homem das cavernas? Responde aí 👇\nQuer a parte três? Comenta FOGO!\n\n#zinhoosortudo #ese #homemdascavernas #shorts\n\nAnimação original feita com ajuda de IA (vozes e produção).',
-  tags: ['zinho o sortudo', 'e se', 'homem das cavernas', 'neandertal', 'homem das cavernas na cidade', 'ugo', 'animação 3d', 'shorts', 'humor'],
-  categoryId: '1',
+  title: 'O homem das cavernas pediu a rosca da padeira 🥖😳 #shorts',
+  description: 'O Ugo saiu da Idade da Pedra, veio parar na cidade e a primeira parada foi a padaria… 😳 Depois ainda teve ônibus-mamute, geladeira-caverna e um poste que ele quis libertar. 🦴\n\nComenta ROSCA se você também pensou besteira 👇\n\n#zinhoosortudo #ese #homemdascavernas #humor #shorts\n\nAnimação original feita com ajuda de IA (vozes e produção).',
+  tags: ['zinho o sortudo', 'e se', 'homem das cavernas', 'neandertal', 'homem das cavernas na cidade', 'humor', 'duplo sentido', 'animação 3d', 'shorts'],
+  categoryId: '23',
 };

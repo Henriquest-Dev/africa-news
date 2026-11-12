@@ -108,9 +108,10 @@
     {
       "titulo": "E se a Lua sumisse?",
       "gancho": "marés, noites escuras, fatos científicos curtos",
-      "status": "roteiro pronto",
+      "status": "feito",
       "episodio": "episodes/short-04-lua.js",
-      "publish_at": "2026-11-12T15:00:00Z"
+      "publish_at": "2026-11-12T15:00:00Z",
+      "video_id": "pufBhdb4uOU"
     },
     {
       "titulo": "E se você comesse só pão por 30 dias?",

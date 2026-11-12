@@ -37,7 +37,7 @@ async function openPage(browser, port, tl) {
   page.on('pageerror', (e) => console.error('[page]', e.message));
   page.on('console', (m) => { if (m.type() === 'error') console.error('[console]', m.text()); });
   // modo de alta qualidade (materiais PBR, AO, bloom) quando o 1.º plano do episódio tem hq: true
-  await page.goto(`http://127.0.0.1:${port}/web/index.html?w=${W}&h=${H}${tl.shots?.[0]?.hq ? '&hq=1' : ''}`);
+  await page.goto(`http://127.0.0.1:${port}/web/index.html?w=${W}&h=${H}${tl.shots?.[0]?.hq ? '&hq=1' : ''}${tl.shots?.[0]?.blocky ? '&blocky=1' : ''}`);
   await page.waitForFunction(() => window.__loaded === true, null, { timeout: 60000 });
   await page.evaluate(() => document.fonts.ready);
   await page.evaluate((t) => window.__setup(t), tl);

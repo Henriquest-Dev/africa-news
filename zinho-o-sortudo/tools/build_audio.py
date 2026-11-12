@@ -165,6 +165,12 @@ def chord(root, kind):
 
 
 def render_music(name, dur, seed):
+    if name.startswith('file:'):  # trilha de um ficheiro de áudio (repete até cobrir a duração)
+        raw = subprocess.run(['ffmpeg', '-v', 'error', '-i', os.path.join(ROOT, name[5:]), '-f', 'f32le', '-ac', '1', '-ar', str(SR), '-'], capture_output=True, check=True).stdout
+        x = np.frombuffer(raw, dtype=np.float32).astype(np.float64)
+        x = x / (np.max(np.abs(x)) + 1e-9) * 0.6
+        n = int(dur * SR)
+        return np.tile(x, n // len(x) + 1)[:n].copy()
     out = np.zeros(int(dur * SR) + SR * 2)
     if name not in MUSIC:
         return out[:int(dur * SR)]

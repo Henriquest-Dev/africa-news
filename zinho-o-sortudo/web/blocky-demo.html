@@ -1,0 +1,216 @@
+<!doctype html>
+<!-- Exemplos do novo visual "bonecos de blocos" (estilo próprio, sem assets de terceiros): ?cena=1 (bairro de dia) ou ?cena=2 (noite, gigante) -->
+<html><head><meta charset="utf-8">
+<style>html,body{margin:0;background:#000;overflow:hidden}canvas{display:block}</style>
+<script type="importmap">{ "imports": { "three": "/node_modules/three/build/three.module.js", "three/addons/": "/node_modules/three/examples/jsm/" } }</script>
+</head><body>
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+
+const qs = new URLSearchParams(location.search);
+const W = +(qs.get('w') || 1080), H = +(qs.get('h') || 1920), CENA = qs.get('cena') || '1';
+const D2R = Math.PI / 180;
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1); renderer.setSize(W, H, false);
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(50, W / H, 0.1, 800);
+scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+
+const M = (c, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.7, ...o });
+const box = (w, h, d, mat, r = 0.04) => { const m = new THREE.Mesh(new RoundedBoxGeometry(w, h, d, 3, Math.min(r, w / 2.2, h / 2.2, d / 2.2)), mat); m.castShadow = m.receiveShadow = true; return m; };
+const at = (m, x, y, z) => { m.position.set(x, y, z); return m; };
+
+// rosto desenhado em textura (olhos ovais pretos com brilho, sobrancelha, bochecha e boca do Zinho)
+function faceTex(skin, { mouth = 'smile', brow = 0, blush = '#e2506a', lash = false } = {}) {
+  const c = document.createElement('canvas'); c.width = c.height = 512; const g = c.getContext('2d');
+  g.fillStyle = skin; g.fillRect(0, 0, 512, 512);
+  for (const sx of [-1, 1]) {
+    const x = 256 + sx * 92;
+    g.fillStyle = blush; g.globalAlpha = 0.85; g.beginPath(); g.ellipse(x + sx * 38, 330, 44, 28, 0, 0, 7); g.fill(); g.globalAlpha = 1;
+    g.fillStyle = '#0b0b10'; g.beginPath(); g.ellipse(x, 236, 44, 62, 0, 0, 7); g.fill();
+    g.fillStyle = '#fff'; g.beginPath(); g.ellipse(x + 14, 210, 14, 18, 0, 0, 7); g.fill();
+    g.strokeStyle = '#0b0b10'; g.lineWidth = 20; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(x - 46, 142 - sx * brow), g.lineTo(x + 46, 142 + sx * brow); g.stroke();
+    if (lash) { g.lineWidth = 10; g.beginPath(); g.moveTo(x + sx * 40, 200); g.lineTo(x + sx * 64, 182); g.stroke(); }
+  }
+  g.strokeStyle = '#0b0b10'; g.lineWidth = 16; g.lineCap = 'round'; g.fillStyle = '#7a1c2c';
+  if (mouth === 'smile') { g.beginPath(); g.arc(256, 340, 62, 0.15 * Math.PI, 0.85 * Math.PI); g.stroke(); }
+  if (mouth === 'open') { g.beginPath(); g.ellipse(256, 392, 46, 40, 0, 0, 7); g.fill(); g.fillStyle = '#ff6b81'; g.beginPath(); g.ellipse(256, 412, 28, 16, 0, 0, 7); g.fill(); }
+  if (mouth === 'grit') { g.beginPath(); g.moveTo(206, 396); g.lineTo(306, 396); g.stroke(); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t;
+}
+
+// boneco de blocos: cabeça arredondada, tronco e membros em caixas; juntas com pivô para as poses
+function blocky(o) {
+  const { skin = '#6b4026', shirt = '#1f6bff', jacket = null, pants = '#1c2a55', shoes = '#f4f4f4', hair = '#141418', hairStyle = 'spiky', face = {}, scale = 1 } = o;
+  const g = new THREE.Group(), P = {};
+  const skinM = M(skin, { roughness: 0.75 }), jm = jacket ? M(jacket, { roughness: 0.28, metalness: 0.15 }) : null;
+  const sleeve = jm || M(shirt);
+  // pernas
+  for (const s of [-1, 1]) {
+    const piv = new THREE.Group(); piv.position.set(s * 0.235, 0.92, 0);
+    piv.add(at(box(0.44, 0.74, 0.44, M(pants)), 0, -0.37, 0), at(box(0.47, 0.2, 0.54, M(shoes), 0.07), 0, -0.82, 0.04), at(box(0.48, 0.06, 0.56, M('#2a2f3a'), 0.02), 0, -0.91, 0.04));
+    g.add(piv); P[s < 0 ? 'legR' : 'legL'] = piv;
+  }
+  // tronco (camisa + jaqueta aberta)
+  const torso = new THREE.Group(); torso.position.y = 0.92; g.add(torso); P.torso = torso;
+  torso.add(at(box(0.92, 0.86, 0.46, M(shirt)), 0, 0.43, 0));
+  torso.add(at(box(0.94, 0.12, 0.48, M('#15171c'), 0.03), 0, 0.05, 0)); // cinto
+  torso.add(at(box(0.14, 0.1, 0.5, M('#d9a520', { metalness: 0.7, roughness: 0.3 }), 0.02), 0, 0.05, 0.005));
+  if (jm) {
+    torso.add(at(box(0.98, 0.84, 0.3, jm), 0, 0.46, -0.11));
+    for (const s of [-1, 1]) { torso.add(at(box(0.3, 0.84, 0.52, jm), s * 0.345, 0.46, 0)); const lap = at(box(0.13, 0.5, 0.05, jm, 0.02), s * 0.17, 0.6, 0.245); lap.rotation.z = s * 0.22; torso.add(lap); }
+    torso.add(at(box(0.6, 0.12, 0.5, jm, 0.04), 0, 0.86, -0.02)); // gola
+  }
+  // braços
+  for (const s of [-1, 1]) {
+    const piv = new THREE.Group(); piv.position.set(s * 0.68, 1.7, 0);
+    piv.add(at(box(0.42, 0.64, 0.44, sleeve), 0, -0.3, 0), at(box(0.38, 0.24, 0.4, skinM, 0.08), 0, -0.72, 0));
+    const hand = new THREE.Group(); hand.position.set(0, -0.82, 0); piv.add(hand);
+    g.add(piv); P[s < 0 ? 'armR' : 'armL'] = piv; P[s < 0 ? 'handR' : 'handL'] = hand;
+  }
+  // cabeça
+  const head = new THREE.Group(); head.position.y = 1.82; g.add(head); P.head = head;
+  head.add(at(box(0.3, 0.12, 0.3, skinM), 0, 0.02, 0));
+  const hm = [skinM, skinM, skinM, skinM, M('#fff', { map: faceTex(skin, face), roughness: 0.75 }), skinM];
+  const hd = new THREE.Mesh(new RoundedBoxGeometry(0.98, 0.88, 0.9, 6, 0.26), hm); hd.castShadow = true; hd.position.y = 0.5; head.add(hd);
+  const hmat = M(hair, { roughness: 0.55 });
+  if (hairStyle === 'spiky') {
+    head.add(at(box(1.02, 0.3, 0.94, hmat, 0.12), 0, 0.88, -0.02), at(box(1.03, 0.5, 0.5, hmat, 0.1), 0, 0.66, -0.24));
+    let k = 0;
+    for (let ix = -2; ix <= 2; ix++) for (let iz = -1; iz <= 2; iz++) {
+      const r = (Math.sin(++k * 91.7) * 43758.5) % 1, hgt = 0.22 + Math.abs(r) * 0.2;
+      const sp = new THREE.Mesh(new THREE.ConeGeometry(0.15, hgt, 4), hmat); sp.castShadow = true;
+      sp.position.set(ix * 0.2 + r * 0.05, 1.02 + hgt / 2, iz * 0.2 - 0.12); sp.rotation.set((iz - 0.5) * -0.28, k, ix * -0.2); head.add(sp);
+    }
+  } else if (hairStyle === 'long') {
+    head.add(at(box(1.06, 0.34, 0.98, hmat, 0.14), 0, 0.9, -0.02), at(box(1.08, 1.1, 0.34, hmat, 0.12), 0, 0.4, -0.36));
+    for (const s of [-1, 1]) head.add(at(box(0.18, 0.86, 0.5, hmat, 0.08), s * 0.5, 0.5, -0.1));
+    head.add(at(box(0.9, 0.16, 0.2, hmat, 0.06), 0, 0.88, 0.42));
+  } else if (hairStyle === 'cap') {
+    head.add(at(box(1.04, 0.3, 0.96, hmat, 0.12), 0, 0.9, 0), at(box(0.8, 0.07, 0.5, hmat, 0.03), 0, 0.8, 0.6));
+  } else if (hairStyle === 'puffs') {
+    head.add(at(box(1.04, 0.3, 0.96, hmat, 0.12), 0, 0.88, -0.02), at(box(1.05, 0.5, 0.4, hmat, 0.1), 0, 0.62, -0.3));
+    for (const s of [-1, 1]) { const p = new THREE.Mesh(new THREE.IcosahedronGeometry(0.3, 1), hmat); p.castShadow = true; p.position.set(s * 0.52, 1.0, -0.1); head.add(p); }
+  }
+  g.scale.setScalar(scale); g.P = P; return g;
+}
+const pose = (c, p) => { for (const [k, v] of Object.entries(p)) c.P[k].rotation.set(...v.map((a) => a * D2R)); };
+
+function sword(color = '#49e0ff') {
+  const g = new THREE.Group();
+  g.add(at(box(0.09, 0.3, 0.09, M('#3a2616'), 0.03), 0, 0, 0), at(box(0.4, 0.07, 0.14, M('#d9a520', { metalness: 0.8, roughness: 0.25 }), 0.02), 0, 0.17, 0));
+  const blade = box(0.14, 1.5, 0.045, new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 2.6, roughness: 0.2 }), 0.02); blade.position.y = 0.95; g.add(blade);
+  const tip = new THREE.Mesh(new THREE.ConeGeometry(0.075, 0.24, 4), blade.material); tip.position.y = 1.8; tip.scale.z = 0.35; tip.rotation.y = Math.PI / 4; g.add(tip);
+  const l = new THREE.PointLight(color, 14, 7); l.position.y = 1; g.add(l);
+  return g;
+}
+
+// ── mundo do Zinho: rua, casas, cercas, árvores ──
+function house(x, z, wall, roof, ry = 0, lit = false) {
+  const g = new THREE.Group();
+  g.add(at(box(6, 4, 5.4, M(wall), 0.06), 0, 2, 0));
+  const r = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 4.7, 2.6, 4, 1), M(roof)); r.rotation.y = Math.PI / 4; r.position.y = 5.3; r.scale.set(1, 1, 0.92); r.castShadow = true; g.add(r);
+  g.add(at(box(1.15, 2.2, 0.14, M('#7a3b1e')), 0, 1.1, 2.72), at(box(0.12, 0.12, 0.1, M('#f2c230', { metalness: 0.8, roughness: 0.3 })), 0.38, 1.1, 2.82));
+  const wm = lit ? new THREE.MeshStandardMaterial({ color: '#ffe9a0', emissive: '#ffd166', emissiveIntensity: 1.7 }) : M('#bfe6ff', { roughness: 0.1, metalness: 0.2 });
+  for (const s of [-1, 1]) { g.add(at(box(1.5, 1.4, 0.12, M('#fff')), s * 1.9, 2.3, 2.7), at(box(1.26, 1.16, 0.14, wm, 0.02), s * 1.9, 2.3, 2.72), at(box(0.07, 1.16, 0.16, M('#fff'), 0.01), s * 1.9, 2.3, 2.73), at(box(1.26, 0.07, 0.16, M('#fff'), 0.01), s * 1.9, 2.3, 2.73)); }
+  g.add(at(box(0.7, 1.5, 0.7, M('#9b4a35')), 1.7, 5.6, -0.6));
+  g.add(at(box(2.2, 0.16, 1.1, M('#cfcfd6')), 0, 0.08, 3.2));
+  g.position.set(x, 0, z); g.rotation.y = ry * D2R; scene.add(g); return g;
+}
+function fence(x0, x1, z) { for (let x = x0; x <= x1; x += 0.42) scene.add(at(box(0.26, 0.95, 0.07, M('#fbfbfb'), 0.03), x, 0.55, z)); for (const y of [0.34, 0.74]) scene.add(at(box(x1 - x0 + 0.3, 0.09, 0.05, M('#f0f0f0'), 0.02), (x0 + x1) / 2, y, z - 0.05)); }
+function tree(x, z, s = 1) {
+  const g = new THREE.Group(); g.add(at(box(0.5, 2.2, 0.5, M('#6b4423')), 0, 1.1, 0));
+  for (const [dx, dy, dz, r] of [[0, 3, 0, 1.5], [0.9, 2.5, 0.3, 1.0], [-0.9, 2.6, -0.2, 1.05], [0.1, 3.9, 0.1, 0.95]]) { const m = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 1), M('#3fae4a', { flatShading: true })); m.position.set(dx, dy, dz); m.castShadow = true; g.add(m); }
+  g.position.set(x, 0, z); g.scale.setScalar(s); scene.add(g);
+}
+function street(night) {
+  const grass = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), M(night ? '#2f7a3d' : '#5ccf5c')); grass.rotation.x = -Math.PI / 2; grass.receiveShadow = true; scene.add(grass);
+  scene.add(at(box(400, 0.1, 7, M('#4a4d57'), 0.01), 0, 0.02, 6), at(box(400, 0.18, 2.4, M('#d8d9de'), 0.02), 0, 0.06, 1.3), at(box(400, 0.18, 2.4, M('#d8d9de'), 0.02), 0, 0.06, 10.7));
+  for (let x = -60; x <= 60; x += 4) scene.add(at(box(1.8, 0.02, 0.2, M('#f6d74a'), 0.005), x, 0.08, 6));
+  house(-8.2, -5.4, '#f2b632', '#c8372d', 0, night); house(0.6, -6.2, '#5aa9e6', '#2c3e6b', 0, night); house(9.4, -5.4, '#f08fa5', '#7b4a9e', 0, night); house(-17, -6, '#8fd694', '#8a4b2a', 0, night); house(18.4, -6, '#f6efe0', '#c8372d', 0, night);
+  fence(-12.4, -5.0, -0.4); fence(-2.6, 4.4, -0.4); fence(6.2, 13.4, -0.4);
+  tree(-13.4, -3.2, 1.1); tree(5.2, -3.4, 0.95); tree(14.6, -2.8, 1.2); tree(-4.4, -9, 1.3);
+  for (const x of [-10, 12]) { // postes
+    scene.add(at(box(0.16, 5, 0.16, M('#2b2e36'), 0.03), x, 2.5, 2.3), at(box(0.16, 0.14, 1.2, M('#2b2e36'), 0.03), x, 5, 2.8));
+    scene.add(at(box(0.36, 0.14, 0.5, new THREE.MeshStandardMaterial({ color: '#fff3b8', emissive: '#ffe08a', emissiveIntensity: night ? 4 : 0 }), 0.04), x, 4.9, 3.3));
+    if (night) { const l = new THREE.PointLight('#ffd98a', 60, 16); l.position.set(x, 4.7, 3.3); scene.add(l); }
+  }
+}
+function sky(top, bot) {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(500, 24, 12), new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false, fog: false, uniforms: { a: { value: new THREE.Color(top) }, b: { value: new THREE.Color(bot) } },
+    vertexShader: 'varying float h; void main(){ h = normalize(position).y; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }',
+    fragmentShader: 'uniform vec3 a,b; varying float h; void main(){ gl_FragColor = vec4(mix(b,a,smoothstep(-0.05,0.7,h)),1.); }' })); scene.add(m);
+}
+function lights(sunC, sunI, hemiS, hemiG, hemiI, dir) {
+  scene.add(new THREE.HemisphereLight(hemiS, hemiG, hemiI));
+  const s = new THREE.DirectionalLight(sunC, sunI); s.position.set(...dir); s.castShadow = true; s.shadow.mapSize.set(4096, 4096);
+  Object.assign(s.shadow.camera, { left: -26, right: 26, top: 26, bottom: -26, near: 1, far: 120 }); s.shadow.bias = -0.0004; s.shadow.normalBias = 0.03; scene.add(s);
+}
+
+let bloom = [0.16, 0.4, 0.95];
+const ZINHO = { skin: '#6b4026', shirt: '#1f6bff', jacket: '#101114', pants: '#1c2a55' };
+if (CENA === '1') {
+  // ── Exemplo 1: o bairro do Zinho, de dia ──
+  sky('#1f7dff', '#a9dcff'); scene.fog = new THREE.Fog('#bfe4ff', 60, 220); renderer.toneMappingExposure = 0.82; scene.environmentIntensity = 0.5;
+  lights('#fff2d6', 3.0, '#bcdcff', '#6fae62', 0.9, [14, 24, 16]); street(false);
+  const z = blocky({ ...ZINHO, face: { mouth: 'smile' } }); z.position.set(0, 0.15, 2.4); z.rotation.y = 12 * D2R; scene.add(z);
+  pose(z, { armL: [0, 0, 150], armR: [8, 0, -8], legL: [0, 0, 3], legR: [0, 0, -3], head: [-4, -8, 4] });
+  const b = blocky({ skin: '#c98b5e', shirt: '#ff7a1a', pants: '#3a3f4b', hair: '#f08a24', hairStyle: 'cap', face: { mouth: 'open', blush: '#e88' } }); b.position.set(-2.1, 0.15, 1.2); b.rotation.y = 30 * D2R; scene.add(b);
+  pose(b, { armL: [-150, 0, 20], armR: [-150, 0, -20], legL: [20, 0, 0], legR: [-25, 0, 0] });
+  const l = blocky({ skin: '#8a5633', shirt: '#ff5fa2', pants: '#6a3fb5', hair: '#1a1210', hairStyle: 'puffs', face: { mouth: 'smile', lash: true } }); l.position.set(2.1, 0.15, 1.3); l.rotation.y = -28 * D2R; scene.add(l);
+  pose(l, { armL: [0, 0, 10], armR: [-70, 0, -30], head: [0, 10, -5] });
+  const j = blocky({ skin: '#e2b48c', shirt: '#f4f4f4', pants: '#5a4630', hair: '#c9c9c9', hairStyle: 'cap', face: { mouth: 'grit', brow: -10, blush: '#d99' } }); j.position.set(6.6, 0.15, -1.6); j.rotation.y = -35 * D2R; scene.add(j);
+  pose(j, { armR: [-40, 0, -10], armL: [10, 0, 6] });
+  camera.fov = 50; camera.position.set(0.5, 1.8, 12.2); camera.lookAt(0, 2.3, 0);
+} else {
+  // ── Exemplo 2: de noite, um gigante aparece no bairro e o Zinho puxa a espada ──
+  sky('#04081f', '#1b2a66'); scene.fog = new THREE.Fog('#141d4a', 30, 170); renderer.toneMappingExposure = 0.95; scene.environmentIntensity = 0.09; bloom = [0.32, 0.5, 0.85];
+  lights('#9fb4ff', 1.9, '#6a7dd0', '#1b1f33', 0.75, [-14, 26, 12]); street(true);
+  // estrelas e Lua
+  const sp = []; for (let i = 0; i < 700; i++) { const a = Math.random() * 6.283, e = 0.08 + Math.random() * 1.3; sp.push(Math.cos(a) * Math.cos(e) * 400, Math.sin(e) * 400, Math.sin(a) * Math.cos(e) * 400); }
+  const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.Float32BufferAttribute(sp, 3)); scene.add(new THREE.Points(sg, new THREE.PointsMaterial({ color: '#fff', size: 1.6, sizeAttenuation: false, fog: false })));
+  const moon = new THREE.Mesh(new THREE.SphereGeometry(20, 32, 16), new THREE.MeshBasicMaterial({ color: '#fdf6d8', fog: false })); moon.position.set(-36, 96, -150); scene.add(moon);
+  // o gigante: boneco de blocos de pedra, atrás das casas, olhos acesos
+  const stone = M('#3d4466', { roughness: 0.95 }), stone2 = M('#2c3252', { roughness: 0.95 });
+  const G = new THREE.Group(); G.position.set(4, 0, -34); G.rotation.y = -6 * D2R; scene.add(G);
+  G.add(at(box(20, 20, 10, stone, 0.6), 0, 26, 0), at(box(13, 11, 10, stone2, 1.4), 0, 42.5, 1));
+  for (const s of [-1, 1]) {
+    G.add(at(box(8, 16, 8, stone2, 0.5), s * 6, 8, 0));
+    const arm = at(box(7, 24, 7.5, stone, 0.5), s * 14.2, 23, 3); arm.rotation.z = s * 0.14; arm.rotation.x = -0.25; G.add(arm);
+    const eye = box(2.6, 1.5, 0.6, new THREE.MeshStandardMaterial({ color: '#ff3b2f', emissive: '#ff2a1a', emissiveIntensity: 3.2 }), 0.3); eye.position.set(s * 3, 43.4, 6.1); eye.rotation.z = s * -0.22; G.add(eye);
+  }
+  for (let i = 0; i < 7; i++) G.add(at(box(1.1, 1.5, 0.5, M('#8f93b0'), 0.2), -4.2 + i * 1.4, 39.2, 6.05));
+  const gl = new THREE.PointLight('#ff3b2f', 700, 70); gl.position.set(4, 40, -22); scene.add(gl);
+  // Zinho de costas a 3/4, espada erguida
+  const z = blocky({ ...ZINHO, face: { mouth: 'grit', brow: 14 } }); z.position.set(-0.9, 0.02, 6.0); z.rotation.y = 165 * D2R; scene.add(z);
+  pose(z, { armR: [-150, 0, -28], armL: [-28, 0, 22], legL: [-16, 0, 6], legR: [18, 0, -6], torso: [0, 0, 0], head: [-16, 18, 0] });
+  const sw = sword(); sw.rotation.set(115 * D2R, 0, 0); z.P.handR.add(sw);
+  const rim = new THREE.PointLight('#dfe6ff', 14, 9); rim.position.set(-0.4, 3.2, 9.0); scene.add(rim);
+  // vizinhos a fugir
+  const f1 = blocky({ skin: '#c98b5e', shirt: '#ff7a1a', pants: '#3a3f4b', hair: '#f08a24', hairStyle: 'cap', face: { mouth: 'open', brow: -14 } }); f1.position.set(-4.6, 0.02, 3.4); f1.rotation.y = 40 * D2R; scene.add(f1);
+  pose(f1, { armL: [-160, 0, 24], armR: [-160, 0, -24], legL: [38, 0, 0], legR: [-38, 0, 0], torso: [8, 0, 0] });
+  const f2 = blocky({ skin: '#8a5633', shirt: '#ff5fa2', pants: '#6a3fb5', hair: '#1a1210', hairStyle: 'puffs', face: { mouth: 'open', brow: -14, lash: true } }); f2.position.set(3.2, 0.02, 4.6); f2.rotation.y = -30 * D2R; scene.add(f2);
+  pose(f2, { armL: [50, 0, 12], armR: [-50, 0, -12], legL: [-36, 0, 0], legR: [36, 0, 0], torso: [10, 0, 0] });
+  camera.fov = 62; camera.position.set(-1.0, 1.5, 13.6); camera.lookAt(0.8, 9.0, -6);
+}
+camera.updateProjectionMatrix();
+
+const composer = new EffectComposer(renderer); composer.setSize(W, H);
+composer.addPass(new RenderPass(scene, camera));
+const ao = new GTAOPass(scene, camera, W, H); ao.updateGtaoMaterial({ radius: 0.6, distanceExponent: 1.4, thickness: 1.2, scale: 1.1 }); composer.addPass(ao);
+composer.addPass(new UnrealBloomPass(new THREE.Vector2(W, H), ...bloom));
+composer.addPass(new OutputPass());
+composer.render(); composer.render();
+window.__done = true;
+</script></body></html>

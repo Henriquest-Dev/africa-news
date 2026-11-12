@@ -88,9 +88,9 @@
     {
       "titulo": "E se dinossauros ainda existissem?",
       "gancho": "um dinossauro no ponto de ônibus",
-      "status": "roteiro pronto",
+      "status": "pendente",
       "episodio": "episodes/short-05-dino.js",
-      "publish_at": "2026-11-16T15:00:00Z"
+      "_nota": "roteiro antigo (estilo anterior); refazer no formato de blocos antes de usar"
     },
     {
       "titulo": "E se você vivesse um dia no Egito Antigo?",
@@ -112,6 +112,20 @@
       "episodio": "episodes/short-04-lua.js",
       "publish_at": "2026-11-12T15:00:00Z",
       "video_id": "pufBhdb4uOU"
+    },
+    {
+      "titulo": "Nesse bairro, um gigante de pedra acorda toda noite",
+      "gancho": "história de mistério em bonecos de blocos; a regra do poste, espada do avô, o gigante vigia o céu",
+      "status": "feito",
+      "episodio": "episodes/short-08-gigante.js",
+      "publish_at": "2026-11-12T21:00:00Z",
+      "video_id": "rZTkD5NtyIU"
+    },
+    {
+      "titulo": "Gigante de pedra, parte 2: quem está jogando as pedras?",
+      "gancho": "continuação direta do short-08; mesmo visual de blocos, nova revelação e gancho para parte 3",
+      "status": "pendente",
+      "publish_at": "2026-11-16T15:00:00Z"
     },
     {
       "titulo": "E se você comesse só pão por 30 dias?",

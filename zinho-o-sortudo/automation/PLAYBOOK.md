@@ -11,6 +11,26 @@ canal pedir para voltar. Cada Short: viral, vertical, **no máximo 60 s** (alvo 
 A sessão de produção corre só segunda e quinta às 03:23 de Maputo (01:23 UTC) e prepara o Short desse dia
 (upload privado com `publishAt` às 15:00 UTC).
 
+## Formato atual dos Shorts (desde 12/11/2026, pedido do dono do canal)
+
+Os Shorts antigos estagnavam em 1.200–3.800 views. O formato novo, que **substitui** as regras de duração e de gancho
+abaixo, é:
+
+- **Visual de bonecos de blocos**: `blocky: true` (junto com `hq: true`) no 1.º plano do episódio. Modelos próprios do
+  motor, braços grandes e quadrados; nada de modelos, logótipos ou nomes do Roblox.
+- **História narrada de mistério**, uma só história contínua, a abrir com a regra estranha do lugar
+  ("Nesse bairro, …", "Nessa cidade, …"), elemento gigante ou ameaça, viragem no fim e gancho para a parte seguinte
+  ("Comenta X pra ver a parte dois"). Modelo: `episodes/short-08-gigante.js`.
+- **Duração ~1 min 30 s** (85–92 s; ~250 palavras com `voiceSpeed: 1.08`).
+- **Ação**: usar `props.sword` e as poses `swordup`, `slash`, `guard`; gigante com `fx.giant`.
+- **Música**: `music: 'file:assets/music/fundo.mp3'`, `musicGain: 0.2`, `duck: 0.6`. O ficheiro foi dado pelo dono do
+  canal e não está no repositório; se faltar no servidor, usar a música gerada pelo motor e avisar no relatório.
+- **Título** no padrão "Nesse bairro, … - animação"; `categoryId: '1'`; tags descritivas como em `short-08-gigante.js`
+  ("animação de blocos", "animação estilo roblox", "história animada", "nesse mundo", "animation story", …).
+- **Câmaras**: nos planos do gigante manter a câmara em x≈5.5, z≤2.7 (a norte do poste); somar ~0.9 à distância dos
+  grandes planos. Ver sempre uma folha de amostras antes do render final.
+- O render HQ leva ~90 min: correr em segundo plano com limite de 2 h (retoma dos quadros guardados).
+
 ## Segredos (nunca no repositório)
 
 Na sessão principal ficam em `ytenv.sh` na pasta de rascunho (scratchpad) da sessão — basta `. <scratchpad>/ytenv.sh`.

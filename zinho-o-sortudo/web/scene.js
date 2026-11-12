@@ -1304,6 +1304,8 @@ function applyTod(name, flash = 0) {
   fill.intensity = d.fill;
   // alta qualidade: a luz do ambiente acompanha a hora do dia (à noite quase some)
   if (HQ) scene.environmentIntensity = Math.min(1, d.hi / 1.4) ** 3;
+  // alta qualidade: noite de rua mais escura (as cores ficavam com cara de dia)
+  if (HQ && d.lamps) { const k = 0.7; hemi.intensity *= k; sun.intensity *= k; fill.intensity *= k; }
   if (d.fog) { scene.fog.color.set(d.fog); scene.fog.near = d.fogN; scene.fog.far = d.fogF; } else { scene.fog.near = 1000; scene.fog.far = 2000; }
   return d;
 }

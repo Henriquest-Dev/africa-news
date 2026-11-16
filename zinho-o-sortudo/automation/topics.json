@@ -123,9 +123,17 @@
     },
     {
       "titulo": "Gigante de pedra, parte 2: quem está jogando as pedras?",
-      "gancho": "continuação direta do short-08; mesmo visual de blocos, nova revelação e gancho para parte 3",
+      "gancho": "o filho gigante de olhos azuis joga bola com o pai; no fim a mãe (olhos roxos, enorme) acorda",
+      "status": "feito",
+      "publish_at": "2026-11-16T15:00:00Z",
+      "episodio": "episodes/short-09-gigante-2.js",
+      "video_id": "wmzHtljwxw4"
+    },
+    {
+      "titulo": "Gigante de pedra, parte 3: a mãe acordou",
+      "gancho": "continuação direta do short-09 (fx.giant com eye '#c04dff', s 1.25); o que a mãe quer? nova revelação e gancho para a parte 4 ou fecho da história",
       "status": "pendente",
-      "publish_at": "2026-11-16T15:00:00Z"
+      "publish_at": "2026-11-19T15:00:00Z"
     },
     {
       "titulo": "E se você comesse só pão por 30 dias?",

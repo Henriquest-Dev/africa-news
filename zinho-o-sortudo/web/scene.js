@@ -823,7 +823,7 @@ function makeChar(name, cfg, seed) {
     mk(G.rbox(0.26, 0.05, 0.1, 0.015), M('#d9a520'), { p: [0, 0.13, 0], parent: props.sword, ol: 0 });
     mk(G.rbox(0.1, 1.0, 0.035, 0.015), bm, { p: [0, 0.65, 0], parent: props.sword, ol: 0 });
     mk(new THREE.ConeGeometry(0.052, 0.16, 4), bm, { p: [0, 1.22, 0], r: [0, Math.PI / 4, 0], s: [1, 1, 0.35], parent: props.sword, ol: 0 });
-    const pl = new THREE.PointLight('#49e0ff', 5, 5); pl.position.y = 0.7; props.sword.add(pl); }
+    const pl = new THREE.PointLight('#49e0ff', 0.7, 3); pl.position.y = 0.7; props.sword.add(pl); }
   for (const k of Object.keys(props)) props[k].visible = k === 'cane';
   // sem receber sombra: rostos limpos, sem manchas de shadow-map
   root.traverse((o) => { if (o.isMesh) { o.castShadow = o.material !== OUTLINE; o.receiveShadow = false; } });
@@ -1763,6 +1763,7 @@ function render(T) {
     FX.giantArms[1].pv.rotation.set(step * 0.25 - 0.1 - raise * 0.5, 0, 0.12 + raise * 2.75);
     FX.giantHead.rotation.set(-(m.up ?? raise) * 0.45, (m.look ?? 0) * D2R, 0);
     FX.giantEye.emissiveIntensity = 3.0 + Math.sin(T * 5) * 0.5;
+    FX.giantEye.color.set(m.eye ?? '#ff3b2f'); FX.giantEye.emissive.set(m.eye ?? '#ff2a1a'); FX.giantLight.color.set(m.eye ?? '#ff3b2f'); // eye: cor dos olhos (outros gigantes)
     FX.giantHead.getWorldPosition(FX.giantLight.position); FX.giantLight.position.y += 4 * sc; FX.giantLight.position.z += 8 * sc; FX.giantLight.intensity = 260 * sc; FX.giantLight.distance = 70;
     if (m.rock !== undefined || m.held) {
       const hp = V(); FX.giantArms[1].h.getWorldPosition(hp);
@@ -1771,6 +1772,14 @@ function render(T) {
         FX.giantRock.visible = true; FX.giantRock.position.lerpVectors(from, hp, q * q); FX.giantRock.scale.setScalar(2.4 * sc * 2); FX.giantRock.rotation.set(T * 2, T * 3, 0);
         fxLight.color.set('#ff9a4a'); fxLight.position.copy(FX.giantRock.position); fxLight.distance = 160; fxLight.intensity = m.held ? 220 : 120 + 900 * q * q;
         if (!m.held && q >= 1) impactShakeExtra = Math.max(impactShakeExtra, 0.12 * clamp(1 - (u - m.rock) * shot.dur / 0.6));
+      }
+    }
+    if (m.throw !== undefined) { // throw: fração do plano em que ele lança a pedra que tem na mão
+      const hp = V(); FX.giantArms[1].h.getWorldPosition(hp);
+      const q = clamp((u - m.throw) / 0.4), d = m.throwDir ?? [40, 45, 30];
+      if (q < 1) {
+        FX.giantRock.visible = true; FX.giantRock.position.copy(hp).add(V(d[0], d[1], d[2]).multiplyScalar(q * (2 - q) * sc * 2)); FX.giantRock.scale.setScalar(2.4 * sc * 2); FX.giantRock.rotation.set(T * 2, T * 3, 0);
+        fxLight.color.set('#ff9a4a'); fxLight.position.copy(FX.giantRock.position); fxLight.distance = 120; fxLight.intensity = 200;
       }
     }
   }

@@ -375,6 +375,74 @@ const WL = {};
   mk(G.ico(7, 1), M('#7d7368', { flatShading: true }), { p: [-14, 0, -18], s: [1.4, 0.9, 1], parent: wild, ol: 0.05 });
   mk(G.sph(2.6, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), M('#1a120c'), { p: [-12.5, 0, -12.4], s: [1, 1.1, 0.4], parent: wild, ol: 0 });
 }
+// expansão de domínio (Shorts "seu mês…"): espaço fechado com céu, chão e decoração próprios — shot.domain = { top, bot, floor, line, cube, deco }
+const domain = new THREE.Group(); sets.domain = domain; scene.add(domain);
+const DM = {};
+{
+  DM.floorM = new THREE.MeshStandardMaterial({ color: '#222', roughness: 0.9, metalness: 0.0, envMapIntensity: 0.1 });
+  mk(G.cyl(60, 60, 0.2, 64), DM.floorM, { p: [0, -0.1, 0], parent: domain, ol: 0, cast: false });
+  DM.lineM = new THREE.MeshStandardMaterial({ color: '#000', emissive: '#fff', emissiveIntensity: 2 });
+  for (const r of [4, 9, 16, 26]) mk(new THREE.TorusGeometry(r, 0.06, 6, 96), DM.lineM, { p: [0, 0.02, 0], r: [Math.PI / 2, 0, 0], parent: domain, ol: 0, cast: false });
+  DM.cubeM = new THREE.MeshStandardMaterial({ color: '#111', emissive: '#fff', emissiveIntensity: 1.2, roughness: 0.4 });
+  DM.cubes = [];
+  for (let i = 0; i < 46; i++) {
+    const c = mk(G.rbox(1, 1, 1, 0.12), DM.cubeM, { parent: domain, ol: 0, cast: false });
+    c.userData = { r: 6 + hash(i * 3.1) * 22, a: hash(i * 7.7) * Math.PI * 2, y: 1 + hash(i * 1.9) * 14, sp: 0.1 + hash(i) * 0.25, sz: 0.3 + hash(i * 5.3) * 1.3 };
+    DM.cubes.push(c);
+  }
+  const deco = (k) => { const g = new THREE.Group(); g.visible = false; domain.add(g); DM[k] = g; return g; };
+  const gb = (w, h, d, m, p, parent, r = [0, 0, 0]) => mk(G.rbox(w, h, d, Math.min(w, h, d) * 0.15), m, { p, r, parent, ol: 0 });
+  // vazio: olho/galáxia gigante no céu
+  { const g = deco('void'); const em = (c, i = 2) => new THREE.MeshStandardMaterial({ color: '#000', emissive: c, emissiveIntensity: i });
+    mk(new THREE.TorusGeometry(14, 1.2, 12, 64), em('#9fd4ff', 3), { p: [0, 16, -40], parent: g, ol: 0, cast: false });
+    mk(new THREE.TorusGeometry(9, 0.6, 12, 64), em('#d79bff', 3), { p: [0, 16, -40], parent: g, ol: 0, cast: false });
+    mk(G.sph(5, 32, 16), em('#ffffff', 4), { p: [0, 16, -40], parent: g, ol: 0, cast: false }); }
+  // santuário: templo de blocos vermelho e escuro, com chifres
+  { const g = deco('temple'); const r = M('#7a1010'), dk = M('#1a0b0b'), bn = M('#e8dcc4');
+    gb(14, 1.2, 10, dk, [0, 0.6, -16], g); gb(10, 5, 7, r, [0, 3.7, -16], g); gb(15, 1, 11, dk, [0, 6.7, -16], g); gb(9, 3, 6, r, [0, 8.7, -16], g); gb(12, 0.8, 8, dk, [0, 10.6, -16], g);
+    for (const sd of [-1, 1]) { gb(0.8, 6, 0.8, bn, [sd * 6.5, 13, -16], g, [0, 0, sd * -0.4]); for (let i = 0; i < 4; i++) gb(1.2, 1.2, 1.2, bn, [sd * (3 + i * 1.6), 0.6, -9 + i * 0.7], g); }
+    for (let i = 0; i < 10; i++) gb(1.1, 1.1, 1.1, bn, [-5 + i * 1.1, 1.8 + (i % 2) * 0.6, -10.5], g); }
+  // vulcão
+  { const g = deco('volcano'); const rk = M('#3a2a24', { flatShading: true }), lv = new THREE.MeshStandardMaterial({ color: '#000', emissive: '#ff5a1a', emissiveIntensity: 3 });
+    for (const [x, z, r, h] of [[-12, -30, 12, 18], [14, -34, 14, 22], [0, -46, 18, 30]]) { mk(new THREE.ConeGeometry(r, h, 7), rk, { p: [x, h / 2, z], parent: g, ol: 0 }); mk(G.cyl(r * 0.18, r * 0.18, 0.4, 12), lv, { p: [x, h - 0.6, z], parent: g, ol: 0 }); }
+    for (let i = 0; i < 12; i++) mk(G.rbox(2 + hash(i) * 3, 0.15, 0.6, 0.05), lv, { p: [(hash(i * 2.2) - 0.5) * 30, 0.06, -4 - hash(i * 3.3) * 20], r: [0, hash(i) * 3, 0], parent: g, ol: 0, cast: false }); }
+  // mãos de pedra cinzenta (alma)
+  { const g = deco('hands'); const sk = M('#8d94a8'), dk = M('#4b4f5e');
+    for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2, rr = 10 + hash(i) * 8, h = 3 + hash(i * 4.4) * 6, hg = new THREE.Group(); hg.position.set(Math.cos(a) * rr, 0, Math.sin(a) * rr - 6); hg.rotation.z = (hash(i * 9) - 0.5) * 0.5; g.add(hg);
+      gb(1.4, h, 1.4, dk, [0, h / 2, 0], hg); gb(2.2, 1.8, 1.2, sk, [0, h + 0.9, 0], hg); for (let f = 0; f < 4; f++) gb(0.4, 1.4, 0.5, sk, [-0.75 + f * 0.5, h + 2.4, 0], hg); } }
+  // praia e mar
+  { const g = deco('beach'); mk(G.cyl(60, 60, 0.22, 64), M('#e9cf8d'), { p: [0, -0.08, 0], parent: g, ol: 0, cast: false });
+    mk(G.box(300, 0.3, 200), new THREE.MeshStandardMaterial({ color: '#1fb7c9', roughness: 0.15, metalness: 0.2, transparent: true, opacity: 0.92 }), { p: [0, 0.02, -114], parent: g, ol: 0, cast: false });
+    DM.fish = []; for (let i = 0; i < 18; i++) { const f = gb(1.4, 0.6, 0.4, M(['#ff6f61', '#ffd166', '#4dd0e1', '#b388ff'][i % 4]), [0, 0, 0], g); DM.fish.push(f); } }
+  // sombras: chão espelhado preto e lobos de sombra
+  { const g = deco('shadow'); const dk = new THREE.MeshStandardMaterial({ color: '#05050a', roughness: 0.05, metalness: 0.6 }), ey = new THREE.MeshStandardMaterial({ color: '#000', emissive: '#7cf', emissiveIntensity: 4 });
+    mk(G.cyl(60, 60, 0.22, 64), dk, { p: [0, -0.08, 0], parent: g, ol: 0, cast: false });
+    for (let i = 0; i < 6; i++) { const w = new THREE.Group(); const a = -0.9 + i * 0.36, rr = 7 + (i % 2) * 3; w.position.set(Math.sin(a) * rr, 0, -Math.cos(a) * rr); w.rotation.y = -a; g.add(w);
+      const bm = M('#0d0d16'); gb(0.9, 0.9, 2.2, bm, [0, 1.1, 0], w); gb(0.8, 0.8, 0.9, bm, [0, 1.6, 1.3], w); for (const sx of [-0.3, 0.3]) { gb(0.25, 0.7, 0.25, bm, [sx, 0.35, 0.8], w); gb(0.25, 0.7, 0.25, bm, [sx, 0.35, -0.8], w); gb(0.18, 0.35, 0.18, bm, [sx * 0.9, 2.15, 1.2], w); mk(G.rbox(0.16, 0.08, 0.04, 0.02), ey, { p: [sx * 0.7, 1.7, 1.76], parent: w, ol: 0, cast: false }); } } }
+  // campo de espadas
+  { const g = deco('swords'); const bl = new THREE.MeshStandardMaterial({ color: '#cfe8ff', metalness: 0.8, roughness: 0.2, emissive: '#5a7cff', emissiveIntensity: 0.3 }), hd = M('#2a2a3a');
+    for (let i = 0; i < 70; i++) { const x = (hash(i * 1.3) - 0.5) * 50, z = -3 - hash(i * 2.9) * 40; if (Math.abs(x) < 2.5 && z > -6) continue; const sw = new THREE.Group(); sw.position.set(x, 0, z); sw.rotation.set((hash(i) - 0.5) * 0.5, hash(i * 6) * 3, (hash(i * 8) - 0.5) * 0.5); g.add(sw);
+      gb(0.14, 2.4, 0.05, bl, [0, 1.1, 0], sw); gb(0.6, 0.12, 0.16, hd, [0, 2.35, 0], sw); gb(0.12, 0.7, 0.12, hd, [0, 2.75, 0], sw); } }
+  // máquina de pachinko / caça-níquel
+  { const g = deco('slot'); const bd = M('#e0b030'), rd = M('#c0182a'), win = new THREE.MeshStandardMaterial({ color: '#000', emissive: '#fff6c8', emissiveIntensity: 2 }), ly = (c) => new THREE.MeshStandardMaterial({ color: '#000', emissive: c, emissiveIntensity: 3 });
+    gb(16, 18, 4, rd, [0, 9, -20], g); gb(13, 5, 0.6, bd, [0, 12, -17.8], g); for (const x of [-4, 0, 4]) gb(3.2, 3.6, 0.4, win, [x, 12, -17.4], g);
+    DM.lights = []; for (let i = 0; i < 16; i++) DM.lights.push(mk(G.sph(0.45, 12, 8), ly(['#ff3b6b', '#ffe14d', '#4dffb5', '#4dc3ff'][i % 4]), { p: [-7 + (i % 8) * 2, i < 8 ? 17 : 6.5, -17.6], parent: g, ol: 0, cast: false }));
+    gb(2, 7, 2, bd, [9.5, 14, -20], g); mk(G.sph(1.3, 16, 10), rd, { p: [9.5, 18.2, -20], parent: g, ol: 0 }); }
+  // tribunal
+  { const g = deco('court'); const wd = M('#6b4026'), wd2 = M('#8a5634'), gd = M('#d9b13b');
+    gb(9, 4, 3, wd, [0, 2, -10], g); gb(10, 0.5, 3.4, wd2, [0, 4.2, -10], g); gb(2.6, 7, 0.6, wd2, [0, 5.5, -11.6], g); mk(G.sph(1.1, 16, 10), gd, { p: [0, 8.2, -11.6], parent: g, ol: 0 });
+    for (const sd of [-1, 1]) { gb(3, 2.4, 2, wd, [sd * 7, 1.2, -4], g); for (let i = 0; i < 4; i++) gb(0.8, 8, 0.8, M('#d8d2c4'), [sd * (12 + i * 3), 4, -14 + i * 2], g); } }
+  // lua enorme
+  { const g = deco('moon'); mk(G.sph(22, 48, 24), new THREE.MeshStandardMaterial({ color: '#000', emissive: '#fff2c4', emissiveIntensity: 1.6 }), { p: [0, 20, -90], parent: g, ol: 0, cast: false });
+    for (let i = 0; i < 6; i++) mk(G.sph(2 + hash(i) * 3, 16, 10), new THREE.MeshStandardMaterial({ color: '#000', emissive: '#d9c890', emissiveIntensity: 1.4 }), { p: [(hash(i * 2) - 0.5) * 26, 20 + (hash(i * 3) - 0.5) * 26, -68.5], parent: g, ol: 0, cast: false }); }
+  // esfera perfeita
+  { const g = deco('sphere'); DM.ball = mk(G.sph(5, 48, 24), new THREE.MeshStandardMaterial({ color: '#f2f6ff', metalness: 1, roughness: 0.04 }), { p: [0, 9, -16], parent: g, ol: 0 });
+    for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; gb(1, 10, 1, M('#5b2a6e'), [Math.cos(a) * 14, 5, -16 + Math.sin(a) * 8], g, [0, 0, (i % 2 ? 1 : -1) * 0.3]); } }
+  // útero / cérebro: casulos pulsantes
+  { const g = deco('womb'); DM.pods = []; const pm = new THREE.MeshStandardMaterial({ color: '#3a0d1e', emissive: '#ff2d6b', emissiveIntensity: 0.6, roughness: 0.3 });
+    for (let i = 0; i < 14; i++) { const a = i / 14 * Math.PI * 2, rr = 10 + hash(i) * 8; DM.pods.push(mk(G.sph(1.6 + hash(i * 3) * 1.6, 20, 12), pm, { p: [Math.cos(a) * rr, 2 + hash(i * 5) * 8, Math.sin(a) * rr - 6], parent: g, ol: 0 })); }
+    mk(new THREE.TorusGeometry(18, 1.8, 10, 48), M('#5a1430'), { p: [0, 0.5, -8], r: [Math.PI / 2, 0, 0], parent: g, ol: 0 }); }
+}
 const egypt = new THREE.Group(); sets.egypt = egypt; scene.add(egypt);
 const EG = {};
 {
@@ -982,6 +1050,9 @@ function pose(c, a, k) {
     case 'lie':
       c.root.rotation.x = -Math.PI / 2;
       break;
+    case 'sign': // mãos juntas à frente do peito (sinal de mão para abrir o domínio)
+      A[0].pivot.rotation.set(-1.45, 0, 0.62); A[1].pivot.rotation.set(-1.45, 0, -0.62); c.torso.rotation.x += 0.05;
+      break;
     case 'hug':
       A[0].pivot.rotation.set(-1.35, 0, 0.75); A[1].pivot.rotation.set(-1.35, 0, -0.75);
       break;
@@ -1422,6 +1493,20 @@ function render(T) {
   for (const b of bolts) { const dt = lt - b * shot.dur; if (dt >= 0 && dt < 0.35) flash = Math.max(flash, (dt < 0.08 ? 1 : 0.4) * (1 - dt / 0.35)); }
   const tod = applyTod(shot.tod, flash);
   if (shot.set === 'bedroom') { BR.glass.color.set(tod.lamps ? '#16264f' : '#9fd8f5'); BR.moon.visible = !!tod.lamps; }
+  if (shot.set === 'domain') {
+    const d = shot.domain || {}, ap = clamp(lt / 0.6);                 // abre o domínio no começo do plano
+    skyU.top.value.set(d.top ?? '#000010'); skyU.bot.value.set(d.bot ?? '#1a1440');
+    scene.fog.color.set(d.bot ?? '#1a1440'); scene.fog.near = 30; scene.fog.far = 140;
+    hemi.color.set(d.light ?? '#ffffff'); hemi.groundColor.set(d.floor ?? '#222'); hemi.intensity = 1.1; sun.color.set(d.light ?? '#ffffff'); sun.intensity = 1.4; fill.intensity = 0.6;
+    if (HQ) scene.environmentIntensity = 0.35;
+    DM.floorM.color.set(d.floor ?? '#15121f'); DM.lineM.emissive.set(d.line ?? '#a98bff'); DM.cubeM.emissive.set(d.cube ?? d.line ?? '#a98bff');
+    for (const k of ['void', 'temple', 'volcano', 'hands', 'beach', 'shadow', 'swords', 'slot', 'court', 'moon', 'sphere', 'womb']) DM[k].visible = d.deco === k;
+    DM.cubes.forEach((c) => { const q = c.userData, a = q.a + T * q.sp; c.visible = d.cubes !== false; c.position.set(Math.cos(a) * q.r, q.y * ap + Math.sin(T + q.a) * 0.4, Math.sin(a) * q.r - 4); c.rotation.set(T * q.sp * 2, T * q.sp * 3, 0); c.scale.setScalar(q.sz * ap); });
+    if (d.deco === 'beach') DM.fish.forEach((f, i) => { const a = T * 0.8 + i * 0.7; f.position.set(Math.cos(a) * (6 + i % 5 * 3), 3 + Math.sin(T * 2 + i) * 1.5 + (i % 3) * 2, Math.sin(a) * (6 + i % 5 * 3) - 6); f.rotation.y = -a; });
+    if (d.deco === 'slot') DM.lights.forEach((l, i) => { l.material.emissiveIntensity = (Math.floor(T * 6) + i) % 3 === 0 ? 5 : 1; });
+    if (d.deco === 'womb') DM.pods.forEach((p, i) => { p.scale.setScalar(1 + Math.sin(T * 3 + i) * 0.08); });
+    if (d.deco === 'sphere') DM.ball.position.y = 9 + Math.sin(T * 1.5) * 0.6;
+  }
 
   // luzes da rua (apagão)
   let lamps = tod.lamps;
@@ -1823,7 +1908,7 @@ function render(T) {
   for (const c of Object.values(chars)) c.face.blush.forEach((b) => { b.visible = !!shot.style2 && c.root.visible; });
 
   // ─── mundo vazio ───
-  stars.visible = (shot.set === 'street' || shot.set === 'egypt' || shot.set === 'wild') && (shot.tod === 'night');
+  stars.visible = ((shot.set === 'street' || shot.set === 'egypt' || shot.set === 'wild') && (shot.tod === 'night')) || (shot.set === 'domain' && !!shot.domain?.stars);
   if (fx.overgrow) FX.weeds.forEach((w) => {
     const [x, z, s0, h] = w.userData.base;
     const lv = clamp(fx.overgrow * 1.3 - h * 0.3);
@@ -1996,7 +2081,7 @@ function render(T) {
   $('fade').style.opacity = fade;
   const card = $('card');
   if (shot.card) {
-    card.style.display = 'flex';
+    card.style.display = 'flex'; card.classList.toggle('top', !!shot.card.top);
     const ck = shot.card.t + '|' + (shot.card.s || ''); if (card.dataset.k !== ck) { card.innerHTML = `<div class="ct">${shot.card.t}</div>${shot.card.s ? `<div class="cs">${shot.card.s}</div>` : ''}`; card.dataset.k = ck; }
     const a0 = shot.card.at ?? 0.08, k = clamp((u - a0) / 0.15) * (1 - clamp((u - 0.88) / 0.1));
     card.style.opacity = k; card.style.transform = `translateY(${(1 - k) * 2}vh) scale(${1 + 0.04 * u})`;
@@ -2021,7 +2106,7 @@ function render(T) {
     const k = clamp((T - shot.vstart) / Math.max(0.3, shot.vdur));
     const cur = Math.min(words.length - 1, Math.floor(k * words.length));
     const vis = T < shot.vstart ? 0 : cur + 1;
-    cap.style.display = vis ? 'block' : 'none';
+    cap.style.display = vis ? 'block' : 'none'; cap.style.top = shot.capY ?? '';
     const st = Math.max(0, cur - (cur % 4)), chunk = words.slice(st, Math.min(words.length, st + 4));
     cap.innerHTML = chunk.map((w, i) => `<span class="${st + i === cur ? 'on' : ''}" style="opacity:${st + i <= cur ? 1 : 0.0}">${w}</span>`).join(' ');
     const pop = st + 0 === cur ? 1 + 0.12 * (1 - clamp(((T - shot.vstart) - cur / words.length * shot.vdur) / 0.12)) : 1;

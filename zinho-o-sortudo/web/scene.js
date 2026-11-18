@@ -11,6 +11,7 @@ import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.j
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 // modo de alta qualidade (?hq=1): mesmo low poly, mas com materiais PBR, luz ambiente, AO, bloom e sombras mais finas
 const HQ = new URLSearchParams(location.search).get('hq') === '1';
 // visual de bonecos de blocos (?blocky=1): corpo, braços e pernas em caixas, cabeça em bloco arredondado, sem contorno
@@ -369,11 +370,12 @@ const PR = {};
   for (const a of [0, 1, 2, 3]) { const pm = new THREE.MeshStandardMaterial({ map: pathTex, roughness: 0.9 }); const m = mk(G.box(3.4, 0.07, 30), pm, { p: [Math.sin(a * Math.PI / 2) * 25, 0.035, Math.cos(a * Math.PI / 2) * 25], r: [0, a * Math.PI / 2, 0], parent: P, ol: 0, cast: false }); }
   // fonte
   const sm = M('#d8d2c4'), wm = new THREE.MeshStandardMaterial({ color: '#3fb6e8', roughness: 0.08, metalness: 0.1, transparent: true, opacity: 0.85, emissive: '#0d4f73', emissiveIntensity: 0.3 });
-  mk(G.cyl(3.0, 3.2, 0.7, 40), sm, { p: [0, 0.35, 0], parent: P, ol: 0 }); PR.water = mk(G.cyl(2.75, 2.75, 0.1, 40), wm, { p: [0, 0.66, 0], parent: P, ol: 0, cast: false });
-  mk(G.cyl(0.45, 0.6, 1.8, 20), sm, { p: [0, 1.5, 0], parent: P, ol: 0 }); mk(G.cyl(1.4, 0.7, 0.4, 32), sm, { p: [0, 2.5, 0], parent: P, ol: 0 });
-  mk(G.cyl(1.25, 1.25, 0.08, 32), wm, { p: [0, 2.68, 0], parent: P, ol: 0, cast: false }); mk(G.cyl(0.18, 0.25, 0.8, 12), sm, { p: [0, 3.0, 0], parent: P, ol: 0 });
-  PR.jet = mk(G.cyl(0.08, 0.16, 1.2, 10), wm, { p: [0, 3.9, 0], parent: P, ol: 0, cast: false });
-  PR.falls = [0, 1, 2, 3, 4, 5].map((i) => { const a = i / 6 * Math.PI * 2; return mk(G.cyl(0.05, 0.12, 1.8, 6), wm, { p: [Math.cos(a) * 1.3, 1.75, Math.sin(a) * 1.3], parent: P, ol: 0, cast: false }); });
+  PR.fount = new THREE.Group(); P.add(PR.fount);
+  mk(G.cyl(3.0, 3.2, 0.7, 40), sm, { p: [0, 0.35, 0], parent: PR.fount, ol: 0 }); PR.water = mk(G.cyl(2.75, 2.75, 0.1, 40), wm, { p: [0, 0.66, 0], parent: PR.fount, ol: 0, cast: false });
+  mk(G.cyl(0.45, 0.6, 1.8, 20), sm, { p: [0, 1.5, 0], parent: PR.fount, ol: 0 }); mk(G.cyl(1.4, 0.7, 0.4, 32), sm, { p: [0, 2.5, 0], parent: PR.fount, ol: 0 });
+  mk(G.cyl(1.25, 1.25, 0.08, 32), wm, { p: [0, 2.68, 0], parent: PR.fount, ol: 0, cast: false }); mk(G.cyl(0.18, 0.25, 0.8, 12), sm, { p: [0, 3.0, 0], parent: PR.fount, ol: 0 });
+  PR.jet = mk(G.cyl(0.08, 0.16, 1.2, 10), wm, { p: [0, 3.9, 0], parent: PR.fount, ol: 0, cast: false });
+  PR.falls = [0, 1, 2, 3, 4, 5].map((i) => { const a = i / 6 * Math.PI * 2; return mk(G.cyl(0.05, 0.12, 1.8, 6), wm, { p: [Math.cos(a) * 1.3, 1.75, Math.sin(a) * 1.3], parent: PR.fount, ol: 0, cast: false }); });
   // lojas à volta
   house(P, -13, -17, 7, 4.2, '#f5deb3', { sign: 'PADARIA DA ROSA', awning: true, door: '#a0522d', doorX: 2.2 });
   house(P, -4.5, -18, 7, 5.6, '#9fd3e6', { sign: 'ESCOLA', door: '#2d6ff0', roof: '#3a5a8a' });
@@ -401,7 +403,7 @@ const PR = {};
     const s = makeSign('BAIRRO DO ZINHO', 4.6, 0.8, '#2d6ff0', '#fff'); s.position.set(0, 4.2, 0.46); g.add(s); }
   // riacho e ponte de madeira (leste)
   mk(G.box(4, 0.06, 200), new THREE.MeshStandardMaterial({ color: '#2fa6d8', roughness: 0.1, metalness: 0.1, emissive: '#0b3f5c', emissiveIntensity: 0.25 }), { p: [33, 0.02, 0], parent: P, ol: 0, cast: false });
-  { const g = new THREE.Group(); g.position.set(33, 0, 0); P.add(g); const wd = M('#8a5a34'), wd2 = M('#6d4528');
+  { const g = new THREE.Group(); g.position.set(33, 0, 0); P.add(g); PR.bridge = g; const wd = M('#8a5a34'), wd2 = M('#6d4528');
     for (let i = 0; i < 12; i++) mk(G.rbox(0.42, 0.12, 3.2, 0.03), i % 2 ? wd : wd2, { p: [-2.6 + i * 0.47, 0.32 + Math.sin(i / 11 * Math.PI) * 0.35, 0], parent: g, ol: 0 });
     for (const sz of [-1.55, 1.55]) { for (let i = 0; i < 5; i++) mk(G.rbox(0.14, 0.9, 0.14, 0.03), wd2, { p: [-2.6 + i * 1.3, 0.75 + Math.sin(i / 4 * Math.PI) * 0.35, sz], parent: g, ol: 0 });
       mk(G.rbox(5.6, 0.1, 0.12, 0.03), wd, { p: [0, 1.2 + 0.18, sz], parent: g, ol: 0 }); } }
@@ -2339,6 +2341,35 @@ async function loadModels() {
       const sw = c.props.sword; sw.children.filter((o) => o.isMesh).forEach((o) => sw.remove(o));
       const m = new THREE.Mesh(geo, mat); m.castShadow = true; m.rotation.y = Math.PI / 2; sw.add(m);
     }
+  }
+  // peças do lobby (assets/models/lobby/*.glb): postes de lanterna, baú, portal de pedra, fonte, árvore, banco, fogueira…
+  if (await ok('/assets/models/lobby/lamp.glb')) {
+    const LB = {}, gl = new GLTFLoader();
+    const tint = { fence: '#8a5a34', bridge: '#9a6a3a', hedge: '#3f9e4d', pine: '#d8d2c4' };
+    await Promise.all(['lamp', 'chest', 'portal', 'rock', 'fountain', 'tree', 'pine', 'fence', 'bridge', 'bench', 'campfire', 'hedge', 'fern', 'pebbles', 'grass'].map(async (k) => {
+      const g = (await gl.loadAsync(`/assets/models/lobby/${k}.glb`)).scene; g.updateMatrixWorld(true);
+      const b = new THREE.Box3().setFromObject(g), c = b.getCenter(V()), w = new THREE.Group(); g.position.set(-c.x, -b.min.y, -c.z); w.add(g);
+      g.traverse((m) => { if (m.isMesh) { m.castShadow = m.receiveShadow = true; if (tint[k]) { m.material = m.material.clone(); m.material.color.set(tint[k]); m.material.map = null; } } });
+      LB[k] = w; }));
+    const put = (set, k, x, z, s = 0.3, r = 0) => { const o = LB[k].clone(); o.position.set(x, 0, z); o.scale.setScalar(s); o.rotation.y = r; set.add(o); return o; };
+    // praça: fonte de três andares no lugar da nossa, postes de lanterna nos caminhos, portal de pedra a sul, banco, árvores, baú
+    PR.fount.visible = false; put(praca, 'fountain', 0, 0, 0.36);
+    for (const d of [15, 21]) for (const sd of [-1, 1]) for (let a = 0; a < 4; a++) { const ca = Math.cos(a * Math.PI / 2), sa = Math.sin(a * Math.PI / 2);
+      put(praca, 'lamp', sa * d + ca * sd * 2.4, ca * d - sa * sd * 2.4, 0.3, a * Math.PI / 2 + (sd > 0 ? Math.PI : 0)); }
+    put(praca, 'portal', 0, 31, 0.22, Math.PI);
+    for (const [x, z, r] of [[-9, -12.6, 0], [9, -12.6, 0], [-9, 12.6, Math.PI], [9, 12.6, Math.PI]]) put(praca, 'bench', x, z, 0.3, r);
+    for (const [x, z] of [[-16, -24], [16, -24], [-17, 24], [17, 25], [-26, 9], [25, -9]]) put(praca, 'tree', x, z, 0.26, hash(x) * 6);
+    PR.chest = put(praca, 'chest', 6.8, -9.4, 0.3, -0.4);
+    PR.bridge.visible = false; put(praca, 'bridge', 33, 0, 0.13, Math.PI / 2);
+    for (let i = 0; i < 9; i++) for (const sx of [30.8, 35.2]) if (Math.abs(-26 + i * 6.5) > 4) put(praca, 'fence', sx, -26 + i * 6.5, 0.3, Math.PI / 2);
+    for (let i = 0; i < 14; i++) { const a = hash(i * 4.4) * Math.PI * 2, r = 13 + hash(i * 1.9) * 10; put(praca, ['fern', 'grass', 'pebbles', 'hedge'][i % 4], Math.cos(a) * r, Math.sin(a) * r, 0.3, hash(i) * 6); }
+    // rua: postes de lanterna e árvores do lobby
+    for (let i = 0; i < 8; i++) put(street, 'tree', -50 + i * 14 + hash(i) * 4, (i % 2 ? 1 : -1) * (15 + hash(i * 3) * 4), 0.24, hash(i * 7) * 6);
+    // campo: fogueira, rochas, fetos e erva, mais um baú escondido
+    put(wild, 'campfire', -5, -7, 0.3); put(wild, 'chest', 7, -14, 0.3, 0.5);
+    for (let i = 0; i < 26; i++) { const a = hash(i * 2.6) * Math.PI * 2, r = 4 + hash(i * 5.3) * 24; put(wild, ['rock', 'fern', 'grass', 'pebbles', 'hedge'][i % 5], Math.cos(a) * r, Math.sin(a) * r - 8, i % 5 === 0 ? 0.18 : 0.3, hash(i) * 6); }
+    for (let i = 0; i < 6; i++) put(wild, 'tree', -30 + i * 12, -30 - hash(i) * 8, 0.26, hash(i * 9) * 6);
+    window.__LB = Object.keys(LB);
   }
   // Forest Pack: árvores, rochas e penhascos low-poly, pintados por altura (o pacote veio sem a textura)
   if (!(await ok('/assets/models/trees.fbx'))) return;

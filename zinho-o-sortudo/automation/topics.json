@@ -138,10 +138,32 @@
       "video_id": "Tov21D9gn2M"
     },
     {
+      "titulo": "Escolhe uma porta: 1, 2 ou 3 (sem trocar!)",
+      "gancho": "formato de escolha, 32 s em loop; porta 1 mãe com chinelo, 2 gigante quer abraço, 3 pão infinito com letra miúda",
+      "status": "roteiro pronto",
+      "episodio": "episodes/short-11-portas.js",
+      "publish_at": "2026-11-18T15:00:00Z"
+    },
+    {
+      "titulo": "Escolhe uma caixa: 1, 2 ou 3 (presente do Seu Juca)",
+      "gancho": "formato de escolha; uma caixa tem algo bom, uma engraçada, uma com virada; loop",
+      "status": "pendente"
+    },
+    {
+      "titulo": "Escolhe um botão: vermelho, azul ou verde",
+      "gancho": "formato de escolha no mundo do Zinho; cada botão muda o bairro; loop",
+      "status": "pendente"
+    },
+    {
+      "titulo": "Seu mês de nascimento define seu poder no bairro do Zinho",
+      "gancho": "versão curta do formato 'seu mês'; poderes originais ligados aos personagens",
+      "status": "pendente"
+    },
+    {
       "titulo": "Gigante de pedra, parte 3: a mãe acordou",
       "gancho": "continuação direta do short-09 (fx.giant com eye '#c04dff', s 1.25); o que a mãe quer? nova revelação e gancho para a parte 4 ou fecho da história",
       "status": "pendente",
-      "publish_at": "2026-11-19T15:00:00Z"
+      "_nota": "adiado: a parte 2 caiu para 1.288 views; só fazer se a parte 1 voltar a crescer"
     },
     {
       "titulo": "E se você comesse só pão por 30 dias?",

@@ -5,31 +5,41 @@ Este ficheiro é o manual que cada sessão automática (tarefa agendada) segue. 
 
 ## Calendário de publicação (ritmo atual, para poupar créditos)
 
-**Só 2 Shorts por semana: segunda e quinta, às 12h de Brasília (15:00 UTC).** Vídeos longos em pausa até o dono do
-canal pedir para voltar. Cada Short: viral, vertical, **no máximo 60 s** (alvo 45–58 s), gancho no 1.º segundo.
+**4 Shorts por semana: segunda, quarta, quinta e sábado, às 12h de Brasília (15:00 UTC).** Vídeos longos em pausa até o
+dono do canal pedir para voltar. Cada Short: 30–55 s, regras na secção "Formato atual dos Shorts".
 
-A sessão de produção corre só segunda e quinta às 03:23 de Maputo (01:23 UTC) e prepara o Short desse dia
+A sessão de produção corre segunda, quarta, quinta e sábado às 03:23 de Maputo (01:23 UTC) e prepara o Short desse dia
 (upload privado com `publishAt` às 15:00 UTC).
 
-## Formato atual dos Shorts (desde 12/11/2026, pedido do dono do canal)
+## Formato atual dos Shorts (desde 18/11/2026, aprovado pelo dono do canal)
 
-Os Shorts antigos estagnavam em 1.200–3.800 views. O formato novo, que **substitui** as regras de duração e de gancho
-abaixo, é:
+Análise de 18/11 (9 Shorts): os de ~55 s fizeram 2.200–3.300 views; os de ~1:30 ficaram em 1.200–1.700. O que
+falhava: vídeos longos demais, 1.º quadro escuro/parado, um corte a cada ~6 s, formato a mudar toda a semana, poucos
+vídeos e final sem loop. Regras novas (substituem as de 12/11 e as regras de duração/gancho mais abaixo):
 
-- **Visual de bonecos de blocos**: `blocky: true` (junto com `hq: true`) no 1.º plano do episódio. Modelos próprios do
-  motor, braços grandes e quadrados; nada de modelos, logótipos ou nomes do Roblox.
-- **História narrada de mistério**, uma só história contínua, a abrir com a regra estranha do lugar
-  ("Nesse bairro, …", "Nessa cidade, …"), elemento gigante ou ameaça, viragem no fim e gancho para a parte seguinte
-  ("Comenta X pra ver a parte dois"). Modelo: `episodes/short-08-gigante.js`.
-- **Duração ~1 min 30 s** (85–92 s; ~250 palavras com `voiceSpeed: 1.08`).
-- **Ação**: usar `props.sword` e as poses `swordup`, `slash`, `guard`; gigante com `fx.giant`.
-- **Música**: `music: 'file:assets/music/fundo.mp3'`, `musicGain: 0.2`, `duck: 0.6`. O ficheiro foi dado pelo dono do
-  canal e não está no repositório; se faltar no servidor, usar a música gerada pelo motor e avisar no relatório.
-- **Título** no padrão "Nesse bairro, … - animação"; `categoryId: '1'`; tags descritivas como em `short-08-gigante.js`
-  ("animação de blocos", "animação estilo roblox", "história animada", "nesse mundo", "animation story", …).
-- **Câmaras**: nos planos do gigante manter a câmara em x≈5.5, z≤2.7 (a norte do poste); somar ~0.9 à distância dos
-  grandes planos. Ver sempre uma folha de amostras antes do render final.
-- O render HQ leva ~90 min: correr em segundo plano com limite de 2 h (retoma dos quadros guardados).
+- **Duração 30–55 s.** Nunca mais de 60 s.
+- **1.º quadro = a imagem mais forte**, já em movimento, com texto grande no topo que diz a promessa
+  (`card: { t, s, at: 0, top: true }` fica visível desde o 1.º quadro). Personagem grande no ecrã, cena clara.
+- **Um corte a cada ~2 s** (15+ planos em 30–40 s), câmara sempre a mexer (`pos2`/`push`).
+- **Pedido de comentário de uma palavra/número logo no início** (até ao 3.º plano), não só no fim.
+- **Final em loop**: a última frase leva de volta à primeira, e o último plano termina no mesmo enquadramento do
+  primeiro. Sem cartão final nos vídeos em loop.
+- **Formatos que testamos agora** (manter o mesmo formato vários vídeos seguidos):
+  1. **Escolha** ("Escolhe uma porta: 1, 2 ou 3") — modelo `episodes/short-11-portas.js`, cenário `set: 'domain'`
+     com `domain.deco: 'doors'` (`open`, `opened`). Variações: caixas, botões, cartas, presentes, caminhos.
+  2. **"Seu mês de nascimento define…"** — modelo `episodes/short-10-dominio-mes.js` (em versão curta: 6 meses
+     por vídeo ou ritmo de ~2,5 s por mês).
+  3. **Gancho de duplo sentido** (os 3 melhores do canal) — modelo `short-03-ugo-cidade.js`.
+- **Visual de bonecos de blocos**: `hq: true, blocky: true` no 1.º plano; personagens do canal (Zinho, Dona Neide =
+  `mae`, Beto, Lia, Seu Juca, `prof`, Ugo), gigante de pedra (`fx.giant`), espada, chinelo (`prop: 'chinelo'`,
+  pose `threat`). Nada de modelos, logótipos ou personagens desenhados de terceiros (nomes de técnicas de anime
+  podem ser citados, com aviso de vídeo de fã na descrição).
+- **Música**: `music: 'file:assets/music/fundo.mp3'`, `musicGain: 0.2`, `duck: 0.6` (ficheiro fora do repositório;
+  se faltar, usar a música do motor e avisar). Voz: `voiceSpeed` 1.1–1.2.
+- **Título** curto com a promessa e 1 emoji; tags descritivas do formato (ver `short-11-portas.js`), `categoryId: '1'`.
+- **Câmaras**: ver sempre uma folha de quadros (`render --preview`) antes do render final; legenda com `capY: '37%'`
+  para não tapar caras quando o personagem está em baixo.
+- Render de ~40 s leva ~40 min; correr em segundo plano com limite de 2 h (retoma dos quadros guardados).
 
 ## Segredos (nunca no repositório)
 

@@ -435,6 +435,22 @@ const DM = {};
   // lua enorme
   { const g = deco('moon'); mk(G.sph(22, 48, 24), new THREE.MeshStandardMaterial({ color: '#000', emissive: '#fff2c4', emissiveIntensity: 1.6 }), { p: [0, 20, -90], parent: g, ol: 0, cast: false });
     for (let i = 0; i < 6; i++) mk(G.sph(2 + hash(i) * 3, 16, 10), new THREE.MeshStandardMaterial({ color: '#000', emissive: '#d9c890', emissiveIntensity: 1.4 }), { p: [(hash(i * 2) - 0.5) * 26, 20 + (hash(i * 3) - 0.5) * 26, -68.5], parent: g, ol: 0, cast: false }); }
+  // três portas numeradas (vídeos de escolha)
+  { const g = deco('doors'); DM.doorList = [];
+    const fr = M('#2a2238'), cols = ['#e74c3c', '#2f80ed', '#27ae60'];
+    for (let i = 0; i < 3; i++) {
+      const x = (i - 1) * 3.1, z = -5, dg = new THREE.Group(); dg.position.set(x, 0, z); g.add(dg);
+      gb(0.3, 3.9, 0.5, fr, [-1.15, 1.95, 0], dg); gb(0.3, 3.9, 0.5, fr, [1.15, 1.95, 0], dg); gb(2.6, 0.35, 0.5, fr, [0, 3.95, 0], dg);
+      const glow = mk(G.box(2.0, 3.6, 0.05), new THREE.MeshStandardMaterial({ color: '#000', emissive: '#fff4d0', emissiveIntensity: 0 }), { p: [0, 1.8, -0.15], parent: dg, ol: 0, cast: false });
+      const hinge = new THREE.Group(); hinge.position.set(-1.0, 0, 0.05); dg.add(hinge);
+      gb(2.0, 3.6, 0.18, M(cols[i]), [1.0, 1.8, 0], hinge);
+      const cv = document.createElement('canvas'); cv.width = cv.height = 256; const cx = cv.getContext('2d');
+      cx.fillStyle = '#ffffff'; cx.font = '900 210px Inter, Arial, sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.lineWidth = 18; cx.strokeStyle = '#111'; cx.strokeText(String(i + 1), 128, 140); cx.fillText(String(i + 1), 128, 140);
+      const tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace;
+      mk(new THREE.PlaneGeometry(1.2, 1.2), new THREE.MeshBasicMaterial({ map: tx, transparent: true }), { p: [1.0, 2.35, 0.1], parent: hinge, ol: 0, cast: false });
+      mk(G.sph(0.09, 10, 8), M('#f1c40f'), { p: [1.75, 1.7, 0.15], parent: hinge, ol: 0 });
+      DM.doorList.push({ hinge, glow });
+    } }
   // esfera perfeita
   { const g = deco('sphere'); DM.ball = mk(G.sph(5, 48, 24), new THREE.MeshStandardMaterial({ color: '#f2f6ff', metalness: 1, roughness: 0.04 }), { p: [0, 9, -16], parent: g, ol: 0 });
     for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; gb(1, 10, 1, M('#5b2a6e'), [Math.cos(a) * 14, 5, -16 + Math.sin(a) * 8], g, [0, 0, (i % 2 ? 1 : -1) * 0.3]); } }
@@ -884,6 +900,10 @@ function makeChar(name, cfg, seed) {
   mk(G.cyl(0.25, 0.25, 0.05, 18), M('#e84a5f'), { p: [-0.18, -0.02, 0.22], parent: props.cake, ol: 0 });
   mk(G.cyl(0.015, 0.015, 0.12, 6), M('#5dade2'), { p: [-0.18, 0.08, 0.22], parent: props.cake, ol: 0 });
   mk(G.sph(0.03, 8, 6), new THREE.MeshBasicMaterial({ color: '#ffcc33' }), { p: [-0.18, 0.16, 0.22], parent: props.cake, ol: 0 });
+  // chinelo (a arma da mãe)
+  props.chinelo = new THREE.Group(); arms[1].hand.add(props.chinelo);
+  mk(G.rbox(0.16, 0.36, 0.045, 0.02), M('#2d6ff0'), { p: [0, -0.08, 0.06], parent: props.chinelo, ol: 0 });
+  mk(G.rbox(0.18, 0.05, 0.07, 0.015), M('#ffffff'), { p: [0, 0.0, 0.1], parent: props.chinelo, ol: 0 });
   // espada brilhante (visual de blocos)
   props.sword = new THREE.Group(); arms[1].hand.add(props.sword); props.sword.rotation.x = Math.PI / 2;
   { const bm = new THREE.MeshStandardMaterial({ color: '#49e0ff', emissive: '#49e0ff', emissiveIntensity: 2.4, roughness: 0.2 });
@@ -1049,6 +1069,9 @@ function pose(c, a, k) {
       break;
     case 'lie':
       c.root.rotation.x = -Math.PI / 2;
+      break;
+    case 'threat': // braço erguido com o chinelo, a tremer
+      A[1].pivot.rotation.set(-2.75 + Math.sin(t * 14) * 0.12, 0, -0.25); A[0].pivot.rotation.set(-0.3, 0, -0.6); c.torso.rotation.x -= 0.05;
       break;
     case 'sign': // mãos juntas à frente do peito (sinal de mão para abrir o domínio)
       A[0].pivot.rotation.set(-1.45, 0, 0.62); A[1].pivot.rotation.set(-1.45, 0, -0.62); c.torso.rotation.x += 0.05;
@@ -1500,12 +1523,16 @@ function render(T) {
     hemi.color.set(d.light ?? '#ffffff'); hemi.groundColor.set(d.floor ?? '#222'); hemi.intensity = 1.1; sun.color.set(d.light ?? '#ffffff'); sun.intensity = 1.4; fill.intensity = 0.6;
     if (HQ) scene.environmentIntensity = 0.35;
     DM.floorM.color.set(d.floor ?? '#15121f'); DM.lineM.emissive.set(d.line ?? '#a98bff'); DM.cubeM.emissive.set(d.cube ?? d.line ?? '#a98bff');
-    for (const k of ['void', 'temple', 'volcano', 'hands', 'beach', 'shadow', 'swords', 'slot', 'court', 'moon', 'sphere', 'womb']) DM[k].visible = d.deco === k;
+    for (const k of ['void', 'temple', 'volcano', 'hands', 'beach', 'shadow', 'swords', 'slot', 'court', 'moon', 'sphere', 'womb', 'doors']) DM[k].visible = d.deco === k;
     DM.cubes.forEach((c) => { const q = c.userData, a = q.a + T * q.sp; c.visible = d.cubes !== false; c.position.set(Math.cos(a) * q.r, q.y * ap + Math.sin(T + q.a) * 0.4, Math.sin(a) * q.r - 4); c.rotation.set(T * q.sp * 2, T * q.sp * 3, 0); c.scale.setScalar(q.sz * ap); });
     if (d.deco === 'beach') DM.fish.forEach((f, i) => { const a = T * 0.8 + i * 0.7; f.position.set(Math.cos(a) * (6 + i % 5 * 3), 3 + Math.sin(T * 2 + i) * 1.5 + (i % 3) * 2, Math.sin(a) * (6 + i % 5 * 3) - 6); f.rotation.y = -a; });
     if (d.deco === 'slot') DM.lights.forEach((l, i) => { l.material.emissiveIntensity = (Math.floor(T * 6) + i) % 3 === 0 ? 5 : 1; });
     if (d.deco === 'womb') DM.pods.forEach((p, i) => { p.scale.setScalar(1 + Math.sin(T * 3 + i) * 0.08); });
     if (d.deco === 'sphere') DM.ball.position.y = 9 + Math.sin(T * 1.5) * 0.6;
+    if (d.deco === 'doors') DM.doorList.forEach((dr, i) => { // open: n (abre neste plano a partir de 'at'), opened: [n…] já abertas
+      const k = (d.opened || []).includes(i + 1) ? 1 : d.open === i + 1 ? smooth(clamp((u - (d.at ?? 0.15)) / 0.3)) : 0;
+      dr.hinge.rotation.y = -k * 1.9; dr.glow.material.emissiveIntensity = k * 3.5;
+    });
   }
 
   // luzes da rua (apagão)
@@ -2083,7 +2110,7 @@ function render(T) {
   if (shot.card) {
     card.style.display = 'flex'; card.classList.toggle('top', !!shot.card.top);
     const ck = shot.card.t + '|' + (shot.card.s || ''); if (card.dataset.k !== ck) { card.innerHTML = `<div class="ct">${shot.card.t}</div>${shot.card.s ? `<div class="cs">${shot.card.s}</div>` : ''}`; card.dataset.k = ck; }
-    const a0 = shot.card.at ?? 0.08, k = clamp((u - a0) / 0.15) * (1 - clamp((u - 0.88) / 0.1));
+    const a0 = shot.card.at ?? 0.08, k = (a0 === 0 ? 1 : clamp((u - a0) / 0.15)) * (1 - clamp((u - 0.88) / 0.1)); // at: 0 = já visível no 1.º quadro
     card.style.opacity = k; card.style.transform = `translateY(${(1 - k) * 2}vh) scale(${1 + 0.04 * u})`;
   } else card.style.display = 'none';
   const st = $('stamp');

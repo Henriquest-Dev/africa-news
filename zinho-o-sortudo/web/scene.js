@@ -10,6 +10,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 // modo de alta qualidade (?hq=1): mesmo low poly, mas com materiais PBR, luz ambiente, AO, bloom e sombras mais finas
 const HQ = new URLSearchParams(location.search).get('hq') === '1';
 // visual de bonecos de blocos (?blocky=1): corpo, braços e pernas em caixas, cabeça em bloco arredondado, sem contorno
@@ -352,6 +353,66 @@ const ST = {}; // objetos da rua usados por efeitos
   for (let y = 0.4; y < 5; y += 0.45) mk(G.box(0.6, 0.05, 0.06), M('#c9a227'), { p: [0, y, 0], parent: ST.ladder, ol: 0.01 });
 }
 // ───────────────────────── cenário: pré-história ─────────────────────────
+// praça do bairro (cidade do Zinho, inspirada no layout do lobby: praça redonda, fonte, lojas, ponte, portal e a porta proibida)
+const praca = new THREE.Group(); sets.praca = praca; scene.add(praca);
+const PR = {};
+{
+  const P = praca, stoneTex = canvasTex(512, 512, (g) => { g.fillStyle = '#b9b3a8'; g.fillRect(0, 0, 512, 512);
+    for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) { const o = (y % 2) * 16; g.fillStyle = ['#c7c1b5', '#aea79b', '#bdb6aa', '#cfc9bd'][(x * 7 + y * 3) % 4]; g.fillRect(x * 32 + o + 2, y * 32 + 2, 28, 28); } });
+  stoneTex.wrapS = stoneTex.wrapT = THREE.RepeatWrapping; stoneTex.repeat.set(5, 5);
+  const stone = new THREE.MeshStandardMaterial({ map: stoneTex, roughness: 0.9 });
+  const pathTex = stoneTex.clone(); pathTex.needsUpdate = true; pathTex.repeat.set(1.2, 8);
+  mk(G.box(500, 0.1, 500), M('#86c96b'), { p: [0, -0.05, 0], parent: P, ol: 0, cast: false });
+  mk(G.cyl(11, 11, 0.08, 64), stone, { p: [0, 0.04, 0], parent: P, ol: 0, cast: false });
+  mk(new THREE.TorusGeometry(11, 0.18, 8, 64), M('#8f887c'), { p: [0, 0.08, 0], r: [Math.PI / 2, 0, 0], parent: P, ol: 0, cast: false });
+  for (const a of [0, 1, 2, 3]) { const pm = new THREE.MeshStandardMaterial({ map: pathTex, roughness: 0.9 }); const m = mk(G.box(3.4, 0.07, 30), pm, { p: [Math.sin(a * Math.PI / 2) * 25, 0.035, Math.cos(a * Math.PI / 2) * 25], r: [0, a * Math.PI / 2, 0], parent: P, ol: 0, cast: false }); }
+  // fonte
+  const sm = M('#d8d2c4'), wm = new THREE.MeshStandardMaterial({ color: '#3fb6e8', roughness: 0.08, metalness: 0.1, transparent: true, opacity: 0.85, emissive: '#0d4f73', emissiveIntensity: 0.3 });
+  mk(G.cyl(3.0, 3.2, 0.7, 40), sm, { p: [0, 0.35, 0], parent: P, ol: 0 }); PR.water = mk(G.cyl(2.75, 2.75, 0.1, 40), wm, { p: [0, 0.66, 0], parent: P, ol: 0, cast: false });
+  mk(G.cyl(0.45, 0.6, 1.8, 20), sm, { p: [0, 1.5, 0], parent: P, ol: 0 }); mk(G.cyl(1.4, 0.7, 0.4, 32), sm, { p: [0, 2.5, 0], parent: P, ol: 0 });
+  mk(G.cyl(1.25, 1.25, 0.08, 32), wm, { p: [0, 2.68, 0], parent: P, ol: 0, cast: false }); mk(G.cyl(0.18, 0.25, 0.8, 12), sm, { p: [0, 3.0, 0], parent: P, ol: 0 });
+  PR.jet = mk(G.cyl(0.08, 0.16, 1.2, 10), wm, { p: [0, 3.9, 0], parent: P, ol: 0, cast: false });
+  PR.falls = [0, 1, 2, 3, 4, 5].map((i) => { const a = i / 6 * Math.PI * 2; return mk(G.cyl(0.05, 0.12, 1.8, 6), wm, { p: [Math.cos(a) * 1.3, 1.75, Math.sin(a) * 1.3], parent: P, ol: 0, cast: false }); });
+  // lojas à volta
+  house(P, -13, -17, 7, 4.2, '#f5deb3', { sign: 'PADARIA DA ROSA', awning: true, door: '#a0522d', doorX: 2.2 });
+  house(P, -4.5, -18, 7, 5.6, '#9fd3e6', { sign: 'ESCOLA', door: '#2d6ff0', roof: '#3a5a8a' });
+  house(P, 4.5, -17, 7, 4.0, '#f4a7a0', { sign: 'SORVETERIA', signBg: '#ff7ab8', awning: true });
+  house(P, 13, -17, 7, 4.2, '#a8e0b5', { sign: 'MERCADINHO DO TONHO', signBg: '#1f4e79', door: '#6d4c41' });
+  house(P, -13, 17, 7, 3.6, '#f2c14e', { door: '#2d6ff0', roof: '#b9472f' });
+  house(P, -4.5, 18, 6, 5.6, '#c9b3e6');
+  house(P, 4.5, 17, 7, 3.6, '#f0a35e', { sign: 'LAN HOUSE', signBg: '#111', signFg: '#5dff8a' });
+  house(P, 13, 17, 7, 4.0, '#b8d98a', { roof: '#8e3b2e' });
+  // postes, bancos, canteiros, arbustos
+  PR.bulbs = [];
+  for (let i = 0; i < 8; i++) { const a = (i + 0.5) / 8 * Math.PI * 2, x = Math.cos(a) * 11.8, z = Math.sin(a) * 11.8;
+    mk(G.cyl(0.09, 0.12, 3.6, 8), M('#2b2f3a'), { p: [x, 1.8, z], parent: P, ol: 0 }); mk(G.rbox(0.5, 0.18, 0.5, 0.05), M('#2b2f3a'), { p: [x, 3.6, z], parent: P, ol: 0 });
+    PR.bulbs.push(mk(G.rbox(0.36, 0.42, 0.36, 0.08), new THREE.MeshStandardMaterial({ color: '#fff6d0', emissive: '#ffd97a', emissiveIntensity: 0.4 }), { p: [x, 3.3, z], parent: P, ol: 0, cast: false })); }
+  for (let i = 0; i < 4; i++) { const a = (i + 0.25) / 4 * Math.PI * 2, x = Math.cos(a) * 8.6, z = Math.sin(a) * 8.6, b = new THREE.Group(); b.position.set(x, 0, z); b.rotation.y = -a - Math.PI / 2; P.add(b);
+    for (const yy of [0.5, 0.95]) mk(G.rbox(2.2, 0.1, yy > 0.6 ? 0.1 : 0.55, 0.03), M('#9a6a3a'), { p: [0, yy, yy > 0.6 ? -0.25 : 0], parent: b, ol: 0 });
+    for (const sx of [-0.9, 0.9]) mk(G.rbox(0.1, 0.5, 0.5, 0.02), M('#2b2f3a'), { p: [sx, 0.25, 0], parent: b, ol: 0 }); }
+  for (let i = 0; i < 4; i++) { const a = i / 4 * Math.PI * 2 + Math.PI / 4;
+    for (let k = 0; k < 5; k++) { const aa = a + (k - 2) * 0.09, rr = 6.2; mk(G.sph(0.55 + hash(i * 9 + k) * 0.2, 12, 8), M(['#3f9e4d', '#4caf50', '#2e7d4f'][k % 3]), { p: [Math.cos(aa) * rr, 0.45, Math.sin(aa) * rr], s: [1, 0.85, 1], parent: P, ol: 0 });
+      if (k % 2 === 0) mk(G.sph(0.14, 8, 6), M(['#ff5c8a', '#ffd23f', '#ffffff'][(i + k) % 3]), { p: [Math.cos(aa) * rr, 0.95, Math.sin(aa) * rr], parent: P, ol: 0 }); } }
+  // portal de entrada (oeste)
+  { const g = new THREE.Group(); g.position.set(-30, 0, 0); g.rotation.y = Math.PI / 2; P.add(g);
+    for (const sx of [-2.6, 2.6]) { mk(G.rbox(0.9, 5.2, 0.9, 0.1), M('#c8b89a'), { p: [sx, 2.6, 0], parent: g, ol: 0 }); mk(G.rbox(1.2, 0.4, 1.2, 0.1), M('#a8987a'), { p: [sx, 5.3, 0], parent: g, ol: 0 }); }
+    mk(G.rbox(6.6, 0.6, 0.8, 0.1), M('#a8987a'), { p: [0, 5.0, 0], parent: g, ol: 0 });
+    const s = makeSign('BAIRRO DO ZINHO', 4.6, 0.8, '#2d6ff0', '#fff'); s.position.set(0, 4.2, 0.46); g.add(s); }
+  // riacho e ponte de madeira (leste)
+  mk(G.box(4, 0.06, 200), new THREE.MeshStandardMaterial({ color: '#2fa6d8', roughness: 0.1, metalness: 0.1, emissive: '#0b3f5c', emissiveIntensity: 0.25 }), { p: [33, 0.02, 0], parent: P, ol: 0, cast: false });
+  { const g = new THREE.Group(); g.position.set(33, 0, 0); P.add(g); const wd = M('#8a5a34'), wd2 = M('#6d4528');
+    for (let i = 0; i < 12; i++) mk(G.rbox(0.42, 0.12, 3.2, 0.03), i % 2 ? wd : wd2, { p: [-2.6 + i * 0.47, 0.32 + Math.sin(i / 11 * Math.PI) * 0.35, 0], parent: g, ol: 0 });
+    for (const sz of [-1.55, 1.55]) { for (let i = 0; i < 5; i++) mk(G.rbox(0.14, 0.9, 0.14, 0.03), wd2, { p: [-2.6 + i * 1.3, 0.75 + Math.sin(i / 4 * Math.PI) * 0.35, sz], parent: g, ol: 0 });
+      mk(G.rbox(5.6, 0.1, 0.12, 0.03), wd, { p: [0, 1.2 + 0.18, sz], parent: g, ol: 0 }); } }
+  // a porta proibida (canto norte-oeste): moldura de pedra escura, porta roxa a brilhar e correntes
+  { const g = new THREE.Group(); g.position.set(-22, 0, -12); g.rotation.y = 0.6; P.add(g); const dk = M('#2d2a35');
+    mk(G.rbox(4.2, 0.5, 2, 0.1), dk, { p: [0, 0.25, 0], parent: g, ol: 0 }); for (const sx of [-1.6, 1.6]) mk(G.rbox(0.8, 4.4, 1.1, 0.1), dk, { p: [sx, 2.6, 0], parent: g, ol: 0 });
+    mk(G.rbox(4.2, 0.9, 1.2, 0.1), dk, { p: [0, 5.1, 0], parent: g, ol: 0 });
+    PR.doorGlow = mk(G.rbox(2.3, 3.9, 0.3, 0.05), new THREE.MeshStandardMaterial({ color: '#1a0830', emissive: '#9b4dff', emissiveIntensity: 1.2 }), { p: [0, 2.45, 0], parent: g, ol: 0, cast: false });
+    const cm = new THREE.MeshStandardMaterial({ color: '#8a8f99', metalness: 0.8, roughness: 0.3 });
+    for (const [a, y] of [[0.5, 3.2], [-0.5, 1.8]]) for (let i = 0; i < 9; i++) mk(new THREE.TorusGeometry(0.13, 0.04, 6, 12), cm, { p: [-1.2 + i * 0.3, y + (i - 4) * a * 0.3, 0.25], r: [0, i % 2 ? Math.PI / 2 : 0, a], parent: g, ol: 0 });
+    const s = makeSign('NÃO ABRA', 1.8, 0.45, '#111', '#ff4d4d'); s.position.set(0, 5.1, 0.62); g.add(s); }
+}
 const wild = new THREE.Group(); sets.wild = wild; scene.add(wild);
 const WL = {};
 {
@@ -660,6 +721,11 @@ const CHARS = {
   lia:   { skin: '#f1c9a5', shirt: '#ff7aa8', pants: '#2f4f8f', shoes: '#ffffff', hair: 'ponytail', hairColor: '#5a3420' },
   juca:  { skin: '#d8a47f', shirt: '#ece4cf', vest: '#4d6b4a', pants: '#6b5444', shoes: '#3b2a1e', hair: 'old', hairColor: '#f2f2f2', hat: '#6c6c6c', mustache: true, cane: true, hunch: 0.14, scale: 0.94 },
   prof:  { skin: '#8d5a3c', shirt: '#2aa198', dress: '#2aa198', pants: '#8d5a3c', shoes: '#34495e', hair: 'bob', hairColor: '#2b1a10', glasses: '#d23c3c' },
+  // NPCs do bairro (corpo R15 + roupas próprias)
+  rosa:  { skin: '#c68e62', shirt: '#ffffff', dress: '#f6d6a8', pants: '#c68e62', shoes: '#8a5a3a', hair: 'bob', hairColor: '#2b1a10', hat: '#ffffff', earrings: true },
+  tonho: { skin: '#8d5a3c', shirt: '#c0392b', pants: '#3a3a40', shoes: '#2b2b2b', hair: 'old', hairColor: '#cfcfcf', hat: '#1f4e79', mustache: true, scale: 1.04 },
+  dudu:  { skin: '#f1c9a5', shirt: '#f39c12', pants: '#2c3e50', shoes: '#27ae60', hair: 'messy', hairColor: '#8a5a2b', scale: 0.95 },
+  kaka:  { skin: '#4a2e1f', shirt: '#9b59b6', pants: '#34495e', shoes: '#ffffff', hair: 'afro', hairColor: '#1a1410', scale: 0.95 },
   kid1:  { skin: '#a8704a', shirt: '#f39c12', pants: '#34495e', shoes: '#ecf0f1', hair: 'afro', hairColor: '#1a1a1a', scale: 0.92 },
   kid2:  { skin: '#e8b98f', shirt: '#27ae60', pants: '#2c3e50', shoes: '#ecf0f1', hair: 'ponytail', hairColor: '#e0b44a', scale: 0.92 },
   // tribo de neandertais (Short da caçada)
@@ -681,10 +747,16 @@ function onHead(head, obj, dir, r = HEAD_R) {
 function makeChar(name, cfg, seed) {
   const root = new THREE.Group(); root.name = name;
   const body = new THREE.Group(); root.add(body); body.scale.setScalar(cfg.scale || 1);
-  const hipY = BLOCKY ? R6.hipY : 0.5;
+  const hipY = R15G ? R15G.hipY : BLOCKY ? R6.hipY : 0.5;
   const hips = new THREE.Group(); hips.position.y = hipY; body.add(hips);
   const legs = [-1, 1].map((sd) => {
     const p = new THREE.Group(); p.position.set(sd * 0.13, 0.02, 0); hips.add(p);
+    if (R15G) {
+      p.position.set(sd * R15G.legX, 0, 0);
+      const [up, lo, ft] = R15G['leg' + sd], pm = M(cfg.dress && !cfg.pantsUnder ? cfg.skin : cfg.pants);
+      mk(up, pm, { parent: p, ol: 0 }); mk(lo, cfg.tunic || cfg.dress ? M(cfg.skin) : pm, { parent: p, ol: 0 }); mk(ft, M(cfg.shoes), { parent: p, ol: 0 });
+      return p;
+    }
     if (BLOCKY) {
       mk(G.rbox(0.245, R6.legH, 0.25, 0.025), M(cfg.pants), { p: [0, 0.02 - R6.legH / 2, 0], parent: p });
       mk(G.rbox(0.255, 0.1, 0.29, 0.035), M(cfg.shoes), { p: [0, -R6.hipY + 0.07, 0.02], parent: p });
@@ -696,7 +768,17 @@ function makeChar(name, cfg, seed) {
     return p;
   });
   const torso = new THREE.Group(); hips.add(torso);
-  if (BLOCKY) {
+  if (R15G) {
+    const top = cfg.jacket || cfg.dress || cfg.tunic || cfg.shirt;
+    mk(R15G.torso[0], M(top, cfg.jacket ? { roughness: 0.45, metalness: 0.04 } : {}), { parent: torso, ol: 0 });
+    mk(R15G.torso[1], M(cfg.dress || cfg.tunic || cfg.pants), { parent: torso, ol: 0 });
+    if (cfg.jacket) { // camisa por baixo do casaco aberto + fecho
+      mk(G.rbox(0.21, 0.44, 0.06, 0.02), M(cfg.shirt), { p: [0, 0.33, 0.135], parent: torso, ol: 0 });
+      for (const sd of [-1, 1]) mk(G.rbox(0.05, 0.36, 0.05, 0.015), M(cfg.jacket, { roughness: 0.45, metalness: 0.04 }), { p: [sd * 0.095, 0.36, 0.15], r: [0, 0, sd * 0.12], parent: torso, ol: 0 });
+    }
+    if (cfg.vest) for (const sd of [-1, 1]) mk(G.rbox(0.17, 0.46, 0.07, 0.02), M(cfg.vest), { p: [sd * 0.16, 0.32, 0.13], parent: torso, ol: 0 });
+    if (cfg.dress || cfg.tunic) { const sk = new THREE.CylinderGeometry(0.27, 0.34, 0.4, 20); sk.scale(1, 1, 0.72); mk(sk, M(cfg.dress || cfg.tunic), { p: [0, -0.08, 0.0], parent: torso, ol: 0 }); }
+  } else if (BLOCKY) {
     const jm = cfg.jacket ? M(cfg.jacket, { roughness: 0.28, metalness: 0.15 }) : null;
     mk(G.rbox(0.5, 0.54, 0.26, 0.03), M(cfg.dress || cfg.tunic || cfg.shirt), { p: [0, 0.36, 0], parent: torso });
     mk(G.rbox(0.51, 0.07, 0.27, 0.02), M('#15171c'), { p: [0, 0.12, 0], parent: torso });
@@ -727,6 +809,13 @@ function makeChar(name, cfg, seed) {
   const sleeve = cfg.jacket ? new THREE.MeshPhongMaterial({ color: cfg.jacket, shininess: 70, specular: '#555a66' }) : M(cfg.vest ? cfg.shirt : cfg.shirt);
   const arms = [-1, 1].map((sd) => {
     const p = new THREE.Group(); p.position.set(sd * 0.3, 0.6, 0); torso.add(p);
+    if (R15G) {
+      p.position.set(sd * R15G.armX, R15G.armY, 0);
+      const [up, lo, hd] = R15G['arm' + sd], sm = cfg.jacket ? M(cfg.jacket, { roughness: 0.45, metalness: 0.04 }) : M(cfg.dress || cfg.tunic || cfg.shirt);
+      mk(up, sm, { parent: p, ol: 0 }); mk(lo, cfg.jacket ? sm : M(cfg.skin), { parent: p, ol: 0 }); mk(hd, M(cfg.skin), { parent: p, ol: 0 });
+      const hand = new THREE.Group(); hand.position.set(sd * 0.063, -0.6, 0); p.add(hand);
+      return { pivot: p, hand };
+    }
     if (BLOCKY) {
       // braços grandes e quadrados, do tamanho do tronco
       p.position.set(sd * 0.385, 0.6, 0);
@@ -741,9 +830,10 @@ function makeChar(name, cfg, seed) {
     return { pivot: p, hand };
   });
   // cabeça
-  const head = new THREE.Group(); head.position.set(0, BLOCKY ? R6.headY : 1.05, 0); torso.add(head);
-  if (BLOCKY) head.scale.setScalar(R6.head);
-  if (BLOCKY) { mk(new RoundedBoxGeometry(0.86, 0.8, 0.77, 6, 0.2), M(cfg.skin), { parent: head }); mk(G.rbox(0.2, 0.1, 0.2, 0.02), M(cfg.skin), { p: [0, -0.43, 0], parent: head }); }
+  const head = new THREE.Group(); head.position.set(0, R15G ? R15G.headY : BLOCKY ? R6.headY : 1.05, 0); torso.add(head);
+  if (BLOCKY) head.scale.setScalar(R15G ? R15G.headS : R6.head);
+  if (R15G) mk(R15G.head, M(cfg.skin), { parent: head, ol: 0 });
+  else if (BLOCKY) { mk(new RoundedBoxGeometry(0.86, 0.8, 0.77, 6, 0.2), M(cfg.skin), { parent: head }); mk(G.rbox(0.2, 0.1, 0.2, 0.02), M(cfg.skin), { p: [0, -0.43, 0], parent: head }); }
   else {
   mk(G.sph(HEAD_R, 28, 20), M(cfg.skin), { parent: head, ol: 0.028 });
   for (const sd of [-1, 1]) mk(G.sph(0.085, 10, 8), M(cfg.skin), { p: [sd * 0.45, -0.02, 0], s: [0.6, 1, 1], parent: head, ol: 0.015 });
@@ -923,9 +1013,29 @@ function makeChar(name, cfg, seed) {
   root.traverse((o) => { if (o.isMesh) { o.castShadow = o.material !== OUTLINE; o.receiveShadow = false; } });
   return { name, cfg, root, body, hips, torso, legs, arms, head, face, props, seed, hipY };
 }
+// ── corpo R15 (modelo de boneco sem textura dado pelo dono do canal): cada personagem recebe as suas cores/roupas ──
+const R15K = 0.34;                                   // escala do modelo para o tamanho dos nossos bonecos
+async function loadR15() {
+  try {
+    const r = await fetch('/assets/models/r15.obj'); if (!r.ok) return null;
+    const obj = new OBJLoader().parse(await r.text()), P = {};
+    obj.traverse((m) => { if (m.isMesh) P[m.name.replace(/\D/g, '')] = m.geometry; });
+    const prep = (id, tx, ty, s = R15K) => { let g = P[id].clone(); g.deleteAttribute('normal'); g.deleteAttribute('uv'); g = mergeVertices(g, 1e-4); g.translate(tx, ty, 0); g.scale(s, s, s); g.computeVertexNormals(); return g; };
+    const out = { hipY: (3.01 - 0.74) * R15K, legX: 0.42 * R15K, armX: 1.2 * R15K, armY: (0.75 + 0.74) * R15K, headY: (1.46 + 0.74) * R15K, headS: 1.2 * R15K / 0.86 };
+    for (const sd of [-1, 1]) {
+      const L = sd < 0 ? ['4', '5', '6'] : ['7', '8', '9'], A = sd < 0 ? ['14', '13', '12'] : ['3', '2', '1'];
+      out['leg' + sd] = L.map((id) => prep(id, -sd * 0.42, 0.74));
+      out['arm' + sd] = A.map((id) => prep(id, -sd * 1.2, -0.75));
+    }
+    out.torso = ['11', '10'].map((id) => prep(id, 0, 0.74));
+    out.head = prep('15', 0, -1.46, 0.86 / 1.2);
+    return out;
+  } catch (e) { console.error('r15:', e.message); return null; }
+}
+const R15G = BLOCKY ? await loadR15() : null;
 const chars = {};
 Object.entries(CHARS).forEach(([n, cfg], i) => { chars[n] = makeChar(n, cfg, i * 1.37 + 0.4); scene.add(chars[n].root); });
-const WHO = { ZINHO: 'zinho', MAE: 'mae', BETO: 'beto', LIA: 'lia', JUCA: 'juca', PROF: 'prof', UGO: 'ugo', NEFER: 'nefer', KHA: 'kha' };
+const WHO = { ZINHO: 'zinho', MAE: 'mae', BETO: 'beto', LIA: 'lia', JUCA: 'juca', PROF: 'prof', UGO: 'ugo', NEFER: 'nefer', KHA: 'kha', ROSA: 'rosa', TONHO: 'tonho', DUDU: 'dudu', KAKA: 'kaka' };
 
 const EXPR = {
   neutral: { eye: 1, lid: 1, brow: [0, 0], by: 0, mouth: 'smile', ms: 0.55 },
@@ -1522,6 +1632,10 @@ function render(T) {
   for (const b of bolts) { const dt = lt - b * shot.dur; if (dt >= 0 && dt < 0.35) flash = Math.max(flash, (dt < 0.08 ? 1 : 0.4) * (1 - dt / 0.35)); }
   const tod = applyTod(shot.tod, flash);
   if (shot.set === 'bedroom') { BR.glass.color.set(tod.lamps ? '#16264f' : '#9fd8f5'); BR.moon.visible = !!tod.lamps; }
+  if (shot.set === 'praca') {
+    PR.water.position.y = 0.66 + Math.sin(T * 3) * 0.01; PR.jet.scale.y = 1 + Math.sin(T * 9) * 0.08; PR.falls.forEach((f, i) => { f.scale.y = 1 + Math.sin(T * 7 + i) * 0.06; });
+    PR.bulbs.forEach((b) => { b.material.emissiveIntensity = tod.lamps ? 3 : 0.3; }); PR.doorGlow.material.emissiveIntensity = 1.1 + Math.sin(T * 2.5) * 0.4;
+  }
   if (shot.set === 'domain') {
     const d = shot.domain || {}, ap = clamp(lt / 0.6);                 // abre o domínio no começo do plano
     skyU.top.value.set(d.top ?? '#000010'); skyU.bot.value.set(d.bot ?? '#1a1440');
@@ -1941,7 +2055,7 @@ function render(T) {
   for (const c of Object.values(chars)) c.face.blush.forEach((b) => { b.visible = !!shot.style2 && c.root.visible; });
 
   // ─── mundo vazio ───
-  stars.visible = ((shot.set === 'street' || shot.set === 'egypt' || shot.set === 'wild') && (shot.tod === 'night')) || (shot.set === 'domain' && !!shot.domain?.stars);
+  stars.visible = ((shot.set === 'street' || shot.set === 'egypt' || shot.set === 'wild' || shot.set === 'praca') && (shot.tod === 'night')) || (shot.set === 'domain' && !!shot.domain?.stars);
   if (fx.overgrow) FX.weeds.forEach((w) => {
     const [x, z, s0, h] = w.userData.base;
     const lv = clamp(fx.overgrow * 1.3 - h * 0.3);
@@ -2201,6 +2315,10 @@ async function loadModels() {
   for (let i = 0; i < 26; i++) { const x = -60 + i * 4.8 + (hash(i * 3.3) - 0.5) * 2, side = i % 2 ? 1 : -1, z = side * (17 + hash(i * 1.7) * 9);
     put(street, trees[i % trees.length], x, z, 0.9 + hash(i * 5.1) * 0.6, hash(i) * 6); }
   for (let i = 0; i < 8; i++) put(street, cliffs[i % cliffs.length], -70 + i * 20, (i % 2 ? 1 : -1) * (55 + hash(i) * 10), 1.6 + hash(i * 2) * 0.8, hash(i * 7) * 6);
+  // praça: árvores entre as lojas e à volta, penhascos ao longe
+  for (let i = 0; i < 30; i++) { const a = i / 30 * Math.PI * 2 + hash(i * 1.3) * 0.15, r = 24 + hash(i * 3.7) * 14; const x = Math.cos(a) * r, z = Math.sin(a) * r; if (Math.abs(z) < 3 || Math.abs(x) < 3 || Math.abs(x - 33) < 3.5) continue; put(praca, trees[i % trees.length], x, z, 0.9 + hash(i * 2.2) * 0.6, hash(i) * 6); }
+  for (const [x, z] of [[-20, -6], [20, -7], [-20, 7], [21, 8], [-9, -12.5], [9, 12.5]]) put(praca, trees[(x + z + 99) % trees.length | 0], x, z, 1.0, hash(x) * 6);
+  for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2, r = 70 + hash(i) * 10; put(praca, cliffs[i % cliffs.length], Math.cos(a) * r, Math.sin(a) * r, 2.4 + hash(i * 3) * 1.2, hash(i * 5) * 6); }
   // campo: floresta, pedras e penhascos à volta
   for (let i = 0; i < 34; i++) { const a = i / 34 * Math.PI * 2 + hash(i) * 0.2, r = 13 + hash(i * 2.9) * 22; put(wild, trees[i % trees.length], Math.cos(a) * r, Math.sin(a) * r - 10, 0.9 + hash(i * 4.1) * 0.7, hash(i * 9) * 6); }
   for (let i = 0; i < 12; i++) { const a = hash(i * 6.6) * Math.PI * 2, r = 6 + hash(i * 3.1) * 14; put(wild, rocks[i % rocks.length], Math.cos(a) * r, Math.sin(a) * r - 6, 1.5 + hash(i) * 2, hash(i * 2) * 6); }

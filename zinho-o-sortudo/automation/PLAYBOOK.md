@@ -37,6 +37,15 @@ vídeos e final sem loop. Regras novas (substituem as de 12/11 e as regras de du
 - **Proporções Roblox (R6)** desde 18/11: no modo `blocky` os personagens têm pernas do tamanho do tronco e cabeça pequena
   (`R6` em `web/scene.js`, medidas tiradas do rig Noob que o dono do canal mandou). Os grandes planos com `at:` mostram
   agora cabeça e tronco; para um rosto em grande, usar `d` 2.0–2.4.
+- **Corpo R15** desde 18/11: com `assets/models/r15.obj` presente, todos os personagens em modo `blocky` usam o corpo R15
+  (modelo sem textura do dono do canal) com as cores/roupas de cada um; sem o ficheiro, cai para os blocos R6.
+- **Cenário `set: 'praca'`** (cidade do Zinho): praça redonda de pedra com fonte no centro (0,0), lojas a norte
+  (z≈-17: PADARIA DA ROSA x-13, ESCOLA x-4.5, SORVETERIA x4.5, MERCADINHO DO TONHO x13) e a sul (z≈17, LAN HOUSE x4.5),
+  bancos e postes à volta (raio ~9–12), portal "BAIRRO DO ZINHO" em x=-30, riacho e ponte de madeira em x=33,
+  e a **porta proibida** (moldura escura, porta roxa a brilhar, correntes, placa "NÃO ABRA") em (-22, -12) — boa para
+  histórias de mistério. Exemplo de câmaras em `episodes/teste-praca.js`.
+- **NPCs do bairro** (com voz no `tts.py`): `ROSA` (Dona Rosa, padeira), `TONHO` (Seu Tonho, mercadinho), `DUDU` e `KAKA`
+  (amigos do Zinho), além da turma de sempre (ZINHO, MAE, BETO, LIA, JUCA, PROF).
 - **Modelos externos** em `assets/models/` (fora do git, dados pelo dono do canal): `sword.obj` + `sword_diffuse.png`
   (espada de cristal, substitui a espada de caixas) e Forest Pack (`trees.fbx`, `rocks.fbx`, `cliffs.fbx`) pintado por
   altura, espalhado na rua (atrás das casas e no horizonte) e no campo (`set: 'wild'`). Se a pasta faltar, o motor usa

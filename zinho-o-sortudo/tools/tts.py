@@ -45,6 +45,10 @@ GEMINI_VOICES = {  # voz pré-definida do Gemini, direção de interpretação
     'UGO':   ('Algenib',   'Homem das cavernas, voz grave e rouca, fala curta, engraçado'),
     'KHA':   ('Alnilam',   'Faraó do Egito Antigo, voz grave, vaidosa e cheia de si, engraçado'),
     'NEFER': ('Iapetus',   'Trabalhador do Egito Antigo, voz calma, sábia e simpática, um pouco divertida'),
+    'ROSA':  ('Despina',   'Dona Rosa, padeira do bairro, simpática, fofoqueira e engraçada'),
+    'TONHO': ('Orus',      'Seu Tonho, dono do mercadinho, voz grossa, desconfiado e engraçado'),
+    'DUDU':  ('Achird',    'Dudu, amigo do Zinho, menino de 12 anos, empolgado e meio atrapalhado'),
+    'KAKA':  ('Laomedeia', 'Kaká, amiga do Zinho, menina de 12 anos, esperta e debochada'),
 }
 EDGE_VOICES = {  # voz, velocidade, tom
     'NAR':   ('pt-BR-AntonioNeural', '+12%', '-4Hz'),
@@ -57,6 +61,10 @@ EDGE_VOICES = {  # voz, velocidade, tom
     'UGO':   ('pt-BR-AntonioNeural', '-6%', '-42Hz'),
     'NEFER': ('pt-BR-AntonioNeural', '-2%', '-15Hz'),
     'KHA':   ('pt-BR-AntonioNeural', '-8%', '-30Hz'),
+    'ROSA':  ('pt-BR-FranciscaNeural', '+10%', '+4Hz'),
+    'TONHO': ('pt-BR-AntonioNeural', '+0%', '-20Hz'),
+    'DUDU':  ('pt-BR-AntonioNeural', '+18%', '+28Hz'),
+    'KAKA':  ('pt-BR-ThalitaMultilingualNeural', '+14%', '+10Hz'),
 }
 
 
@@ -221,7 +229,7 @@ def openrouter_has_credit(key):
 
 
 def tts_openrouter(key, who, text, out_wav, model='openai/gpt-audio-mini'):
-    voice, style = OPENROUTER_VOICES[who]
+    voice, style = OPENROUTER_VOICES.get(who, OPENROUTER_VOICES['NAR'])
     body = {
         'model': model, 'modalities': ['text', 'audio'], 'stream': True,
         'audio': {'voice': voice, 'format': 'pcm16'},
@@ -308,7 +316,7 @@ def main():
         todo = {}
         for i, shot in enumerate(story):
             who, text = shot['who'], shot['text']
-            tag = hashlib.sha1(f'{provider}|{who}|{text}|{EDGE_VOICES[who]}|{OPENROUTER_VOICES[who]}|{GEMINI_VOICES[who]}'.encode()).hexdigest()[:10]
+            tag = hashlib.sha1(f'{provider}|{who}|{text}|{EDGE_VOICES[who]}|{OPENROUTER_VOICES.get(who, OPENROUTER_VOICES['NAR'])}|{GEMINI_VOICES[who]}'.encode()).hexdigest()[:10]
             out = os.path.join(VOICES_DIR, f'{i:03d}_{who}_{tag}.wav')
             if args.force or not os.path.exists(out):
                 todo.setdefault(who, []).append((i, who, text, out))
@@ -323,7 +331,7 @@ def main():
     lines = []
     for i, shot in enumerate(story):
         who, text = shot['who'], shot['text']
-        tag = hashlib.sha1(f'{provider}|{who}|{text}|{EDGE_VOICES[who]}|{OPENROUTER_VOICES[who]}|{GEMINI_VOICES[who]}'.encode()).hexdigest()[:10]
+        tag = hashlib.sha1(f'{provider}|{who}|{text}|{EDGE_VOICES[who]}|{OPENROUTER_VOICES.get(who, OPENROUTER_VOICES['NAR'])}|{GEMINI_VOICES[who]}'.encode()).hexdigest()[:10]
         out = os.path.join(VOICES_DIR, f'{i:03d}_{who}_{tag}.wav')
         if args.force or not os.path.exists(out):
             for attempt in range(4):

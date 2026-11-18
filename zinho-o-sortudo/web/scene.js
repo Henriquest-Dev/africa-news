@@ -167,6 +167,7 @@ const TOD = {
   desert: { top: '#4fa9f2', bot: '#fbe3b0', hs: '#fff3d8', hg: '#c9a46a', hi: 1.4, sc: '#fff0cf', si: 2.7, dir: [-14, 24, 10], fog: '#f3dcae', fogN: 60, fogF: 220, lamps: 0, win: 0, fill: 0.25 },
   day:   { top: '#56aef0', bot: '#f6e8ca', hs: '#e8f4ff', hg: '#a4976e', hi: 1.35, sc: '#fff2dc', si: 2.5, dir: [-12, 22, 14], fog: '#e8e6d8', fogN: 50, fogF: 190, lamps: 0, win: 0 , fill: 0.25 },
   dusk:  { top: '#4b4d96', bot: '#ffab76', hs: '#ffd9bb', hg: '#6a5869', hi: 1.05, sc: '#ffb070', si: 2.1, dir: [-26, 11, 9], fog: '#d6957f', fogN: 35, fogF: 150, lamps: 1, win: 0.6 , fill: 0.45 },
+  horror: { top: '#04030a', bot: '#1c1226', hs: '#7a74b8', hg: '#16141e', hi: 1.0, sc: '#9aa6e8', si: 0.85, dir: [10, 25, 10], fog: '#0b0810', fogN: 7, fogF: 48, lamps: 1, win: 0.4, fill: 0.7 },
   night: { top: '#081236', bot: '#26386a', hs: '#6074b8', hg: '#22222e', hi: 0.85, sc: '#a2b7ff', si: 0.9, dir: [10, 25, 10], fog: '#1c2749', fogN: 25, fogF: 120, lamps: 1, win: 1 , fill: 0.7 },
   storm: { top: '#242a36', bot: '#5a616f', hs: '#9da6b8', hg: '#393940', hi: 1.0, sc: '#c9d3ea', si: 0.85, dir: [-8, 25, 12], fog: '#4b515d', fogN: 20, fogF: 110, lamps: 1, win: 0.8 , fill: 0.6 },
   indoor: { top: '#8fd0f7', bot: '#fbeacb', hs: '#fff4e2', hg: '#9c8466', hi: 1.45, sc: '#fff0d6', si: 1.7, dir: [-6, 9, 7], fog: null, lamps: 0, win: 0 , fill: 0.3 },
@@ -408,9 +409,14 @@ const PR = {};
   { const g = new THREE.Group(); g.position.set(-22, 0, -12); g.rotation.y = 0.6; P.add(g); const dk = M('#2d2a35');
     mk(G.rbox(4.2, 0.5, 2, 0.1), dk, { p: [0, 0.25, 0], parent: g, ol: 0 }); for (const sx of [-1.6, 1.6]) mk(G.rbox(0.8, 4.4, 1.1, 0.1), dk, { p: [sx, 2.6, 0], parent: g, ol: 0 });
     mk(G.rbox(4.2, 0.9, 1.2, 0.1), dk, { p: [0, 5.1, 0], parent: g, ol: 0 });
-    PR.doorGlow = mk(G.rbox(2.3, 3.9, 0.3, 0.05), new THREE.MeshStandardMaterial({ color: '#1a0830', emissive: '#9b4dff', emissiveIntensity: 1.2 }), { p: [0, 2.45, 0], parent: g, ol: 0, cast: false });
+    mk(G.box(2.4, 4.0, 0.1), new THREE.MeshBasicMaterial({ color: '#000000' }), { p: [0, 2.45, -0.5], parent: g, ol: 0, cast: false });  // o vazio do outro lado
+    PR.doorHinge = new THREE.Group(); PR.doorHinge.position.set(-1.15, 0, 0); g.add(PR.doorHinge);
+    PR.doorGlow = mk(G.rbox(2.3, 3.9, 0.3, 0.05), new THREE.MeshStandardMaterial({ color: '#1a0830', emissive: '#9b4dff', emissiveIntensity: 1.2 }), { p: [1.15, 2.45, 0], parent: PR.doorHinge, ol: 0, cast: false });
+    PR.doorG = g; PR.doorLight = new THREE.PointLight('#a35bff', 0, 14); PR.doorLight.position.set(0, 2.4, 1.6); g.add(PR.doorLight);
     const cm = new THREE.MeshStandardMaterial({ color: '#8a8f99', metalness: 0.8, roughness: 0.3 });
-    for (const [a, y] of [[0.5, 3.2], [-0.5, 1.8]]) for (let i = 0; i < 9; i++) mk(new THREE.TorusGeometry(0.13, 0.04, 6, 12), cm, { p: [-1.2 + i * 0.3, y + (i - 4) * a * 0.3, 0.25], r: [0, i % 2 ? Math.PI / 2 : 0, a], parent: g, ol: 0 });
+    PR.chains = [[0.5, 3.4], [-0.5, 2.4], [0.0, 1.3]].map(([a, y]) => { const row = new THREE.Group(); g.add(row);
+      for (let i = 0; i < 9; i++) mk(new THREE.TorusGeometry(0.13, 0.04, 6, 12), cm, { p: [-1.2 + i * 0.3, y + (i - 4) * a * 0.3, 0.25], r: [0, i % 2 ? Math.PI / 2 : 0, a], parent: row, ol: 0 });
+      mk(G.rbox(0.3, 0.36, 0.14, 0.04), M('#b8860b'), { p: [0, y, 0.33], parent: row, ol: 0 }); return row; });
     const s = makeSign('NÃO ABRA', 1.8, 0.45, '#111', '#ff4d4d'); s.position.set(0, 5.1, 0.62); g.add(s); }
 }
 const wild = new THREE.Group(); sets.wild = wild; scene.add(wild);
@@ -715,17 +721,19 @@ function setGold(name, on) {
 
 // ───────────────────────── personagens ─────────────────────────
 const CHARS = {
-  zinho: { skin: '#5b3a26', shirt: '#2d6ff0', jacket: '#18181c', pants: '#2c3550', shoes: '#f4f4f4', hair: 'short', hairColor: '#121212' },
+  zinho: { body: 'r6', skin: '#5b3a26', shirt: '#2d6ff0', jacket: '#18181c', pants: '#2c3550', shoes: '#f4f4f4', hair: 'short', hairColor: '#121212' },
   mae:   { skin: '#4a2e1f', shirt: '#f2b632', dress: '#f2b632', pants: '#4a2e1f', shoes: '#8a3b2a', hair: 'wrap', hairColor: '#d9542a', earrings: true },
-  beto:  { skin: '#c08a5c', shirt: '#7b4bc4', pants: '#3a3a40', shoes: '#e74c3c', hair: 'messy', hairColor: '#3b2414', glasses: '#222' },
+  beto:  { body: 'r6', skin: '#c08a5c', shirt: '#7b4bc4', pants: '#3a3a40', shoes: '#e74c3c', hair: 'messy', hairColor: '#3b2414', glasses: '#222' },
   lia:   { skin: '#f1c9a5', shirt: '#ff7aa8', pants: '#2f4f8f', shoes: '#ffffff', hair: 'ponytail', hairColor: '#5a3420' },
   juca:  { skin: '#d8a47f', shirt: '#ece4cf', vest: '#4d6b4a', pants: '#6b5444', shoes: '#3b2a1e', hair: 'old', hairColor: '#f2f2f2', hat: '#6c6c6c', mustache: true, cane: true, hunch: 0.14, scale: 0.94 },
   prof:  { skin: '#8d5a3c', shirt: '#2aa198', dress: '#2aa198', pants: '#8d5a3c', shoes: '#34495e', hair: 'bob', hairColor: '#2b1a10', glasses: '#d23c3c' },
   // NPCs do bairro (corpo R15 + roupas próprias)
   rosa:  { skin: '#c68e62', shirt: '#ffffff', dress: '#f6d6a8', pants: '#c68e62', shoes: '#8a5a3a', hair: 'bob', hairColor: '#2b1a10', hat: '#ffffff', earrings: true },
   tonho: { skin: '#8d5a3c', shirt: '#c0392b', pants: '#3a3a40', shoes: '#2b2b2b', hair: 'old', hairColor: '#cfcfcf', hat: '#1f4e79', mustache: true, scale: 1.04 },
-  dudu:  { skin: '#f1c9a5', shirt: '#f39c12', pants: '#2c3e50', shoes: '#27ae60', hair: 'messy', hairColor: '#8a5a2b', scale: 0.95 },
+  dudu:  { body: 'r6', skin: '#f1c9a5', shirt: '#f39c12', pants: '#2c3e50', shoes: '#27ae60', hair: 'messy', hairColor: '#8a5a2b', scale: 0.95 },
   kaka:  { skin: '#4a2e1f', shirt: '#9b59b6', pants: '#34495e', shoes: '#ffffff', hair: 'afro', hairColor: '#1a1410', scale: 0.95 },
+  // criatura de terror (a coisa atrás da porta proibida): corpo R15 todo preto, braços compridos, olhos e sorriso brancos
+  sorriso: { skin: '#17161d', shirt: '#17161d', pants: '#17161d', shoes: '#17161d', hair: 'none', hairColor: '#000', monster: true, longArms: 1.35, scale: 1.45 },
   kid1:  { skin: '#a8704a', shirt: '#f39c12', pants: '#34495e', shoes: '#ecf0f1', hair: 'afro', hairColor: '#1a1a1a', scale: 0.92 },
   kid2:  { skin: '#e8b98f', shirt: '#27ae60', pants: '#2c3e50', shoes: '#ecf0f1', hair: 'ponytail', hairColor: '#e0b44a', scale: 0.92 },
   // tribo de neandertais (Short da caçada)
@@ -745,15 +753,16 @@ function onHead(head, obj, dir, r = HEAD_R) {
   return obj;
 }
 function makeChar(name, cfg, seed) {
+  const RB = R15G && cfg.body !== 'r6' ? R15G : null;   // misto: alguns bonecos R6 (Noob), outros R15
   const root = new THREE.Group(); root.name = name;
   const body = new THREE.Group(); root.add(body); body.scale.setScalar(cfg.scale || 1);
-  const hipY = R15G ? R15G.hipY : BLOCKY ? R6.hipY : 0.5;
+  const hipY = RB ? RB.hipY : BLOCKY ? R6.hipY : 0.5;
   const hips = new THREE.Group(); hips.position.y = hipY; body.add(hips);
   const legs = [-1, 1].map((sd) => {
     const p = new THREE.Group(); p.position.set(sd * 0.13, 0.02, 0); hips.add(p);
-    if (R15G) {
-      p.position.set(sd * R15G.legX, 0, 0);
-      const [up, lo, ft] = R15G['leg' + sd], pm = M(cfg.dress && !cfg.pantsUnder ? cfg.skin : cfg.pants);
+    if (RB) {
+      p.position.set(sd * RB.legX, 0, 0);
+      const [up, lo, ft] = RB['leg' + sd], pm = M(cfg.dress && !cfg.pantsUnder ? cfg.skin : cfg.pants);
       mk(up, pm, { parent: p, ol: 0 }); mk(lo, cfg.tunic || cfg.dress ? M(cfg.skin) : pm, { parent: p, ol: 0 }); mk(ft, M(cfg.shoes), { parent: p, ol: 0 });
       return p;
     }
@@ -768,10 +777,10 @@ function makeChar(name, cfg, seed) {
     return p;
   });
   const torso = new THREE.Group(); hips.add(torso);
-  if (R15G) {
+  if (RB) {
     const top = cfg.jacket || cfg.dress || cfg.tunic || cfg.shirt;
-    mk(R15G.torso[0], M(top, cfg.jacket ? { roughness: 0.45, metalness: 0.04 } : {}), { parent: torso, ol: 0 });
-    mk(R15G.torso[1], M(cfg.dress || cfg.tunic || cfg.pants), { parent: torso, ol: 0 });
+    mk(RB.torso[0], M(top, cfg.jacket ? { roughness: 0.45, metalness: 0.04 } : {}), { parent: torso, ol: 0 });
+    mk(RB.torso[1], M(cfg.dress || cfg.tunic || cfg.pants), { parent: torso, ol: 0 });
     if (cfg.jacket) { // camisa por baixo do casaco aberto + fecho
       mk(G.rbox(0.21, 0.44, 0.06, 0.02), M(cfg.shirt), { p: [0, 0.33, 0.135], parent: torso, ol: 0 });
       for (const sd of [-1, 1]) mk(G.rbox(0.05, 0.36, 0.05, 0.015), M(cfg.jacket, { roughness: 0.45, metalness: 0.04 }), { p: [sd * 0.095, 0.36, 0.15], r: [0, 0, sd * 0.12], parent: torso, ol: 0 });
@@ -809,20 +818,27 @@ function makeChar(name, cfg, seed) {
   const sleeve = cfg.jacket ? new THREE.MeshPhongMaterial({ color: cfg.jacket, shininess: 70, specular: '#555a66' }) : M(cfg.vest ? cfg.shirt : cfg.shirt);
   const arms = [-1, 1].map((sd) => {
     const p = new THREE.Group(); p.position.set(sd * 0.3, 0.6, 0); torso.add(p);
-    if (R15G) {
-      p.position.set(sd * R15G.armX, R15G.armY, 0);
-      const [up, lo, hd] = R15G['arm' + sd], sm = cfg.jacket ? M(cfg.jacket, { roughness: 0.45, metalness: 0.04 }) : M(cfg.dress || cfg.tunic || cfg.shirt);
-      mk(up, sm, { parent: p, ol: 0 }); mk(lo, cfg.jacket ? sm : M(cfg.skin), { parent: p, ol: 0 }); mk(hd, M(cfg.skin), { parent: p, ol: 0 });
-      const hand = new THREE.Group(); hand.position.set(sd * 0.063, -0.6, 0); p.add(hand);
-      return { pivot: p, hand };
+    if (RB) {
+      p.position.set(sd * RB.armX, RB.armY, 0);
+      const [up, lo, hd] = RB['arm' + sd], sm = cfg.jacket ? M(cfg.jacket, { roughness: 0.45, metalness: 0.04 }) : M(cfg.dress || cfg.tunic || cfg.shirt);
+      const EY = -0.343, elbow = new THREE.Group(); elbow.position.set(sd * 0.03, EY, 0); p.add(elbow);
+      mk(up, sm, { parent: p, ol: 0 });
+      const lm = mk(lo, cfg.jacket ? sm : M(cfg.skin), { parent: elbow, ol: 0 }), hm2 = mk(hd, M(cfg.skin), { parent: elbow, ol: 0 });
+      lm.position.set(-sd * 0.03, -EY, 0); hm2.position.set(-sd * 0.03, -EY, 0);
+      if (cfg.longArms) { p.scale.y = cfg.longArms; }
+      const hand = new THREE.Group(); hand.position.set(sd * 0.033, -0.6 - EY, 0); elbow.add(hand);
+      return { pivot: p, hand, elbow };
     }
     if (BLOCKY) {
       // braços grandes e quadrados, do tamanho do tronco
       p.position.set(sd * 0.385, 0.6, 0);
-      mk(G.rbox(0.25, 0.4, 0.26, 0.03), cfg.jacket ? M(cfg.jacket, { roughness: 0.28, metalness: 0.15 }) : sleeve, { p: [0, -0.15, 0], parent: p });
-      mk(G.rbox(0.23, 0.17, 0.24, 0.04), M(cfg.skin), { p: [0, -0.42, 0], parent: p });
-      const hand = new THREE.Group(); hand.position.y = -0.46; p.add(hand);
-      return { pivot: p, hand };
+      const smR6 = cfg.jacket ? M(cfg.jacket, { roughness: 0.28, metalness: 0.15 }) : sleeve;
+      mk(G.rbox(0.25, 0.33, 0.26, 0.03), smR6, { p: [0, -0.11, 0], parent: p });
+      const elbow = new THREE.Group(); elbow.position.y = -0.27; p.add(elbow);
+      mk(G.rbox(0.245, 0.17, 0.255, 0.03), smR6, { p: [0, -0.05, 0], parent: elbow });
+      mk(G.rbox(0.235, 0.17, 0.245, 0.04), M(cfg.skin), { p: [0, -0.17, 0], parent: elbow });
+      const hand = new THREE.Group(); hand.position.y = -0.19; elbow.add(hand);
+      return { pivot: p, hand, elbow };
     }
     mk(G.cyl(0.072, 0.066, 0.4, 10), sleeve, { p: [0, -0.2, 0], parent: p, ol: 0.02 });
     const hand = new THREE.Group(); hand.position.y = -0.43; p.add(hand);
@@ -830,9 +846,9 @@ function makeChar(name, cfg, seed) {
     return { pivot: p, hand };
   });
   // cabeça
-  const head = new THREE.Group(); head.position.set(0, R15G ? R15G.headY : BLOCKY ? R6.headY : 1.05, 0); torso.add(head);
-  if (BLOCKY) head.scale.setScalar(R15G ? R15G.headS : R6.head);
-  if (R15G) mk(R15G.head, M(cfg.skin), { parent: head, ol: 0 });
+  const head = new THREE.Group(); head.position.set(0, RB ? RB.headY : BLOCKY ? R6.headY : 1.05, 0); torso.add(head);
+  if (BLOCKY) head.scale.setScalar(RB ? RB.headS : R6.head);
+  if (RB) mk(RB.head, M(cfg.skin), { parent: head, ol: 0 });
   else if (BLOCKY) { mk(new RoundedBoxGeometry(0.86, 0.8, 0.77, 6, 0.2), M(cfg.skin), { parent: head }); mk(G.rbox(0.2, 0.1, 0.2, 0.02), M(cfg.skin), { p: [0, -0.43, 0], parent: head }); }
   else {
   mk(G.sph(HEAD_R, 28, 20), M(cfg.skin), { parent: head, ol: 0.028 });
@@ -867,7 +883,13 @@ function makeChar(name, cfg, seed) {
   if (cfg.beard) { const bg = G.ico(0.3, 1); bg.scale(1.05, 0.75, 0.55); mk(bg, M(cfg.beard, { flatShading: true }), { p: [0, -0.3, 0.2], parent: head, ol: 0.018 }); }
   if (cfg.unibrow) { face.browL.scale.x = 1.5; face.browR.scale.x = 1.5; face.browL.scale.y = face.browR.scale.y = 1.6; }
   // rubor nas bochechas (só nos planos com estilo 2)
-  face.blush = [-1, 1].map((sd) => { const b = new THREE.Mesh(G.sph(1, 12, 8), new THREE.MeshBasicMaterial({ color: '#ff6f7d', transparent: true, opacity: 0.45 })); b.scale.set(0.08, 0.045, 0.02); onHead(head, new THREE.Group(), [sd * 0.5, -0.16, 0.85], HEAD_R + 0.005).add(b); return b; });
+  if (cfg.monster) {   // criatura: olhos brancos enormes e sorriso branco largo
+    for (const k of ['L', 'R']) { face['eye' + k].material = new THREE.MeshBasicMaterial({ color: '#ffffff' }); face['eye' + k].parent.scale.set(1.25, 2.0, 1.2); face['eye' + k].rotation.z = (k === 'L' ? -1 : 1) * 0.5; face['hl' + k].material = face['eye' + k].material; face['brow' + k].visible = false; }
+    lineMat.color.set('#f4f4f4'); mp.scale.set(2.4, 1.8, 1); mp.position.multiplyScalar(1.12);
+    for (let i = 0; i < 9; i++) { const a = Math.PI * (0.12 + 0.76 * i / 8), tt = mk(new THREE.ConeGeometry(0.03, 0.08, 4), new THREE.MeshBasicMaterial({ color: '#ffffff' }), { ol: 0, cast: false });
+      tt.position.set(Math.cos(a) * 0.095, 0.06 - Math.sin(a) * 0.085, 0.02); tt.scale.set(0.45, 0.6, 1); tt.rotation.z = Math.PI; mp.add(tt); }
+  }
+  face.blush = [-1, 1].map((sd) => { const b = new THREE.Mesh(G.sph(1, 12, 8), new THREE.MeshBasicMaterial({ color: '#ff6f7d', transparent: true, opacity: 0.45 })); b.scale.set(0.08, 0.045, 0.02); onHead(head, new THREE.Group(), [sd * 0.5, -0.16, 0.85], HEAD_R + 0.005).add(b); if (cfg.monster) b.material.opacity = 0; return b; });
   if (cfg.mustache) for (const sd of [-1, 1]) {
     const m = new THREE.Mesh(G.sph(1, 10, 8), M('#f4f4f4')); m.scale.set(0.11, 0.05, 0.05); m.rotation.z = sd * 0.25;
     onHead(head, new THREE.Group(), [sd * 0.12, -0.18, 0.97], HEAD_R + 0.01).add(m);
@@ -1035,7 +1057,7 @@ async function loadR15() {
 const R15G = BLOCKY ? await loadR15() : null;
 const chars = {};
 Object.entries(CHARS).forEach(([n, cfg], i) => { chars[n] = makeChar(n, cfg, i * 1.37 + 0.4); scene.add(chars[n].root); });
-const WHO = { ZINHO: 'zinho', MAE: 'mae', BETO: 'beto', LIA: 'lia', JUCA: 'juca', PROF: 'prof', UGO: 'ugo', NEFER: 'nefer', KHA: 'kha', ROSA: 'rosa', TONHO: 'tonho', DUDU: 'dudu', KAKA: 'kaka' };
+const WHO = { ZINHO: 'zinho', MAE: 'mae', BETO: 'beto', LIA: 'lia', JUCA: 'juca', PROF: 'prof', UGO: 'ugo', NEFER: 'nefer', KHA: 'kha', ROSA: 'rosa', TONHO: 'tonho', DUDU: 'dudu', KAKA: 'kaka', SORRISO: 'sorriso' };
 
 const EXPR = {
   neutral: { eye: 1, lid: 1, brow: [0, 0], by: 0, mouth: 'smile', ms: 0.55 },
@@ -1092,6 +1114,11 @@ function pose(c, a, k) {
   c.torso.rotation.set(c.cfg.hunch || 0, 0, 0);
   L[0].rotation.set(0, 0, 0); L[1].rotation.set(0, 0, 0);
   A[0].pivot.rotation.set(0, 0, -0.13); A[1].pivot.rotation.set(0, 0, 0.13);
+  // cotovelos (R15 e R6 em duas partes): x < 0 dobra o antebraço para a frente
+  const el = (i, x, z = 0) => { if (A[i].elbow) A[i].elbow.rotation.set(x, 0, z); };
+  const br = Math.sin(t * 1.6 + c.seed) * 0.04;
+  el(0, -0.14 - br); el(1, -0.14 + br);
+  A[0].pivot.rotation.x = Math.sin(t * 1.1 + c.seed) * 0.04; A[1].pivot.rotation.x = -Math.sin(t * 1.1 + c.seed) * 0.04;
   c.head.rotation.set(Math.sin(t * 0.7 + c.seed * 2) * 0.025, Math.sin(t * 0.5 + c.seed) * 0.05, Math.sin(t * 0.9 + c.seed) * 0.03);
   c.hips.position.y += Math.sin(t * 2.2 + c.seed) * 0.01;
 
@@ -1108,50 +1135,53 @@ function pose(c, a, k) {
       A[1].pivot.rotation.x = -0.45 - 0.45 * g * (0.4 + amp);
       A[1].pivot.rotation.z = 0.35;
       A[0].pivot.rotation.x = -0.15 - 0.2 * (0.5 + 0.5 * Math.sin(t * 2.3));
+      el(1, -0.7 - 0.5 * g * (0.4 + amp)); el(0, -0.45 - 0.2 * Math.sin(t * 2.3)); c.torso.rotation.y += Math.sin(t * 1.7 + c.seed) * 0.06;
       break;
     }
     case 'wave':
-      A[1].pivot.rotation.z = 2.55 + Math.sin(t * 9 + c.seed) * 0.35; A[1].pivot.rotation.x = -0.15;
+      A[1].pivot.rotation.z = 2.35 + Math.sin(t * 4.5 + c.seed) * 0.08; A[1].pivot.rotation.x = -0.15;
+      el(1, -0.15, Math.sin(t * 9 + c.seed) * 0.55); c.torso.rotation.z = Math.sin(t * 4.5) * 0.03;
       break;
     case 'cheer':
       A[0].pivot.rotation.z = -2.6 - Math.sin(t * 8) * 0.2; A[1].pivot.rotation.z = 2.6 + Math.sin(t * 8) * 0.2;
       c.hips.position.y += Math.abs(Math.sin(t * 6 + c.seed)) * 0.16;
+      el(0, -0.35 - Math.sin(t * 8) * 0.25); el(1, -0.35 - Math.sin(t * 8 + 1) * 0.25);
       break;
     case 'shock':
       A[0].pivot.rotation.set(-0.7, 0, -1.25 + Math.sin(t * 30) * 0.04); A[1].pivot.rotation.set(-0.7, 0, 1.25 + Math.sin(t * 31) * 0.04);
       c.hips.position.y += lt < 0.45 ? Math.sin(Math.PI * lt / 0.45) * 0.22 : 0;
-      c.head.rotation.x -= 0.12;
+      c.head.rotation.x -= 0.12; el(0, -1.3); el(1, -1.3);
       break;
     case 'angry':
       A[0].pivot.rotation.set(-0.35 + Math.sin(t * 24) * 0.12, 0, -0.45); A[1].pivot.rotation.set(-0.35 + Math.sin(t * 25 + 1) * 0.12, 0, 0.45);
-      c.torso.rotation.x += 0.12;
+      c.torso.rotation.x += 0.12; el(0, -1.4 + Math.sin(t * 24) * 0.15); el(1, -1.4 + Math.sin(t * 25) * 0.15);
       c.hips.position.y += Math.max(0, Math.sin(t * 7)) * 0.06;
       break;
     case 'hold':
-      A[0].pivot.rotation.set(-1.15, 0, 0.32); A[1].pivot.rotation.set(-1.15, 0, -0.32);
+      A[0].pivot.rotation.set(-0.8, 0, 0.32); A[1].pivot.rotation.set(-0.8, 0, -0.32); el(0, -0.7); el(1, -0.7);
       break;
     case 'swordup': // espada erguida, firme
       A[1].pivot.rotation.set(-2.5 + Math.sin(t * 3) * 0.05, 0, 0.25); A[0].pivot.rotation.set(-0.5, 0, -0.5);
-      L[0].rotation.x = 0.25; L[1].rotation.x = -0.25; c.torso.rotation.x -= 0.06;
+      L[0].rotation.x = 0.25; L[1].rotation.x = -0.25; c.torso.rotation.x -= 0.06; el(1, -0.25); el(0, -0.9);
       break;
     case 'slash': { // golpes de espada em sequência
       const ph = (t * 1.9 + c.seed) % 1, sw = ph < 0.25 ? smooth(ph / 0.25) : 1 - smooth((ph - 0.25) / 0.75);
       A[1].pivot.rotation.set(-2.7 + 2.3 * sw, 0, 0.5 - 1.0 * sw); A[0].pivot.rotation.set(-0.4, 0, -0.6 + 0.3 * sw);
       c.torso.rotation.y = 0.5 - 1.0 * sw; c.torso.rotation.x += 0.1 * sw; L[0].rotation.x = 0.35; L[1].rotation.x = -0.35;
-      c.hips.position.y -= 0.03;
+      c.hips.position.y -= 0.03; el(1, -1.1 * (1 - sw)); el(0, -0.8);
       break;
     }
     case 'guard': // espada à frente, em guarda
       A[1].pivot.rotation.set(-1.25 + Math.sin(t * 4) * 0.04, 0, -0.25); A[0].pivot.rotation.set(-1.0, 0, 0.45);
-      L[0].rotation.x = 0.3; L[1].rotation.x = -0.3; c.torso.rotation.x += 0.08;
+      L[0].rotation.x = 0.3; L[1].rotation.x = -0.3; c.torso.rotation.x += 0.08; el(1, -0.5); el(0, -1.0);
       break;
     case 'point':
       A[1].pivot.rotation.set(-1.5 + Math.sin(t * 10) * 0.08, 0, 0.1);
-      A[0].pivot.rotation.set(0, 0, -0.5); c.torso.rotation.x += 0.06;
+      A[0].pivot.rotation.set(-0.2, 0, -0.5); c.torso.rotation.x += 0.06; el(1, -0.05); el(0, -1.2); c.torso.rotation.y += 0.15;
       break;
     case 'shrug':
       A[0].pivot.rotation.set(-0.5, 0, -0.95); A[1].pivot.rotation.set(-0.5, 0, 0.95);
-      c.head.rotation.z += 0.15 * Math.sin(t * 2);
+      c.head.rotation.z += 0.15 * Math.sin(t * 2); el(0, -1.2); el(1, -1.2);
       break;
     case 'kick': {
       const kk = pulse(u, 0.12, 0.38);
@@ -1180,25 +1210,32 @@ function pose(c, a, k) {
       break;
     case 'sit': case 'headdown':
       c.hips.position.y = 0.48; L[0].rotation.x = L[1].rotation.x = -1.45;
-      A[0].pivot.rotation.set(-1.0, 0, 0.15); A[1].pivot.rotation.set(-1.0, 0, -0.15);
+      A[0].pivot.rotation.set(-0.6, 0, 0.15); A[1].pivot.rotation.set(-0.6, 0, -0.15); el(0, -0.7); el(1, -0.7);
       if (a === 'headdown') { c.torso.rotation.x = 0.35; c.head.rotation.x = 0.45; A[0].pivot.rotation.x = A[1].pivot.rotation.x = -1.45; }
       break;
     case 'lie':
       c.root.rotation.x = -Math.PI / 2;
       break;
     case 'threat': // braço erguido com o chinelo, a tremer
-      A[1].pivot.rotation.set(-2.5 + Math.sin(t * 14) * 0.15, 0, 0.55); A[0].pivot.rotation.set(-0.3, 0, -0.6); c.torso.rotation.x -= 0.05;
+      A[1].pivot.rotation.set(-2.5 + Math.sin(t * 7) * 0.1, 0, 0.55); A[0].pivot.rotation.set(-0.3, 0, -0.6); c.torso.rotation.x -= 0.05;
+      el(1, -0.6 - 0.6 * Math.max(0, Math.sin(t * 14))); el(0, -1.3); c.hips.position.y += Math.abs(Math.sin(t * 7)) * 0.03;
       break;
     case 'sign': // mãos juntas à frente do peito (sinal de mão para abrir o domínio)
-      A[0].pivot.rotation.set(-1.45, 0, 0.62); A[1].pivot.rotation.set(-1.45, 0, -0.62); c.torso.rotation.x += 0.05;
+      A[0].pivot.rotation.set(-1.0, 0, 0.5); A[1].pivot.rotation.set(-1.0, 0, -0.5); c.torso.rotation.x += 0.05; el(0, -1.0); el(1, -1.0);
       break;
     case 'hug':
-      A[0].pivot.rotation.set(-1.35, 0, 0.75); A[1].pivot.rotation.set(-1.35, 0, -0.75);
+      A[0].pivot.rotation.set(-1.35, 0, 0.75); A[1].pivot.rotation.set(-1.35, 0, -0.75); el(0, -0.7); el(1, -0.7);
       break;
     case 'reach':
-      A[1].pivot.rotation.set(-1.45, 0, 0.05); A[0].pivot.rotation.set(-0.2, 0, -0.15);
+      A[1].pivot.rotation.set(-1.45, 0, 0.05); A[0].pivot.rotation.set(-0.2, 0, -0.15); el(1, -0.08); el(0, -0.3);
       c.torso.rotation.x += 0.08;
       break;
+    case 'creep': { // criatura: braços compridos para a frente, cabeça torta, balanço lento
+      const w = Math.sin(t * 1.3 + c.seed);
+      A[0].pivot.rotation.set(-1.25 + w * 0.12, 0, 0.12); A[1].pivot.rotation.set(-1.15 - w * 0.12, 0, -0.12); el(0, -0.35 + w * 0.2); el(1, -0.25 - w * 0.2);
+      c.head.rotation.z += 0.45 + w * 0.08; c.head.rotation.x += 0.15; c.torso.rotation.x += 0.12; c.torso.rotation.z = w * 0.05;
+      break;
+    }
     case 'sitbed':
       c.hips.position.y = 0.12; L[0].rotation.x = L[1].rotation.x = -1.5;
       A[0].pivot.rotation.set(-0.5, 0, -0.1); A[1].pivot.rotation.set(-0.5, 0, 0.1);
@@ -1209,7 +1246,8 @@ function pose(c, a, k) {
     const s = Math.sin(walkPhase), amp2 = run ? 1.0 : 0.55;
     if (a !== 'trip' || u < 0.45) {
       L[0].rotation.x = s * amp2; L[1].rotation.x = -s * amp2;
-      if (a === 'walk' || a === 'run' || a === 'trip') { A[0].pivot.rotation.x = -s * amp2 * 0.85; A[1].pivot.rotation.x = s * amp2 * 0.85; }
+      if (a === 'walk' || a === 'run' || a === 'trip') { A[0].pivot.rotation.x = -s * amp2 * 0.85; A[1].pivot.rotation.x = s * amp2 * 0.85;
+        el(0, (run ? -1.35 : -0.35) - Math.max(0, -s) * 0.3); el(1, (run ? -1.35 : -0.35) - Math.max(0, s) * 0.3); c.torso.rotation.y += s * (run ? 0.16 : 0.09); c.head.rotation.y -= s * (run ? 0.12 : 0.07); }
       c.hips.position.y += Math.abs(Math.cos(walkPhase)) * (run ? 0.1 : 0.045);
       if (run) { c.torso.rotation.x += 0.22; A[0].pivot.rotation.z = -0.3; A[1].pivot.rotation.z = 0.3; }
     }
@@ -1634,7 +1672,12 @@ function render(T) {
   if (shot.set === 'bedroom') { BR.glass.color.set(tod.lamps ? '#16264f' : '#9fd8f5'); BR.moon.visible = !!tod.lamps; }
   if (shot.set === 'praca') {
     PR.water.position.y = 0.66 + Math.sin(T * 3) * 0.01; PR.jet.scale.y = 1 + Math.sin(T * 9) * 0.08; PR.falls.forEach((f, i) => { f.scale.y = 1 + Math.sin(T * 7 + i) * 0.06; });
-    PR.bulbs.forEach((b) => { b.material.emissiveIntensity = tod.lamps ? 3 : 0.3; }); PR.doorGlow.material.emissiveIntensity = 1.1 + Math.sin(T * 2.5) * 0.4;
+    const off = fx.blackout !== undefined && lt > fx.blackout * shot.dur, flick = shot.tod === 'horror' && hash(Math.floor(T * 11)) < 0.18;
+    PR.bulbs.forEach((b, i) => { b.material.emissiveIntensity = off ? 0 : tod.lamps ? (flick && i % 2 ? 0.4 : 3) : 0.3; });
+    const dr = fx.door || {}, op = Array.isArray(dr.open) ? lerp(dr.open[0], dr.open[1], smooth(u * 1.3)) : (dr.open ?? 0);
+    PR.doorHinge.rotation.y = -op * 1.7; PR.doorGlow.material.emissiveIntensity = (1.1 + Math.sin(T * 2.5) * 0.4) * (1 - op * 0.8) * (dr.knock ? 1 + 2 * Math.max(0, Math.sin(lt * 9)) : 1);
+    PR.chains.forEach((r, i) => { r.visible = i < (dr.chains ?? 3); });
+    PR.doorLight.intensity = (shot.tod === 'horror' || shot.tod === 'night') ? 26 * (1 + (dr.knock ? Math.max(0, Math.sin(lt * 9)) : 0)) : 0;
   }
   if (shot.set === 'domain') {
     const d = shot.domain || {}, ap = clamp(lt / 0.6);                 // abre o domínio no começo do plano

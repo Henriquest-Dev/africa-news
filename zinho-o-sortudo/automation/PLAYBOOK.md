@@ -46,6 +46,12 @@ vídeos e final sem loop. Regras novas (substituem as de 12/11 e as regras de du
   histórias de mistério. Exemplo de câmaras em `episodes/teste-praca.js`.
 - **NPCs do bairro** (com voz no `tts.py`): `ROSA` (Dona Rosa, padeira), `TONHO` (Seu Tonho, mercadinho), `DUDU` e `KAKA`
   (amigos do Zinho), além da turma de sempre (ZINHO, MAE, BETO, LIA, JUCA, PROF).
+- **Elenco misto** desde 18/11: Zinho, Beto e Dudu são bonecos Noob R6 (`body: 'r6'`, braços em duas partes); os outros
+  usam o corpo R15. Todos têm **cotovelos** animados (falar, acenar, correr com braços dobrados, chinelo a chicotear).
+- **Terror**: `tod: 'horror'` (noite com nevoeiro denso, postes a piscar), `fx.blackout` também apaga os postes da praça,
+  `fx.door = { chains: 0–3, open: 0..1 ou [de, até], knock: true }` controla a porta proibida, e a criatura
+  `SORRISO` (`sorriso`, pose `creep`, olhos brancos inclinados e sorriso com dentes) vive atrás dela.
+  Modelo: `episodes/short-12-porta-proibida.js`.
 - **Modelos externos** em `assets/models/` (fora do git, dados pelo dono do canal): `sword.obj` + `sword_diffuse.png`
   (espada de cristal, substitui a espada de caixas) e Forest Pack (`trees.fbx`, `rocks.fbx`, `cliffs.fbx`) pintado por
   altura, espalhado na rua (atrás das casas e no horizonte) e no campo (`set: 'wild'`). Se a pasta faltar, o motor usa

@@ -49,6 +49,7 @@ GEMINI_VOICES = {  # voz pré-definida do Gemini, direção de interpretação
     'TONHO': ('Orus',      'Seu Tonho, dono do mercadinho, voz grossa, desconfiado e engraçado'),
     'DUDU':  ('Achird',    'Dudu, amigo do Zinho, menino de 12 anos, empolgado e meio atrapalhado'),
     'KAKA':  ('Laomedeia', 'Kaká, amiga do Zinho, menina de 12 anos, esperta e debochada'),
+    'SORRISO': ('Algenib', 'Criatura de terror, sussurro rouco e lento, arrepiante, quase um sorriso na voz'),
 }
 EDGE_VOICES = {  # voz, velocidade, tom
     'NAR':   ('pt-BR-AntonioNeural', '+12%', '-4Hz'),
@@ -65,6 +66,7 @@ EDGE_VOICES = {  # voz, velocidade, tom
     'TONHO': ('pt-BR-AntonioNeural', '+0%', '-20Hz'),
     'DUDU':  ('pt-BR-AntonioNeural', '+18%', '+28Hz'),
     'KAKA':  ('pt-BR-ThalitaMultilingualNeural', '+14%', '+10Hz'),
+    'SORRISO': ('pt-BR-AntonioNeural', '-22%', '-48Hz'),
 }
 
 

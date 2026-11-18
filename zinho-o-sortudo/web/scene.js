@@ -8,10 +8,14 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 // modo de alta qualidade (?hq=1): mesmo low poly, mas com materiais PBR, luz ambiente, AO, bloom e sombras mais finas
 const HQ = new URLSearchParams(location.search).get('hq') === '1';
 // visual de bonecos de blocos (?blocky=1): corpo, braços e pernas em caixas, cabeça em bloco arredondado, sem contorno
 const BLOCKY = new URLSearchParams(location.search).get('blocky') === '1';
+// proporções de boneco de blocos "R6": pernas do tamanho do tronco, cabeça pequena (medidas tiradas do rig Noob)
+const R6 = { legH: 0.56, hipY: 0.64, head: 0.56, headY: 0.87 };
 
 const qs = new URLSearchParams(location.search);
 const RW = +(qs.get('w') || 1280), RH = +(qs.get('h') || 720);
@@ -677,12 +681,13 @@ function onHead(head, obj, dir, r = HEAD_R) {
 function makeChar(name, cfg, seed) {
   const root = new THREE.Group(); root.name = name;
   const body = new THREE.Group(); root.add(body); body.scale.setScalar(cfg.scale || 1);
-  const hips = new THREE.Group(); hips.position.y = 0.5; body.add(hips);
+  const hipY = BLOCKY ? R6.hipY : 0.5;
+  const hips = new THREE.Group(); hips.position.y = hipY; body.add(hips);
   const legs = [-1, 1].map((sd) => {
     const p = new THREE.Group(); p.position.set(sd * 0.13, 0.02, 0); hips.add(p);
     if (BLOCKY) {
-      mk(G.rbox(0.235, 0.42, 0.24, 0.025), M(cfg.pants), { p: [0, -0.19, 0], parent: p });
-      mk(G.rbox(0.25, 0.11, 0.3, 0.04), M(cfg.shoes), { p: [0, -0.445, 0.03], parent: p });
+      mk(G.rbox(0.245, R6.legH, 0.25, 0.025), M(cfg.pants), { p: [0, 0.02 - R6.legH / 2, 0], parent: p });
+      mk(G.rbox(0.255, 0.1, 0.29, 0.035), M(cfg.shoes), { p: [0, -R6.hipY + 0.07, 0.02], parent: p });
       return p;
     }
     mk(G.cyl(0.095, 0.085, 0.42, 10), M(cfg.pants), { p: [0, -0.21, 0], parent: p, ol: 0.02 });
@@ -736,7 +741,8 @@ function makeChar(name, cfg, seed) {
     return { pivot: p, hand };
   });
   // cabeça
-  const head = new THREE.Group(); head.position.set(0, 1.05, 0); torso.add(head);
+  const head = new THREE.Group(); head.position.set(0, BLOCKY ? R6.headY : 1.05, 0); torso.add(head);
+  if (BLOCKY) head.scale.setScalar(R6.head);
   if (BLOCKY) { mk(new RoundedBoxGeometry(0.86, 0.8, 0.77, 6, 0.2), M(cfg.skin), { parent: head }); mk(G.rbox(0.2, 0.1, 0.2, 0.02), M(cfg.skin), { p: [0, -0.43, 0], parent: head }); }
   else {
   mk(G.sph(HEAD_R, 28, 20), M(cfg.skin), { parent: head, ol: 0.028 });
@@ -915,7 +921,7 @@ function makeChar(name, cfg, seed) {
   for (const k of Object.keys(props)) props[k].visible = k === 'cane';
   // sem receber sombra: rostos limpos, sem manchas de shadow-map
   root.traverse((o) => { if (o.isMesh) { o.castShadow = o.material !== OUTLINE; o.receiveShadow = false; } });
-  return { name, cfg, root, body, hips, torso, legs, arms, head, face, props, seed };
+  return { name, cfg, root, body, hips, torso, legs, arms, head, face, props, seed, hipY };
 }
 const chars = {};
 Object.entries(CHARS).forEach(([n, cfg], i) => { chars[n] = makeChar(n, cfg, i * 1.37 + 0.4); scene.add(chars[n].root); });
@@ -972,7 +978,7 @@ function pose(c, a, k) {
   const L = c.legs, A = c.arms;
   c.root.rotation.x = 0; c.root.rotation.z = 0;
   c.body.position.y = 0;
-  c.hips.position.y = 0.5; c.hips.rotation.set(0, 0, 0);
+  c.hips.position.y = c.hipY; c.hips.rotation.set(0, 0, 0);
   c.torso.rotation.set(c.cfg.hunch || 0, 0, 0);
   L[0].rotation.set(0, 0, 0); L[1].rotation.set(0, 0, 0);
   A[0].pivot.rotation.set(0, 0, -0.13); A[1].pivot.rotation.set(0, 0, 0.13);
@@ -2161,4 +2167,43 @@ function render(T) {
 
 window.__setup = (tl) => { TL = tl; drawBoard(null); window.__ready = true; return TL.shots.length; };
 window.__render = (t) => { render(t); return true; };
-window.__loaded = true;
+// ───────── modelos externos (assets/models, fora do git): espada e Forest Pack ─────────
+async function loadModels() {
+  const ok = (u) => fetch(u, { method: 'HEAD' }).then((r) => r.ok).catch(() => false);
+  // espada de cristal: substitui a espada de caixas em todos os personagens
+  if (BLOCKY && await ok('/assets/models/sword.obj')) {
+    const obj = await new OBJLoader().loadAsync('/assets/models/sword.obj');
+    const tex = await new THREE.TextureLoader().loadAsync('/assets/models/sword_diffuse.png'); tex.colorSpace = THREE.SRGBColorSpace;
+    const mat = new THREE.MeshStandardMaterial({ map: tex, emissiveMap: tex, emissive: '#7ff6ff', emissiveIntensity: 0.55, roughness: 0.25, metalness: 0.35 });
+    let geo = null; obj.traverse((m) => { if (m.isMesh && !geo) geo = m.geometry; });
+    geo.computeBoundingBox(); const bb = geo.boundingBox, h = bb.max.y - bb.min.y, k = 1.35 / h;
+    geo.translate(-(bb.min.x + bb.max.x) / 2, -(bb.min.y + h * 0.1), -(bb.min.z + bb.max.z) / 2); geo.scale(k, k, k); geo.computeVertexNormals();
+    for (const c of Object.values(chars)) {
+      const sw = c.props.sword; sw.children.filter((o) => o.isMesh).forEach((o) => sw.remove(o));
+      const m = new THREE.Mesh(geo, mat); m.castShadow = true; m.rotation.y = Math.PI / 2; sw.add(m);
+    }
+  }
+  // Forest Pack: árvores, rochas e penhascos low-poly, pintados por altura (o pacote veio sem a textura)
+  if (!(await ok('/assets/models/trees.fbx'))) return;
+  const parts = async (f) => { const o = await new FBXLoader().loadAsync('/assets/models/' + f); o.updateMatrixWorld(true); const out = [];
+    o.traverse((m) => { if (!m.isMesh) return; const g = m.geometry.clone(); g.applyMatrix4(m.matrixWorld); g.computeBoundingBox(); const b = g.boundingBox;
+      g.translate(-(b.min.x + b.max.x) / 2, -b.min.y, -(b.min.z + b.max.z) / 2); g.scale(0.025, 0.025, 0.025); g.computeBoundingBox(); out.push(g); });
+    out.sort((a, b) => a.boundingBox.min.x - b.boundingBox.min.x); return out; };
+  const paint = (g, fn) => { const p = g.attributes.position, h = g.boundingBox.max.y, col = new Float32Array(p.count * 3), c = new THREE.Color();
+    for (let i = 0; i < p.count; i++) { fn(p.getY(i) / h, c, i); col.set([c.r, c.g, c.b], i * 3); } g.setAttribute('color', new THREE.BufferAttribute(col, 3)); return g; };
+  const vm = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.85 });
+  const [trees, rocks, cliffs] = await Promise.all(['trees.fbx', 'rocks.fbx', 'cliffs.fbx'].map(parts));
+  const leaf = ['#4caf50', '#66bb3a', '#3f9e4d', '#2e7d4f'];
+  trees.forEach((g, i) => paint(g, (y, c) => c.set(y < 0.3 ? '#7a4b2a' : leaf[i % 4]).offsetHSL(0, 0, (y - 0.6) * 0.12)));
+  [...rocks, ...cliffs].forEach((g) => paint(g, (y, c) => c.set('#8e98a3').offsetHSL(0, 0, (y - 0.5) * 0.16)));
+  const put = (set, g, x, z, s = 1, r = 0) => { const m = new THREE.Mesh(g, vm); m.position.set(x, groundY(set === street ? 'street' : '', x, z), z); m.scale.setScalar(s); m.rotation.y = r; m.castShadow = m.receiveShadow = true; set.add(m); return m; };
+  // rua: arvoredo atrás das casas e penhascos no horizonte
+  for (let i = 0; i < 26; i++) { const x = -60 + i * 4.8 + (hash(i * 3.3) - 0.5) * 2, side = i % 2 ? 1 : -1, z = side * (17 + hash(i * 1.7) * 9);
+    put(street, trees[i % trees.length], x, z, 0.9 + hash(i * 5.1) * 0.6, hash(i) * 6); }
+  for (let i = 0; i < 8; i++) put(street, cliffs[i % cliffs.length], -70 + i * 20, (i % 2 ? 1 : -1) * (55 + hash(i) * 10), 1.6 + hash(i * 2) * 0.8, hash(i * 7) * 6);
+  // campo: floresta, pedras e penhascos à volta
+  for (let i = 0; i < 34; i++) { const a = i / 34 * Math.PI * 2 + hash(i) * 0.2, r = 13 + hash(i * 2.9) * 22; put(wild, trees[i % trees.length], Math.cos(a) * r, Math.sin(a) * r - 10, 0.9 + hash(i * 4.1) * 0.7, hash(i * 9) * 6); }
+  for (let i = 0; i < 12; i++) { const a = hash(i * 6.6) * Math.PI * 2, r = 6 + hash(i * 3.1) * 14; put(wild, rocks[i % rocks.length], Math.cos(a) * r, Math.sin(a) * r - 6, 1.5 + hash(i) * 2, hash(i * 2) * 6); }
+  for (let i = 0; i < 9; i++) { const a = -Math.PI * 0.95 + i * 0.24, r = 48 + hash(i) * 12; put(wild, cliffs[i % cliffs.length], Math.cos(a) * r, Math.sin(a) * r, 2.2 + hash(i * 3) * 1.2, hash(i * 5) * 6); }
+}
+loadModels().catch((e) => console.error('modelos:', e.message)).finally(() => { window.__loaded = true; });

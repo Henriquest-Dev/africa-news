@@ -34,6 +34,14 @@ vídeos e final sem loop. Regras novas (substituem as de 12/11 e as regras de du
   `mae`, Beto, Lia, Seu Juca, `prof`, Ugo), gigante de pedra (`fx.giant`), espada, chinelo (`prop: 'chinelo'`,
   pose `threat`). Nada de modelos, logótipos ou personagens desenhados de terceiros (nomes de técnicas de anime
   podem ser citados, com aviso de vídeo de fã na descrição).
+- **Proporções Roblox (R6)** desde 18/11: no modo `blocky` os personagens têm pernas do tamanho do tronco e cabeça pequena
+  (`R6` em `web/scene.js`, medidas tiradas do rig Noob que o dono do canal mandou). Os grandes planos com `at:` mostram
+  agora cabeça e tronco; para um rosto em grande, usar `d` 2.0–2.4.
+- **Modelos externos** em `assets/models/` (fora do git, dados pelo dono do canal): `sword.obj` + `sword_diffuse.png`
+  (espada de cristal, substitui a espada de caixas) e Forest Pack (`trees.fbx`, `rocks.fbx`, `cliffs.fbx`) pintado por
+  altura, espalhado na rua (atrás das casas e no horizonte) e no campo (`set: 'wild'`). Se a pasta faltar, o motor usa
+  os modelos próprios. NÃO usar: o busto de pessoa real, o mapa .rbxl de outro jogo nem as peças do pacote pago dentro
+  do Lobby.
 - **Música**: `music: 'file:assets/music/fundo.mp3'`, `musicGain: 0.2`, `duck: 0.6` (ficheiro fora do repositório;
   se faltar, usar a música do motor e avisar). Voz: `voiceSpeed` 1.1–1.2.
 - **Título** curto com a promessa e 1 emoji; tags descritivas do formato (ver `short-11-portas.js`), `categoryId: '1'`.

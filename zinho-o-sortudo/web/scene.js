@@ -1071,7 +1071,7 @@ function pose(c, a, k) {
       c.root.rotation.x = -Math.PI / 2;
       break;
     case 'threat': // braço erguido com o chinelo, a tremer
-      A[1].pivot.rotation.set(-2.75 + Math.sin(t * 14) * 0.12, 0, -0.25); A[0].pivot.rotation.set(-0.3, 0, -0.6); c.torso.rotation.x -= 0.05;
+      A[1].pivot.rotation.set(-2.5 + Math.sin(t * 14) * 0.15, 0, 0.55); A[0].pivot.rotation.set(-0.3, 0, -0.6); c.torso.rotation.x -= 0.05;
       break;
     case 'sign': // mãos juntas à frente do peito (sinal de mão para abrir o domínio)
       A[0].pivot.rotation.set(-1.45, 0, 0.62); A[1].pivot.rotation.set(-1.45, 0, -0.62); c.torso.rotation.x += 0.05;

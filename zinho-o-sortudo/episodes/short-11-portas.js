@@ -27,8 +27,8 @@ export default [
     cam: { at: 'mae', d: 2.9, yaw: -15, h: 0.2, push: 0.35, fov: 52 },
     actors: { mae: { p: [0, -1.2], r: 0, a: 'threat', e: 'angry', prop: 'chinelo' } }, sfx: [['bonk', 0.5]] }),
   K({ who: 'NAR', text: 'Você ganhou a mãe do Zinho. De chinelo na mão.', min: 2,
-    cam: { pos: [2.6, 1.4, 2.6], look: [-0.4, 1.3, -1.2], pos2: [1.8, 1.3, 1.8], look2: [-0.4, 1.3, -1.2], fov: 58 },
-    actors: { mae: { p: [-1.0, -1.4], r: 30, a: 'threat', e: 'angry', prop: 'chinelo' }, zinho: { p: [1.0, -0.6], r: 140, a: 'run', e: 'shock' } } }),
+    cam: { pos: [0.4, 1.5, 3.0], look: [-0.2, 1.3, -1.4], pos2: [0.2, 1.4, 2.2], look2: [-0.2, 1.3, -1.4], fov: 60 },
+    actors: { mae: { p: [-0.2, -1.6], r: 10, a: 'threat', e: 'angry', prop: 'chinelo' } } }),
 
   // ── PORTA 2: o gigante de pedra ──
   P({ who: 'NAR', text: 'Porta dois.', min: 1.3, domain: { ...DOORS, opened: [1], open: 2, at: 0.25 }, cam: doorCam(2), actors: {}, sfx: [['whoosh', 0.3]] }),
@@ -36,8 +36,8 @@ export default [
     cam: { pos: [5.5, 1.2, 2.2], look: [8, 13, -22], pos2: [5.5, 1.2, 1.2], look2: [8, 14.5, -22], fov: 70 },
     actors: {}, fx: { giant: { p: [8, -24], r: -8, up: -0.6 } }, sfx: [['boom', 0.15]] }),
   S({ who: 'NAR', text: 'Mas ele não quer te pegar. Ele só quer um abraço.', min: 2.2,
-    cam: { pos: [6.0, 1.3, -3.4], look: [10, 2.2, -11], pos2: [6.6, 1.3, -4.4], look2: [10, 2.2, -11], fov: 60 },
-    actors: { zinho: { p: [9.4, -9.0], r: 165, a: 'hug', e: 'happy' } }, fx: { giant: { p: [10.5, -14], r: -8, up: -1.1, bow: 0.1 } }, sfx: [['sparkle', 0.6]] }),
+    cam: { pos: [4.2, 1.4, -2.2], look: [9.4, 6.0, -13.5], pos2: [4.8, 1.4, -3.4], look2: [9.4, 6.5, -13.5], fov: 62 },
+    actors: { zinho: { p: [8.6, -10.4], r: 160, a: 'hug', e: 'happy' } }, fx: { giant: { p: [10.2, -14.5], s: 0.34, r: -20, up: -1.1, bow: 0.3, raise: 0.25 } }, sfx: [['sparkle', 0.6]] }),
 
   // ── PORTA 3: pão infinito… com letra miúda ──
   P({ who: 'NAR', text: 'Porta três.', min: 1.3, domain: { ...DOORS, opened: [1, 2], open: 3, at: 0.25 }, cam: doorCam(3), actors: {}, sfx: [['whoosh', 0.3]] }),

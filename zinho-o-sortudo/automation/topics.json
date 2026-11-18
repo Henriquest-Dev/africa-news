@@ -140,9 +140,10 @@
     {
       "titulo": "Escolhe uma porta: 1, 2 ou 3 (sem trocar!)",
       "gancho": "formato de escolha, 32 s em loop; porta 1 mãe com chinelo, 2 gigante quer abraço, 3 pão infinito com letra miúda",
-      "status": "roteiro pronto",
+      "status": "feito",
       "episodio": "episodes/short-11-portas.js",
-      "publish_at": "2026-11-18T15:00:00Z"
+      "publish_at": "2026-11-18T15:00:00Z",
+      "video_id": "kaRS3iwA61w"
     },
     {
       "titulo": "Escolhe uma caixa: 1, 2 ou 3 (presente do Seu Juca)",

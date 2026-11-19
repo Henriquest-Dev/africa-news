@@ -154,9 +154,12 @@
       "video_id": "mUkbsY86W2Y"
     },
     {
-      "titulo": "Escolhe uma caixa: 1, 2 ou 3 (presente do Seu Juca)",
+      "titulo": "Escolhe um baú: 1, 2 ou 3 (os baús do Seu Juca)",
       "gancho": "formato de escolha; uma caixa tem algo bom, uma engraçada, uma com virada; loop",
-      "status": "pendente"
+      "status": "feito",
+      "episodio": "episodes/short-13-baus.js",
+      "publish_at": "2026-11-19T15:00:00Z",
+      "video_id": "1lujL8wVUjI"
     },
     {
       "titulo": "Escolhe um botão: vermelho, azul ou verde",

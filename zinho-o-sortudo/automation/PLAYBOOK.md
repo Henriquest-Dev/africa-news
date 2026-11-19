@@ -5,10 +5,17 @@ Este ficheiro é o manual que cada sessão automática (tarefa agendada) segue. 
 
 ## Calendário de publicação (ritmo atual, para poupar créditos)
 
-**4 Shorts por semana: segunda, quarta, quinta e sábado, às 12h de Brasília (15:00 UTC).** Vídeos longos em pausa até o
-dono do canal pedir para voltar. Cada Short: 30–55 s, regras na secção "Formato atual dos Shorts".
+**1 Short por dia (7 por semana), às 12h de Brasília (15:00 UTC)** — pedido do dono do canal em 19/11/2026.
+**Modo poupança**: se `automation/modo.txt` disser `poupar` (o dono do canal avisa no chat que o uso do Claude não chega
+até à renovação de quinta), só se publica segunda, quarta, quinta e sábado; nos outros dias a sessão não faz nada.
+Volta a `normal` na quinta da renovação. Vídeos longos em pausa. Cada Short: 30–55 s (secção "Formato atual").
 
-A sessão de produção corre segunda, quarta, quinta e sábado às 03:23 de Maputo (01:23 UTC) e prepara o Short desse dia
+**Pesquisa semanal (segundas)**: antes do vídeo, pesquisar rapidamente (2–3 buscas) canais famosos do mesmo nicho
+(animação estilo Roblox, histórias "nesse mundo", vídeos de escolha 1-2-3, terror curto) e o que está a viralizar;
+anotar 3–5 aprendizados concretos em "Aprendizados" no fim deste ficheiro e aplicá-los nos vídeos da semana.
+Nunca copiar roteiros, personagens ou títulos de outros canais — só formatos e técnicas.
+
+A sessão de produção corre todos os dias às 03:23 de Maputo (01:23 UTC) e prepara o Short desse dia
 (upload privado com `publishAt` às 15:00 UTC).
 
 ## Formato atual dos Shorts (desde 18/11/2026, aprovado pelo dono do canal)
@@ -140,3 +147,9 @@ perder-se-ia): faz commit só do roteiro e termina com um relatório a dizer o q
 - Thumbnails personalizadas exigem canal verificado por telefone.
 - Marcar sempre como conteúdo sintético (`containsSyntheticMedia`, já feito pelo script).
 - O YouTube desmonetiza conteúdo repetitivo/produzido em massa: cada vídeo precisa de história própria.
+
+## Aprendizados (atualizar todas as semanas)
+
+- 18–19/11: formato de escolha 1-2-3 com loop foi o melhor dos vídeos novos (portas: 1.981 views e 9 comentários em
+  menos de 24 h). Histórias de 1:30 e continuações (parte 2) caem. Terror curto: views médias, 0 comentários — testar
+  pedido de comentário mais forte no terror.

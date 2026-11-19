@@ -38,7 +38,8 @@ Andar/correr: `p: [x, z], to: [x, z], a: 'walk'|'run'`.
 ## Cenários (`set:`)
 - `praca` — **cidade do Zinho**: fonte de três andares em (0,0), lojas a norte (PADARIA DA ROSA, ESCOLA, SORVETERIA,
   MERCADINHO DO TONHO, z≈-17) e a sul (LAN HOUSE, z≈17), postes de lanterna nos 4 caminhos, bancos, baú do tesouro
-  em (6.8, -9.4), portal de pedra em (0, 31), portal "BAIRRO DO ZINHO" em x=-30, riacho com ponte curva e cercas em
+  em (6.8, -9.4), **três baús numerados** para vídeos de escolha em (-1.9|0|1.9, 5.2) (`fx.chests = { open: n, at, opened: [n…] }`,
+  modelo `episodes/short-13-baus.js`), portal de pedra em (0, 31), portal "BAIRRO DO ZINHO" em x=-30, riacho com ponte curva e cercas em
   x=33, **porta proibida** em (-22, -12) (`fx.door = { chains: 0–3, open: 0..1|[de,até], knock: true }`).
   Exemplos de câmara: `episodes/teste-praca.js`, `episodes/short-12-porta-proibida.js`.
 - `street` — rua das casas (casa amarela do Zinho em x=0, z=-9), árvores e penhascos atrás.

@@ -1679,6 +1679,9 @@ function render(T) {
     const dr = fx.door || {}, op = Array.isArray(dr.open) ? lerp(dr.open[0], dr.open[1], smooth(u * 1.3)) : (dr.open ?? 0);
     PR.doorHinge.rotation.y = -op * 1.7; PR.doorGlow.material.emissiveIntensity = (1.1 + Math.sin(T * 2.5) * 0.4) * (1 - op * 0.8) * (dr.knock ? 1 + 2 * Math.max(0, Math.sin(lt * 9)) : 1);
     PR.chains.forEach((r, i) => { r.visible = i < (dr.chains ?? 3); });
+    if (PR.chests) { const ch = fx.chests; PR.chests.visible = !!ch;
+      if (ch) PR.chestFx.forEach((f, i) => { const n = i + 1, k = (ch.opened || []).includes(n) ? 0.35 : ch.open === n ? Math.sin(Math.PI * clamp((u - (ch.at ?? 0.2)) / 0.75)) : 0;
+        f.glow.scale.setScalar(0.1 + 5.5 * k); f.glow.material.opacity = k; f.light.intensity = 30 * k; f.tag.position.y = 2.0 + Math.sin(T * 3 + i) * 0.06; f.c.position.y = ch.open === n ? Math.abs(Math.sin(T * 18)) * 0.05 * k : 0; }); }
     PR.doorLight.intensity = (shot.tod === 'horror' || shot.tod === 'night') ? 26 * (1 + (dr.knock ? Math.max(0, Math.sin(lt * 9)) : 0)) : 0;
   }
   if (shot.set === 'domain') {
@@ -2360,6 +2363,17 @@ async function loadModels() {
     for (const [x, z, r] of [[-9, -12.6, 0], [9, -12.6, 0], [-9, 12.6, Math.PI], [9, 12.6, Math.PI]]) put(praca, 'bench', x, z, 0.3, r);
     for (const [x, z] of [[-16, -24], [16, -24], [-17, 24], [17, 25], [-26, 9], [25, -9]]) put(praca, 'tree', x, z, 0.26, hash(x) * 6);
     PR.chest = put(praca, 'chest', 6.8, -9.4, 0.3, -0.4);
+    // três baús numerados para vídeos de escolha (fx.chests = { open: n, at, opened: [n…] })
+    PR.chests = new THREE.Group(); PR.chests.visible = false; praca.add(PR.chests); PR.chestFx = [];
+    for (let i = 0; i < 3; i++) { const x = (i - 1) * 1.9, c = put(PR.chests, 'chest', x, 5.2, 0.3, 0);
+      const cv = document.createElement('canvas'); cv.width = cv.height = 256; const cx = cv.getContext('2d');
+      cx.fillStyle = ['#e74c3c', '#2f80ed', '#27ae60'][i]; cx.beginPath(); cx.arc(128, 128, 110, 0, 7); cx.fill(); cx.lineWidth = 14; cx.strokeStyle = '#fff'; cx.stroke();
+      cx.fillStyle = '#fff'; cx.font = '900 170px Inter, Arial, sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillText(String(i + 1), 128, 140);
+      const tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace;
+      const tag = new THREE.Sprite(new THREE.SpriteMaterial({ map: tx, depthWrite: false })); tag.scale.setScalar(0.62); tag.position.set(x, 2.0, 5.2); PR.chests.add(tag);
+      const glow = sprite(glowTex('rgba(255,220,120,1)'), 0.1); glow.position.set(x, 1.0, 5.2); PR.chests.add(glow);
+      const light = new THREE.PointLight('#ffd27a', 0, 8); light.position.set(x, 1.4, 6.0); PR.chests.add(light);
+      PR.chestFx.push({ tag, glow, light, c }); }
     PR.bridge.visible = false; put(praca, 'bridge', 33, 0, 0.13, Math.PI / 2);
     for (let i = 0; i < 9; i++) for (const sx of [30.8, 35.2]) if (Math.abs(-26 + i * 6.5) > 4) put(praca, 'fence', sx, -26 + i * 6.5, 0.3, Math.PI / 2);
     for (let i = 0; i < 14; i++) { const a = hash(i * 4.4) * Math.PI * 2, r = 13 + hash(i * 1.9) * 10; put(praca, ['fern', 'grass', 'pebbles', 'hedge'][i % 4], Math.cos(a) * r, Math.sin(a) * r, 0.3, hash(i) * 6); }

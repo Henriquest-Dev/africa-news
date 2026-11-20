@@ -50,6 +50,10 @@ GEMINI_VOICES = {  # voz pré-definida do Gemini, direção de interpretação
     'DUDU':  ('Achird',    'Dudu, amigo do Zinho, menino de 12 anos, empolgado e meio atrapalhado'),
     'KAKA':  ('Laomedeia', 'Kaká, amiga do Zinho, menina de 12 anos, esperta e debochada'),
     'SORRISO': ('Algenib', 'Criatura de terror, sussurro rouco e lento, arrepiante, quase um sorriso na voz'),
+    'VOZLIA':  ('Aoede',  'Narradora elegante de documentário, voz doce e encantada, elogia tudo'),
+    'VOZJUCA': ('Gacrux', 'Narrador idoso muito calmo e lento, voz de avô contando história'),
+    'VOZCAO':  ('Schedar', 'Narrador britânico chique e dramático de documentário sobre animais'),
+    'VOZZINHO': ('Algenib', 'Voz maligna e debochada, sussurro rouco, fala mal do menino com prazer, arrepiante e engraçada'),
 }
 EDGE_VOICES = {  # voz, velocidade, tom
     'NAR':   ('pt-BR-AntonioNeural', '+12%', '-4Hz'),
@@ -67,6 +71,10 @@ EDGE_VOICES = {  # voz, velocidade, tom
     'DUDU':  ('pt-BR-AntonioNeural', '+18%', '+28Hz'),
     'KAKA':  ('pt-BR-ThalitaMultilingualNeural', '+14%', '+10Hz'),
     'SORRISO': ('pt-BR-AntonioNeural', '-22%', '-48Hz'),
+    'VOZLIA':  ('pt-BR-FranciscaNeural', '-4%', '+8Hz'),
+    'VOZJUCA': ('pt-BR-AntonioNeural', '-18%', '-22Hz'),
+    'VOZCAO':  ('pt-BR-AntonioNeural', '-6%', '-8Hz'),
+    'VOZZINHO': ('pt-BR-AntonioNeural', '-12%', '-46Hz'),
 }
 
 

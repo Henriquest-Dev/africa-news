@@ -23,6 +23,11 @@ resumo de **tudo o que existe para usar**, para cada vídeo aproveitar o univers
 - **R15** (corpo liso do dono do canal): `MAE` (Dona Neide, vestido amarelo, lenço), `LIA` (rosa, rabo de cavalo),
   `JUCA` (Seu Juca, colete, bengala), `PROF` (professora), `ROSA` (padeira), `TONHO` (mercadinho), `KAKA` (amiga),
   `UGO` (homem das cavernas), `NAR` (narrador, sem corpo).
+- **Narradores fantasma** (translúcidos, flutuam atrás da pessoa, `ghost`/`float` em `CHARS`): `VOZLIA` (narradora
+  elegante, roxa), `VOZJUCA` (avô calmo, azul), `VOZCAO` (narrador chique do cão, laranja) e `VOZZINHO` (o Sorriso
+  como voz maligna do Zinho, roxo escuro). Modelo: `episodes/short-15-narrador.js` (função `behind()` para pô-los atrás).
+  Um cão sozinho em qualquer cenário: `fx.dog = { p: [x, z], r, wag: true }`. Nuvem de tempestade sobre o Zinho:
+  `fx.cloud = { size, storm: true }`.
 - **Criatura**: `SORRISO` (`sorriso`) — alta, escura, braços compridos, olhos brancos inclinados, sorriso com dentes.
 - Todas as vozes estão em `tools/tts.py` (Gemini com quota grátis; `--provider edge` quando acabar).
 - Personagem novo: acrescentar em `CHARS` (`web/scene.js`) com `skin/shirt/jacket/dress/vest/pants/shoes/hair/...`

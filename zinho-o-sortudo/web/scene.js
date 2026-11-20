@@ -740,6 +740,11 @@ const CHARS = {
   tonho: { skin: '#8d5a3c', shirt: '#c0392b', pants: '#3a3a40', shoes: '#2b2b2b', hair: 'old', hairColor: '#cfcfcf', hat: '#1f4e79', mustache: true, scale: 1.04 },
   dudu:  { body: 'r6', skin: '#f1c9a5', shirt: '#f39c12', pants: '#2c3e50', shoes: '#27ae60', hair: 'messy', hairColor: '#8a5a2b', scale: 0.95 },
   kaka:  { skin: '#4a2e1f', shirt: '#9b59b6', pants: '#34495e', shoes: '#ffffff', hair: 'afro', hairColor: '#1a1410', scale: 0.95 },
+  // narradores fantasma ("nesse bairro todo mundo tem um narrador"): translúcidos, flutuam atrás da pessoa
+  vozlia:  { skin: '#f1c9a5', shirt: '#ffffff', jacket: '#6a3d9a', pants: '#2b2b3a', shoes: '#1a1a1a', hair: 'bob', hairColor: '#3a2a20', ghost: '#b07cff', float: true },
+  vozjuca: { skin: '#d8a47f', shirt: '#ffffff', jacket: '#3a3a40', pants: '#2b2b3a', shoes: '#1a1a1a', hair: 'old', hairColor: '#f2f2f2', mustache: true, ghost: '#5aa8ff', float: true },
+  vozcao:  { skin: '#c08a5c', shirt: '#ffffff', jacket: '#7a1f2b', pants: '#2b2b3a', shoes: '#1a1a1a', hair: 'short', hairColor: '#3b2414', glasses: '#222', ghost: '#ff9a3c', float: true, scale: 0.8 },
+  vozzinho: { skin: '#17161d', shirt: '#17161d', pants: '#17161d', shoes: '#17161d', hair: 'none', hairColor: '#000', monster: true, longArms: 1.2, scale: 1.15, ghost: '#9b4dff', ghostOpacity: 0.62, float: true },
   // criatura de terror (a coisa atrás da porta proibida): corpo R15 todo preto, braços compridos, olhos e sorriso brancos
   sorriso: { skin: '#17161d', shirt: '#17161d', pants: '#17161d', shoes: '#17161d', hair: 'none', hairColor: '#000', monster: true, longArms: 1.35, scale: 1.45 },
   kid1:  { skin: '#a8704a', shirt: '#f39c12', pants: '#34495e', shoes: '#ecf0f1', hair: 'afro', hairColor: '#1a1a1a', scale: 0.92 },
@@ -1064,8 +1069,10 @@ async function loadR15() {
 }
 const R15G = BLOCKY ? await loadR15() : null;
 const chars = {};
-Object.entries(CHARS).forEach(([n, cfg], i) => { chars[n] = makeChar(n, cfg, i * 1.37 + 0.4); scene.add(chars[n].root); });
-const WHO = { ZINHO: 'zinho', MAE: 'mae', BETO: 'beto', LIA: 'lia', JUCA: 'juca', PROF: 'prof', UGO: 'ugo', NEFER: 'nefer', KHA: 'kha', ROSA: 'rosa', TONHO: 'tonho', DUDU: 'dudu', KAKA: 'kaka', SORRISO: 'sorriso' };
+Object.entries(CHARS).forEach(([n, cfg], i) => { chars[n] = makeChar(n, cfg, i * 1.37 + 0.4); scene.add(chars[n].root);
+  if (cfg.ghost) chars[n].root.traverse((m) => { if (!m.isMesh) return; const mats = [].concat(m.material).map((x) => { const c = x.clone(); c.transparent = true; c.opacity = (c.opacity ?? 1) * (cfg.ghostOpacity ?? 0.55); c.depthWrite = false;
+    if (c.emissive) { c.emissive.set(cfg.ghost); c.emissiveIntensity = 0.6; } return c; }); m.material = Array.isArray(m.material) ? mats : mats[0]; m.castShadow = false; m.renderOrder = 5; }); });
+const WHO = { ZINHO: 'zinho', MAE: 'mae', BETO: 'beto', LIA: 'lia', JUCA: 'juca', PROF: 'prof', UGO: 'ugo', NEFER: 'nefer', KHA: 'kha', ROSA: 'rosa', TONHO: 'tonho', DUDU: 'dudu', KAKA: 'kaka', SORRISO: 'sorriso', VOZLIA: 'vozlia', VOZJUCA: 'vozjuca', VOZCAO: 'vozcao', VOZZINHO: 'vozzinho' };
 
 const EXPR = {
   neutral: { eye: 1, lid: 1, brow: [0, 0], by: 0, mouth: 'smile', ms: 0.55 },
@@ -1117,7 +1124,7 @@ function pose(c, a, k) {
   const { t, lt, u, amp, talking, walkPhase, moving } = k;
   const L = c.legs, A = c.arms;
   c.root.rotation.x = 0; c.root.rotation.z = 0;
-  c.body.position.y = 0;
+  c.body.position.y = c.cfg.float ? 0.32 + Math.sin(t * 1.6 + c.seed) * 0.07 : 0;
   c.hips.position.y = c.hipY; c.hips.rotation.set(0, 0, 0);
   c.torso.rotation.set(c.cfg.hunch || 0, 0, 0);
   L[0].rotation.set(0, 0, 0); L[1].rotation.set(0, 0, 0);
@@ -1578,7 +1585,7 @@ function hideFx() {
   FX.rainAll.visible = FX.rainCloud.visible = false;
   ST.ladder.visible = false; ST.net.position.x = 33.6;
   for (const arr of [FX.sparkles, FX.trail, FX.smoke, FX.debris, FX.coins, FX.sparks, FX.shards, FX.dust]) arr.forEach((o) => { o.visible = false; });
-  FX.dogs.forEach((d) => { d.g.visible = false; });
+  FX.dogs.forEach((d) => { d.g.visible = false; if (d.g.parent === scene) { street.add(d.g); d.g.scale.setScalar(1); } });
   CL.paper.visible = false;
   KT.door.rotation.set(0, 0, 0); KT.door.position.set(3.15, 1.05, -2.53);
   fxLight.intensity = 0; fxLight2.intensity = 0;
@@ -1898,6 +1905,8 @@ function render(T) {
     CL.paper.position.copy(from.lerp(to, k)); CL.paper.position.y += Math.sin(k * Math.PI) * 0.4;
     CL.paper.rotation.set(0, (1 - k) * 4, 0);
   }
+  if (fx.dog) { const d = FX.dogs[0], m = fx.dog; if (d.g.parent !== scene) scene.add(d.g); d.g.visible = true; d.g.scale.setScalar(m.s ?? 1.3); d.g.position.set(m.p[0], 0, m.p[1]); d.g.rotation.y = (m.r ?? 0) * D2R;
+    d.legs.forEach((l) => { l.rotation.x = 0; }); d.head.position.y = 0.72 + Math.abs(Math.sin(T * 6)) * 0.03; d.g.rotation.z = m.wag ? Math.sin(T * 14) * 0.03 : 0; }
   if (fx.dogs) {
     const zp = chars.zinho.root.position;
     FX.dogs.forEach((d, i) => {

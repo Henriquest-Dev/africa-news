@@ -162,9 +162,12 @@
       "video_id": "1lujL8wVUjI"
     },
     {
-      "titulo": "Escolhe um botão: vermelho, azul ou verde",
+      "titulo": "Aperta um botão: vermelho, azul ou verde",
       "gancho": "formato de escolha no mundo do Zinho; cada botão muda o bairro; loop",
-      "status": "pendente"
+      "status": "feito",
+      "episodio": "episodes/short-14-botoes.js",
+      "publish_at": "2026-11-20T15:00:00Z",
+      "video_id": "9pHqQJpSVPM"
     },
     {
       "titulo": "Seu mês de nascimento define seu poder no bairro do Zinho",

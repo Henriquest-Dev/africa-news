@@ -86,6 +86,14 @@
       "video_id": "z-VbaQiS6go"
     },
     {
+      "titulo": "Nesse bairro, todo mundo tem um narrador",
+      "gancho": "cada um tem narrador fantasma; o do Zinho é o Sorriso (voz maligna)",
+      "status": "feito",
+      "video_id": "UFD2PP0eDpI",
+      "publish_at": "2026-11-20T21:00:00Z",
+      "episodio": "episodes/short-15-narrador.js"
+    },
+    {
       "titulo": "E se dinossauros ainda existissem?",
       "gancho": "um dinossauro no ponto de ônibus",
       "status": "pendente",
@@ -217,13 +225,6 @@
       "titulo": "E se você caísse dentro de um videogame?",
       "gancho": "vidas no canto da tela, pulo duplo",
       "status": "pendente"
-    },
-    {
-      "tema": "Nesse bairro, todo mundo tem um narrador (o do Zinho é o Sorriso)",
-      "episodio": "short-15-narrador",
-      "estado": "feito",
-      "video_id": "UFD2PP0eDpI",
-      "publish_at": "2026-11-20T21:00:00Z"
     }
   ]
 }

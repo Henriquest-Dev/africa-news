@@ -407,6 +407,12 @@ const PR = {};
     for (let i = 0; i < 12; i++) mk(G.rbox(0.42, 0.12, 3.2, 0.03), i % 2 ? wd : wd2, { p: [-2.6 + i * 0.47, 0.32 + Math.sin(i / 11 * Math.PI) * 0.35, 0], parent: g, ol: 0 });
     for (const sz of [-1.55, 1.55]) { for (let i = 0; i < 5; i++) mk(G.rbox(0.14, 0.9, 0.14, 0.03), wd2, { p: [-2.6 + i * 1.3, 0.75 + Math.sin(i / 4 * Math.PI) * 0.35, sz], parent: g, ol: 0 });
       mk(G.rbox(5.6, 0.1, 0.12, 0.03), wd, { p: [0, 1.2 + 0.18, sz], parent: g, ol: 0 }); } }
+  // três botões gigantes (vídeos de escolha): fx.buttons = { press: n, at, pressed: [n…] }
+  PR.buttons = new THREE.Group(); PR.buttons.visible = false; P.add(PR.buttons); PR.btn = [];
+  ['#e74c3c', '#2f80ed', '#27ae60'].forEach((col, i) => { const x = (i - 1) * 1.9, g = new THREE.Group(); g.position.set(x, 0, 5.2); PR.buttons.add(g);
+    mk(G.rbox(0.9, 1.0, 0.9, 0.08), M('#3a3f4b'), { p: [0, 0.5, 0], parent: g, ol: 0 }); mk(G.cyl(0.42, 0.44, 0.08, 28), M('#d9dde3'), { p: [0, 1.04, 0], parent: g, ol: 0 });
+    const cm = new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 0.25, roughness: 0.25 }), cap = mk(G.cyl(0.33, 0.35, 0.2, 28), cm, { p: [0, 1.17, 0], parent: g, ol: 0 });
+    const light = new THREE.PointLight(col, 0, 7); light.position.set(0, 1.8, 0.6); g.add(light); PR.btn.push({ cap, cm, light }); });
   // a porta proibida (canto norte-oeste): moldura de pedra escura, porta roxa a brilhar e correntes
   { const g = new THREE.Group(); g.position.set(-22, 0, -12); g.rotation.y = 0.6; P.add(g); const dk = M('#2d2a35');
     mk(G.rbox(4.2, 0.5, 2, 0.1), dk, { p: [0, 0.25, 0], parent: g, ol: 0 }); for (const sx of [-1.6, 1.6]) mk(G.rbox(0.8, 4.4, 1.1, 0.1), dk, { p: [sx, 2.6, 0], parent: g, ol: 0 });
@@ -1383,7 +1389,7 @@ const FX = {};
   for (let i = 0; i < 14; i++) FX.debris.push(mk(G.ico(0.15 + hash(i + 40) * 0.15, 0), M('#4a3628', { flatShading: true }), { parent: street, ol: 0.01 }));
   // moedas
   FX.coins = [];
-  for (let i = 0; i < 40; i++) FX.coins.push(mk(G.cyl(0.14, 0.14, 0.03, 16), M('#f5c518', { emissive: '#7a5a00', emissiveIntensity: 0.4 }), { ol: 0.01 }));
+  for (let i = 0; i < 110; i++) FX.coins.push(mk(G.cyl(0.19, 0.19, 0.035, 16), M('#f5c518', { emissive: '#7a5a00', emissiveIntensity: 0.4 }), { ol: 0.01 }));
   FX.coins.forEach((c) => scene.add(c));
   // faíscas
   FX.sparks = [];
@@ -1679,6 +1685,10 @@ function render(T) {
     const dr = fx.door || {}, op = Array.isArray(dr.open) ? lerp(dr.open[0], dr.open[1], smooth(u * 1.3)) : (dr.open ?? 0);
     PR.doorHinge.rotation.y = -op * 1.7; PR.doorGlow.material.emissiveIntensity = (1.1 + Math.sin(T * 2.5) * 0.4) * (1 - op * 0.8) * (dr.knock ? 1 + 2 * Math.max(0, Math.sin(lt * 9)) : 1);
     PR.chains.forEach((r, i) => { r.visible = i < (dr.chains ?? 3); });
+    PR.buttons.visible = !!fx.buttons;
+    if (fx.buttons) PR.btn.forEach((b, i) => { const n = i + 1, bt = fx.buttons, on = (bt.pressed || []).includes(n), pk = bt.press === n ? clamp((u - (bt.at ?? 0.25)) / 0.12) : 0, rel = bt.press === n ? clamp((u - (bt.at ?? 0.25) - 0.2) / 0.15) : 0;
+      b.cap.position.y = 1.17 - 0.12 * pk * (1 - rel); const glow = on ? 1.2 : bt.press === n ? 0.25 + 3.5 * pk * (1 - 0.6 * rel) : 0.25 + 0.15 * Math.sin(T * 3 + i);
+      b.cm.emissiveIntensity = glow; b.light.intensity = (on ? 6 : 0) + (bt.press === n ? 30 * pk * (1 - 0.5 * rel) : 0); });
     if (PR.chests) { const ch = fx.chests; PR.chests.visible = !!ch;
       if (ch) PR.chestFx.forEach((f, i) => { const n = i + 1, k = (ch.opened || []).includes(n) ? 0.35 : ch.open === n ? Math.sin(Math.PI * clamp((u - (ch.at ?? 0.2)) / 0.75)) : 0;
         f.glow.scale.setScalar(0.1 + 5.5 * k); f.glow.material.opacity = k; f.light.intensity = 30 * k; f.tag.position.y = 2.0 + Math.sin(T * 3 + i) * 0.06; f.c.position.y = ch.open === n ? Math.abs(Math.sin(T * 18)) * 0.05 * k : 0; }); }
@@ -1993,7 +2003,7 @@ function render(T) {
     c.visible = true;
     const hp = chars.zinho.root.position;
     const y = 7 - ((T * 1.6 + hash(i) * 8) % 8);
-    c.position.set(hp.x + (hash(i + 1) - 0.5) * 9, y, hp.z + (hash(i + 2) - 0.5) * 4 + 0.5);
+    c.position.set(hp.x + (hash(i + 1) - 0.5) * 8, y, hp.z + (hash(i + 2) - 0.5) * 5 + 0.5);
     c.rotation.set(T * 3 + i, T * 2, Math.PI / 2);
   });
   if (fx.clock) {

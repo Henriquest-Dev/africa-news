@@ -91,7 +91,7 @@ async function main() {
       const page = await openPage(browser, port, tl);
       for (const f of mine) {
         await page.evaluate((x) => window.__render(x), f / FPS);
-        const buf = await page.screenshot({ type: 'jpeg', quality: 92 });
+        const buf = await page.screenshot({ type: 'jpeg', quality: 92, timeout: 180000 });
         await writeFile(framePath(f) + '.tmp', buf);
         await rename(framePath(f) + '.tmp', framePath(f));
         if (++doneFrames % 150 === 0) {

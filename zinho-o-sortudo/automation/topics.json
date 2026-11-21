@@ -94,6 +94,13 @@
       "episodio": "episodes/short-15-narrador.js"
     },
     {
+      "titulo": "Escolhe uma porta… uma delas tem o Sorriso",
+      "gancho": "formato portas (o melhor) + terror do Sorriso; reviravolta: ele estava atrás de todas",
+      "status": "roteiro pronto",
+      "episodio": "episodes/short-16-portas-sorriso.js",
+      "publish_at": "2026-11-21T15:00:00Z"
+    },
+    {
       "titulo": "E se dinossauros ainda existissem?",
       "gancho": "um dinossauro no ponto de ônibus",
       "status": "pendente",

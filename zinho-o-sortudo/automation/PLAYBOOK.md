@@ -153,3 +153,6 @@ perder-se-ia): faz commit só do roteiro e termina com um relatório a dizer o q
 - 18–19/11: formato de escolha 1-2-3 com loop foi o melhor dos vídeos novos (portas: 1.981 views e 9 comentários em
   menos de 24 h). Histórias de 1:30 e continuações (parte 2) caem. Terror curto: views médias, 0 comentários — testar
   pedido de comentário mais forte no terror.
+- 21/11: portas continua no topo (3.247 views, 19 comentários); a porta proibida (terror) é o 2.º (2.196). Baús (1.428),
+  botões (1.761) e narrador (1.209, ainda a subir) ficaram abaixo. Teste de hoje: juntar os dois vencedores — portas +
+  Sorriso (`short-16-portas-sorriso.js`). Se ganhar, repetir "portas + reviravolta" em vez de trocar o objeto da escolha.

@@ -156,3 +156,5 @@ perder-se-ia): faz commit só do roteiro e termina com um relatório a dizer o q
 - 21/11: portas continua no topo (3.247 views, 19 comentários); a porta proibida (terror) é o 2.º (2.196). Baús (1.428),
   botões (1.761) e narrador (1.209, ainda a subir) ficaram abaixo. Teste de hoje: juntar os dois vencedores — portas +
   Sorriso (`short-16-portas-sorriso.js`). Se ganhar, repetir "portas + reviravolta" em vez de trocar o objeto da escolha.
+- 22/11: portas + Sorriso fez 1.865 views em ~10 h (o melhor arranque desde as portas). Mantém-se "portas +
+  reviravolta com o Sorriso" como série: hoje `short-17-portas-desejo.js` (o desejo é negado pelo Sorriso).

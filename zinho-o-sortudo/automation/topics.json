@@ -104,9 +104,10 @@
     {
       "titulo": "Escolhe uma porta… uma delas realiza um desejo",
       "gancho": "portas + reviravolta: o desejo do Zinho é o Sorriso sumir; 'desejo negado'",
-      "status": "roteiro pronto",
+      "status": "feito",
       "episodio": "episodes/short-17-portas-desejo.js",
-      "publish_at": "2026-11-22T15:00:00Z"
+      "publish_at": "2026-11-22T15:00:00Z",
+      "video_id": "QgOV0f9e-Nk"
     },
     {
       "titulo": "E se dinossauros ainda existissem?",

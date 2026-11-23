@@ -18,7 +18,42 @@ Nunca copiar roteiros, personagens ou títulos de outros canais — só formatos
 A sessão de produção corre todos os dias às 03:23 de Maputo (01:23 UTC) e prepara o Short desse dia
 (upload privado com `publishAt` às 15:00 UTC).
 
-## Formato atual dos Shorts (desde 18/11/2026, aprovado pelo dono do canal)
+## Formatos dos Shorts (desde 23/11/2026, escolhidos pelo dono do canal) — SUBSTITUI a série das portas
+
+O dono do canal disse que os vídeos de portas "não têm sentido" (cenas soltas sem ligação: cozinha → sala → rua).
+A partir de 24/11 a **série das portas acabou**. Rodar estes três formatos, todos com **pegada Roblox**:
+
+| Dia (UTC) | Formato |
+|---|---|
+| seg, qui | **Noob vs Pro vs Hacker** |
+| ter, sex | **Pobre vs Rico** |
+| qua, sáb | **História triste/emocional** |
+| dom | repetir o formato com mais views na semana (videos.list) |
+
+**Regra de ouro — a história tem de fazer sentido:** UMA premissa, UM lugar (no máximo dois), causa → efeito em
+cada plano (cada fala responde à anterior). Antes de escrever, resumir o vídeo numa frase "X quer Y, mas Z, então…";
+se não couber numa frase, reescrever. Nada de cenas aleatórias só para variar cenário.
+
+1. **Noob vs Pro vs Hacker** — o MESMO desafio feito por três níveis, cada um mais exagerado, com contador no topo
+   (`card` "NOOB" / "PRO" / "HACKER"). Noob = `ZINHO` (falha de forma engraçada), Pro = `BETO` (faz bem, convencido),
+   Hacker = `DUDU` ou `KAKA` (faz o impossível com o motor: gigante de pedra, chuva de moedas, espada de cristal,
+   `blackout`, voar com `float`). Final: o noob ganha por sorte (é o Zinho, o Sortudo) ou o hacker é apanhado pela
+   Dona Neide com o chinelo. Desafios: prova surpresa, fila da padaria, apanhar o ônibus, esconde-esconde,
+   fugir do Sorriso, ganhar o baú da praça, jogo de futebol. Pedido de comentário: "Você é noob, pro ou hacker?".
+2. **Pobre vs Rico** — o Zinho (pobre) e um NPC rico (criar `ENZO` em `CHARS` se não existir: roupa dourada, óculos
+   escuros, corrente; voz em `tts.py`) lado a lado no MESMO momento (lanche da escola, aniversário, Natal, presente da
+   mãe, dia de chuva). Cortes alternados rico/pobre a cada ~2 s com `card` "RICO" / "POBRE". Reviravolta final com
+   coração: o pobre ganha o que importa (amigos, a mãe, sorte). Pedido de comentário: "Time pobre ou time rico?".
+3. **História triste/emocional** — mini-novela de 40–55 s com UM conflito: ex. o noob que ninguém escolhe para o time,
+   o cão Bolinha que se perdeu, a mãe que trabalha à noite, o amigo que mudou de cidade. Música mais baixa no início,
+   falas curtas, rosto em grande (`e: 'sad'`, `'headdown'`), final que vira (alegria) e volta ao 1.º plano.
+   Pedido de comentário: "Você já passou por isso? Sim ou não".
+
+Ganchos (1.º quadro, `card` no topo): começar pelo conflito, não pelo cenário — "O NOOB, O PRO E O HACKER NA PROVA",
+"RICO VS POBRE NO NATAL", "NINGUÉM ESCOLHEU O ZINHO…". Manter as regras técnicas de baixo (30–55 s, corte a cada ~2 s,
+loop, `hq/blocky`, música). O Sorriso fica como convidado ocasional (ex.: hacker, ou vilão da história triste).
+
+## Regras técnicas dos Shorts (desde 18/11/2026; a parte dos "formatos que testamos" está substituída acima)
 
 Análise de 18/11 (9 Shorts): os de ~55 s fizeram 2.200–3.300 views; os de ~1:30 ficaram em 1.200–1.700. O que
 falhava: vídeos longos demais, 1.º quadro escuro/parado, um corte a cada ~6 s, formato a mudar toda a semana, poucos

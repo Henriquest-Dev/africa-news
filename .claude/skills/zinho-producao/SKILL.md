@@ -13,8 +13,11 @@ resumo de **tudo o que existe para usar**, para cada vídeo aproveitar o univers
 - Corte a cada ~2 s, câmara sempre a mexer (`pos`→`pos2`, `push`). Legendas com `capY: '37%'`.
 - Pedido de comentário de uma palavra até ao 3.º plano.
 - Final em loop: última frase leva à primeira; último plano termina no enquadramento do primeiro; sem cartão final.
-- Formatos que funcionam: **escolha** (portas/caixas/botões 1-2-3), **"seu mês define…"**, **gancho de duplo sentido**,
-  **terror curto em loop** (porta proibida). Repetir o formato que estiver a ganhar.
+- **Formatos (desde 23/11, pedido do dono): Noob vs Pro vs Hacker (seg/qui), Pobre vs Rico (ter/sex), História
+  triste/emocional (qua/sáb), domingo = o melhor da semana.** A série das portas ACABOU ("não tem sentido").
+  Detalhes e elenco de cada formato: PLAYBOOK, secção "Formatos dos Shorts".
+- **A história tem de fazer sentido:** uma premissa, um lugar, causa → efeito em cada plano. Resumir numa frase antes
+  de escrever ("X quer Y, mas Z, então…").
 - 1.º plano sempre com `hq: true, blocky: true` e música `music: 'file:assets/music/fundo.mp3'`, `musicGain: 0.2–0.24`.
 
 ## Personagens (WHO → nome no motor)

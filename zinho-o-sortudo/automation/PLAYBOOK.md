@@ -158,3 +158,11 @@ perder-se-ia): faz commit só do roteiro e termina com um relatório a dizer o q
   Sorriso (`short-16-portas-sorriso.js`). Se ganhar, repetir "portas + reviravolta" em vez de trocar o objeto da escolha.
 - 22/11: portas + Sorriso fez 1.865 views em ~10 h (o melhor arranque desde as portas). Mantém-se "portas +
   reviravolta com o Sorriso" como série: hoje `short-17-portas-desejo.js` (o desejo é negado pelo Sorriso).
+- 23/11 (pesquisa de segunda + números): portas+Sorriso 2.074 views em 1,5 dia; portas+desejo 1.194 no mesmo tempo
+  → **o medo no título ganha** ("tem o Sorriso" > "realiza um desejo"). Aprendizados aplicados a partir de hoje:
+  1. **Título e cartão com medo/ameaça** ("só uma NÃO tem o Sorriso"), nunca recompensa neutra.
+  2. **Cada porta é uma mini-recompensa de ≤6 s** (curva em patamar dos vídeos de lista): abre → situação → piada/susto.
+  3. **Re-gancho antes da saída natural** (antes da porta 3): "Então a três é a segura. Né?".
+  4. **Fechar sempre a curiosidade** do gancho (reviravolta que responde à pergunta) — gancho sem resposta é isco e corta a retenção.
+  5. **A última frase repete a 1.ª** quase palavra por palavra (o loop conta como nova visualização). Pedir ao dono do
+     canal para responder aos comentários na 1.ª hora depois da estreia (sinal de envolvimento cedo).

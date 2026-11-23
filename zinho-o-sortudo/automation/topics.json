@@ -112,9 +112,10 @@
     {
       "titulo": "Escolhe uma porta… só uma NÃO tem o Sorriso",
       "gancho": "série portas+Sorriso: mãe expulsa o Sorriso, aluno novo, re-gancho na porta 3, ele escolhia junto com você",
-      "status": "roteiro pronto",
+      "status": "feito",
       "episodio": "episodes/short-18-portas-so-uma.js",
-      "publish_at": "2026-11-23T15:00:00Z"
+      "publish_at": "2026-11-23T15:00:00Z",
+      "video_id": "QsrIHE1leIE"
     },
     {
       "titulo": "E se dinossauros ainda existissem?",

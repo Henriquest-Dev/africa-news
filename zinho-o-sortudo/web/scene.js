@@ -739,6 +739,8 @@ const CHARS = {
   rosa:  { skin: '#c68e62', shirt: '#ffffff', dress: '#f6d6a8', pants: '#c68e62', shoes: '#8a5a3a', hair: 'bob', hairColor: '#2b1a10', hat: '#ffffff', earrings: true },
   tonho: { skin: '#8d5a3c', shirt: '#c0392b', pants: '#3a3a40', shoes: '#2b2b2b', hair: 'old', hairColor: '#cfcfcf', hat: '#1f4e79', mustache: true, scale: 1.04 },
   dudu:  { body: 'r6', skin: '#f1c9a5', shirt: '#f39c12', pants: '#2c3e50', shoes: '#27ae60', hair: 'messy', hairColor: '#8a5a2b', scale: 0.95 },
+  // o menino rico do bairro (formato Pobre vs Rico): casaco dourado, óculos escuros, corrente de ouro
+  enzo:  { body: 'r6', skin: '#f1c9a5', shirt: '#ffffff', jacket: '#d4a017', pants: '#1c1c22', shoes: '#ffffff', hair: 'short', hairColor: '#e0b44a', shades: true, chain: true },
   kaka:  { skin: '#4a2e1f', shirt: '#9b59b6', pants: '#34495e', shoes: '#ffffff', hair: 'afro', hairColor: '#1a1410', scale: 0.95 },
   // narradores fantasma ("nesse bairro todo mundo tem um narrador"): translúcidos, flutuam atrás da pessoa
   vozlia:  { skin: '#f1c9a5', shirt: '#ffffff', jacket: '#6a3d9a', pants: '#2b2b3a', shoes: '#1a1a1a', hair: 'bob', hairColor: '#3a2a20', ghost: '#b07cff', float: true },
@@ -912,6 +914,14 @@ function makeChar(name, cfg, seed) {
     for (const sd of [-1, 1]) onHead(head, new THREE.Group(), [sd * 0.33, 0.1, 0.94], HEAD_R + 0.04).add(new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.018, 6, 20), gm));
     onHead(head, new THREE.Group(), [0, 0.13, 0.99], HEAD_R + 0.05).add(new THREE.Mesh(G.box(0.14, 0.02, 0.02), gm));
   }
+  if (cfg.shades) { // óculos escuros (rico)
+    const sm2 = new THREE.MeshBasicMaterial({ color: '#0b0b0f' });
+    for (const sd of [-1, 1]) onHead(head, new THREE.Group(), [sd * 0.3, 0.1, 0.95], HEAD_R + (BLOCKY ? 0.08 : 0.03)).add(new THREE.Mesh(G.box(0.3, 0.16, 0.04), sm2));
+    onHead(head, new THREE.Group(), [0, 0.12, 0.99], HEAD_R + (BLOCKY ? 0.09 : 0.04)).add(new THREE.Mesh(G.box(0.2, 0.03, 0.02), sm2));
+  }
+  if (cfg.chain) { const cm = new THREE.MeshStandardMaterial({ color: '#ffd23f', metalness: 0.9, roughness: 0.25, emissive: '#5a3c00' });
+    const ch = mk(new THREE.TorusGeometry(0.2, 0.025, 6, 20, Math.PI), cm, { p: [0, BLOCKY ? 0.62 : 0.66, 0.16], r: [0.25, 0, Math.PI], parent: torso, ol: 0 });
+    mk(G.box(0.07, 0.09, 0.02), cm, { p: [0, -0.21, 0], parent: ch, ol: 0 }); }
   if (cfg.earrings) for (const sd of [-1, 1]) mk(new THREE.TorusGeometry(0.05, 0.012, 6, 12), M('#f1c40f'), { p: [sd * 0.46, -0.16, 0.02], r: [0, Math.PI / 2, 0], parent: head, ol: 0 });
   // cabelos
   const hm = M(cfg.hairColor, { flatShading: true });
@@ -1072,7 +1082,7 @@ const chars = {};
 Object.entries(CHARS).forEach(([n, cfg], i) => { chars[n] = makeChar(n, cfg, i * 1.37 + 0.4); scene.add(chars[n].root);
   if (cfg.ghost) chars[n].root.traverse((m) => { if (!m.isMesh) return; const mats = [].concat(m.material).map((x) => { const c = x.clone(); c.transparent = true; c.opacity = (c.opacity ?? 1) * (cfg.ghostOpacity ?? 0.55); c.depthWrite = false;
     if (c.emissive) { c.emissive.set(cfg.ghost); c.emissiveIntensity = 0.6; } return c; }); m.material = Array.isArray(m.material) ? mats : mats[0]; m.castShadow = false; m.renderOrder = 5; }); });
-const WHO = { ZINHO: 'zinho', MAE: 'mae', BETO: 'beto', LIA: 'lia', JUCA: 'juca', PROF: 'prof', UGO: 'ugo', NEFER: 'nefer', KHA: 'kha', ROSA: 'rosa', TONHO: 'tonho', DUDU: 'dudu', KAKA: 'kaka', SORRISO: 'sorriso', VOZLIA: 'vozlia', VOZJUCA: 'vozjuca', VOZCAO: 'vozcao', VOZZINHO: 'vozzinho' };
+const WHO = { ZINHO: 'zinho', MAE: 'mae', BETO: 'beto', LIA: 'lia', JUCA: 'juca', PROF: 'prof', UGO: 'ugo', NEFER: 'nefer', KHA: 'kha', ROSA: 'rosa', TONHO: 'tonho', DUDU: 'dudu', KAKA: 'kaka', ENZO: 'enzo', SORRISO: 'sorriso', VOZLIA: 'vozlia', VOZJUCA: 'vozjuca', VOZCAO: 'vozcao', VOZZINHO: 'vozzinho' };
 
 const EXPR = {
   neutral: { eye: 1, lid: 1, brow: [0, 0], by: 0, mouth: 'smile', ms: 0.55 },

@@ -118,6 +118,13 @@
       "video_id": "QsrIHE1leIE"
     },
     {
+      "titulo": "Rico vs Pobre no aniversário",
+      "gancho": "Enzo e Zinho fazem anos no mesmo dia; a festa rica tem regras chatas, todos fogem para o bolo de fubá da Dona Neide e o Zinho chama o Enzo",
+      "status": "roteiro pronto",
+      "episodio": "episodes/short-19-rico-pobre-aniversario.js",
+      "publish_at": "2026-11-24T15:00:00Z"
+    },
+    {
       "titulo": "E se dinossauros ainda existissem?",
       "gancho": "um dinossauro no ponto de ônibus",
       "status": "pendente",

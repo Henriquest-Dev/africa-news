@@ -31,6 +31,8 @@ resumo de **tudo o que existe para usar**, para cada vídeo aproveitar o univers
   como voz maligna do Zinho, roxo escuro). Modelo: `episodes/short-15-narrador.js` (função `behind()` para pô-los atrás).
   Um cão sozinho em qualquer cenário: `fx.dog = { p: [x, z], r, wag: true }`. Nuvem de tempestade sobre o Zinho:
   `fx.cloud = { size, storm: true }`.
+- **Rico**: `ENZO` (`enzo`, Noob R6, casaco dourado, óculos escuros `shades: true`, corrente de ouro `chain: true`) —
+  o menino rico do formato Pobre vs Rico. Modelo: `episodes/short-19-rico-pobre-aniversario.js` (cartões RICO/POBRE).
 - **Criatura**: `SORRISO` (`sorriso`) — alta, escura, braços compridos, olhos brancos inclinados, sorriso com dentes.
 - Todas as vozes estão em `tools/tts.py` (Gemini com quota grátis; `--provider edge` quando acabar).
 - Personagem novo: acrescentar em `CHARS` (`web/scene.js`) com `skin/shirt/jacket/dress/vest/pants/shoes/hair/...`

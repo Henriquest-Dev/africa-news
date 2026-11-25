@@ -128,9 +128,10 @@
     {
       "titulo": "Ninguém escolheu o Zinho…",
       "gancho": "história triste: ninguém escolhe o Zinho no time da praça; o Enzo lembra que o Zinho o chamou no aniversário e escolhe-o primeiro",
-      "status": "roteiro pronto",
+      "status": "feito",
       "episodio": "episodes/short-20-ninguem-escolhe.js",
-      "publish_at": "2026-11-25T15:00:00Z"
+      "publish_at": "2026-11-25T15:00:00Z",
+      "video_id": "m96ecnbKvs0"
     },
     {
       "titulo": "E se dinossauros ainda existissem?",

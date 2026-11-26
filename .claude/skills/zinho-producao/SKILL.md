@@ -58,7 +58,7 @@ Andar/correr: `p: [x, z], to: [x, z], a: 'walk'|'run'`.
 - `kitchen`, `bedroom`, `classroom`, `cave`, `egypt` — interiores e temas antigos.
 - `domain` — palco vazio com `domain.deco`: `doors` (3 portas numeradas, `open`/`opened`), `void temple volcano
   hands beach shadow swords slot court moon sphere womb`.
-- Horas (`tod:`): `day dusk night dawn indoor indoorNight horror` (terror: nevoeiro, postes a piscar).
+- Horas (`tod:`): `day dusk night dawn indoor indoorNight dark horror` (`dark` = luz apagada num interior, ex. apagão na sala) (terror: nevoeiro, postes a piscar).
 
 ## Efeitos úteis (`fx:`)
 `giant` (gigante de pedra: `p, to, s, r, raise, up, bow, rock, held, throw, eye`), `blackout` (apagão),

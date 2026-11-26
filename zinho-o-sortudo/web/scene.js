@@ -178,6 +178,7 @@ const TOD = {
   preDusk: { top: '#4a2fa8', bot: '#ff7a3d', hs: '#ffd0b0', hg: '#6a4a5a', hi: 1.15, sc: '#ff9a5a', si: 2.4, dir: [-25, 9, 8], fog: '#e88a6a', fogN: 30, fogF: 130, lamps: 0, win: 0, fill: 0.45 },
   cave:    { top: '#1a0f0a', bot: '#2a1a10', hs: '#7f93c8', hg: '#2a2030', hi: 0.95, sc: '#ffb070', si: 0.45, dir: [4, 8, 6], fog: null, lamps: 0, win: 0, fill: 0.55 },
   indoorNight: { top: '#0b1638', bot: '#1f2f5a', hs: '#6a7cb8', hg: '#2a2430', hi: 0.8, sc: '#8fa8ff', si: 0.8, dir: [-4, 8, 6], fog: null, lamps: 1, win: 1 , fill: 0.75 },
+  dark: { top: '#05070f', bot: '#0b1022', hs: '#4a5a90', hg: '#141018', hi: 0.38, sc: '#7f96ff', si: 0.35, dir: [-4, 8, 6], fog: null, lamps: 0, win: 0, fill: 0.32 },
 };
 
 // ───────────────────────── materiais partilhados ─────────────────────────

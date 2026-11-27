@@ -142,6 +142,13 @@
       "video_id": "6KZVM29j-m0"
     },
     {
+      "titulo": "Rico vs Pobre na hora do lanche",
+      "gancho": "rico vs pobre: o lanche de chef do Enzo tem gosto de grama; ele troca o chocolate de ouro por um pedaço do pão com ovo do Zinho",
+      "status": "roteiro pronto",
+      "episodio": "episodes/short-22-rico-pobre-lanche.js",
+      "publish_at": "2026-11-27T15:00:00Z"
+    },
+    {
       "titulo": "E se dinossauros ainda existissem?",
       "gancho": "um dinossauro no ponto de ônibus",
       "status": "pendente",
